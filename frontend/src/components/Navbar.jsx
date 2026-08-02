@@ -49,8 +49,8 @@ const Navbar = () => {
             </div>
 
             <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2.5 group">
-              <div className="p-2 rounded-full bg-gradient-to-tr from-indigo-500 via-sky-400 to-emerald-400 shadow-md shadow-indigo-500/30 group-hover:scale-110 transition-transform duration-300">
-                <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-900 border border-white/20 p-0.5 shadow-lg shadow-indigo-500/30 group-hover:scale-110 transition-transform duration-300 overflow-hidden flex items-center justify-center">
+                <img src="/images/logo.png" alt="SAFE-HIRE AI Logo" className="w-full h-full object-cover rounded-full" />
               </div>
               <div className="flex flex-col">
                 <span className="text-base sm:text-lg font-extrabold tracking-tight gradient-text leading-none">SAFE-HIRE</span>
