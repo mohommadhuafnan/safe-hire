@@ -1,0 +1,55 @@
+{
+  "nav": {
+    "brand": "SAFE-HIRE",
+    "dashboard": "Dashboard",
+    "history": "Scan History",
+    "login": "Login",
+    "signup": "Sign Up",
+    "logout": "Logout",
+    "welcome": "Welcome"
+  },
+  "landing": {
+    "tagline": "Verify Before You Apply",
+    "headline": "AI-Powered Protection Against Job & Internship Scams",
+    "subhead": "Empowering South Asian students and job seekers with instant, explainable 5-Agent AI scam verification for job offers, emails, WhatsApp messages, and recruiter URLs.",
+    "cta_start": "Analyze Job Offer Now",
+    "cta_login": "Login to Dashboard",
+    "features_title": "Why Students Trust SAFE-HIRE",
+    "feature_1_title": "5-Agent AI Pipeline",
+    "feature_1_desc": "Multi-stage automated intelligence analyzing intake text, OCR image screenshots, WHOIS domain age, and linguistic risk factors.",
+    "feature_2_title": "Multi-Language Support",
+    "feature_2_desc": "Native analysis and explainable results in English, Sinhala (සිංහල), Tamil (தமிழ்), Hindi (हिंदी), and Bengali (বাংলা).",
+    "feature_3_title": "Domain & WHOIS Verification",
+    "feature_3_desc": "Instant background validation against Google Safe Browsing and corporate WHOIS registries.",
+    "feature_4_title": "Tailored Safety Advice",
+    "feature_4_desc": "Actionable, plain-language guidance to protect your identity, finances, and career."
+  },
+  "dashboard": {
+    "title": "Recruitment Scam Detector",
+    "subtitle": "Paste job text, upload a screenshot, or enter a URL to run the 5-Agent AI pipeline.",
+    "tab_text": "Text Message / Email",
+    "tab_image": "Upload Screenshot (OCR)",
+    "tab_url": "Job Offer URL",
+    "placeholder_text": "Paste suspicious job offer, email body, WhatsApp/LinkedIn message here (e.g., Urgent vacancy! Registration fee required...)",
+    "placeholder_url": "https://company-careers-portal.com/job-id-1029",
+    "select_lang": "Target Language",
+    "auto_detect": "Auto-Detect Language",
+    "analyze_btn": "Run AI Scam Verification",
+    "analyzing": "5 Agents Analyzing...",
+    "results_title": "Scam Analysis Report",
+    "scam_score": "Scam Probability Score",
+    "risk_level": "Risk Assessment Level",
+    "explanation": "Explainable Reasoning",
+    "recommendations": "Personalized Safety Actions",
+    "verification_details": "Verification & Trust Indicators",
+    "download_report": "Export Report PDF"
+  },
+  "history": {
+    "title": "Your Analysis History",
+    "subtitle": "Review your past job offer verifications and scam risk scores.",
+    "empty": "No past verifications found. Analyze a job offer on the Dashboard to get started!",
+    "score": "Score",
+    "date": "Date",
+    "view_detail": "View Full Report"
+  }
+}

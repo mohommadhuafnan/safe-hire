@@ -1,0 +1,35 @@
+# Environment variables
+.env
+*.env
+backend/.env
+frontend/.env
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+dist/
+frontend/dist/
+build/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Firebase
+.firebase/
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
