@@ -102,7 +102,24 @@ async def init_db():
         is_mongo_connected = False
 
 def get_db():
-    global db
+    global db, db_client, is_mongo_connected
     if db is None:
-        db = FallbackDatabase()
+        try:
+            kwargs = {"serverSelectionTimeoutMS": 5000}
+            if "mongodb+srv://" in settings.MONGO_URI:
+                try:
+                    import certifi
+                    kwargs["tlsCAFile"] = certifi.where()
+                except ImportError:
+                    pass
+
+            db_client = AsyncIOMotorClient(settings.MONGO_URI, **kwargs)
+            db = db_client[settings.MONGO_DB_NAME]
+            is_mongo_connected = True
+            logger.info(f"Initialized Motor database client for {settings.MONGO_DB_NAME}")
+        except Exception as e:
+            logger.warning(f"MongoDB Motor init notice ({e}). Using FallbackDatabase.")
+            db = FallbackDatabase()
+            is_mongo_connected = False
     return db
+
