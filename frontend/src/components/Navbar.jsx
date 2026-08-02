@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { ShieldCheck, LogOut, User, Globe, History, LayoutDashboard, Menu, X } from 'lucide-react';
+import { ShieldCheck, LogOut, User, Globe, History, LayoutDashboard, Menu, X, Crown, Sparkles } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -20,24 +20,47 @@ const Navbar = () => {
     navigate('/');
   };
 
+  const scrollToPricing = () => {
+    setMobileMenuOpen(false);
+    if (window.location.pathname !== '/') {
+      navigate('/#pricing');
+      setTimeout(() => {
+        const el = document.getElementById('pricing');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      const el = document.getElementById('pricing');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <nav className="glass-panel sticky top-0 z-50 px-4 sm:px-6 py-3.5 border-b border-slate-800 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
         {/* Brand Logo */}
         <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2.5 group">
-          <div className="p-2 rounded-xl bg-gradient-to-tr from-indigo-600 to-sky-500 shadow-md shadow-indigo-500/30 group-hover:scale-105 transition-transform">
+          <div className="p-2 rounded-xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-emerald-400 shadow-md shadow-indigo-500/30 group-hover:scale-105 transition-transform">
             <ShieldCheck className="w-5 h-5 text-white" />
           </div>
           <div>
-            <span className="text-lg sm:text-xl font-bold tracking-tight gradient-text">SAFE-HIRE</span>
+            <span className="text-lg sm:text-xl font-extrabold tracking-tight gradient-text">SAFE-HIRE</span>
             <span className="block text-[9px] sm:text-[10px] text-slate-400 font-medium tracking-wider">SCAM DETECTOR AI</span>
           </div>
         </Link>
 
-        {/* Desktop Navigation & Language */}
+        {/* Desktop Navigation & Controls */}
         <div className="hidden md:flex items-center space-x-4">
           
+          {/* Navigation Links */}
+          <button
+            onClick={scrollToPricing}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 transition"
+          >
+            <Crown className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+            <span>Pricing Plans (LKR)</span>
+          </button>
+
           {/* Language Selector Dropdown */}
           <div className="relative flex items-center bg-slate-900/80 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200 hover:border-indigo-500/50 transition">
             <Globe className="w-4 h-4 mr-2 text-sky-400" />
@@ -75,12 +98,17 @@ const Navbar = () => {
 
               {/* User Profile Badge */}
               <div className="flex items-center space-x-2 pl-2 border-l border-slate-800">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xs shadow-md">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 via-sky-500 to-emerald-400 flex items-center justify-center text-white font-semibold text-xs shadow-md">
                   {user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U'}
                 </div>
-                <span className="text-xs font-medium text-slate-200 max-w-[120px] truncate">
-                  {user.full_name}
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-slate-200 max-w-[110px] truncate leading-tight">
+                    {user.full_name}
+                  </span>
+                  <span className="text-[9px] text-amber-400 font-semibold flex items-center">
+                    <Crown className="w-2.5 h-2.5 mr-0.5 inline" /> Free Tier
+                  </span>
+                </div>
                 
                 <button
                   onClick={handleLogout}
@@ -102,7 +130,7 @@ const Navbar = () => {
               </Link>
               <Link
                 to="/signup"
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-600 to-sky-500 hover:from-indigo-500 hover:to-sky-400 text-white glow-btn"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white glow-btn"
               >
                 {t('nav.signup')}
               </Link>
@@ -127,6 +155,18 @@ const Navbar = () => {
       {/* Mobile Menu Dropdown Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden mt-3 pt-3 border-t border-slate-800/80 space-y-3 animate-fade-in">
+          
+          <button
+            onClick={scrollToPricing}
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold"
+          >
+            <span className="flex items-center">
+              <Crown className="w-4 h-4 mr-2 text-amber-400 animate-pulse" />
+              View Premium Pricing Plans
+            </span>
+            <span className="text-[10px] text-amber-400 font-bold uppercase">LKR 999+</span>
+          </button>
+
           {/* Mobile Language Selector */}
           <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs">
             <span className="flex items-center text-slate-400">
@@ -154,7 +194,9 @@ const Navbar = () => {
                 </div>
                 <div className="overflow-hidden">
                   <div className="text-xs font-semibold text-slate-200 truncate">{user.full_name}</div>
-                  <div className="text-[10px] text-slate-400 truncate">{user.email}</div>
+                  <div className="text-[10px] text-amber-400 font-semibold flex items-center">
+                    <Crown className="w-3 h-3 mr-1" /> Free Student Account
+                  </div>
                 </div>
               </div>
 

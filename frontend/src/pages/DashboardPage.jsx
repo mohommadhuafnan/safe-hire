@@ -18,7 +18,10 @@ import {
   History,
   ShieldCheck,
   Building2,
-  Upload
+  Upload,
+  Crown,
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -115,29 +118,48 @@ const DashboardPage = () => {
   return (
     <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-5 sm:py-8 space-y-6 sm:space-y-8">
       
-      {/* HEADER BAR */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-800">
-        <div>
-          <div className="flex items-center space-x-2 text-indigo-400 font-semibold text-[11px] sm:text-xs mb-1">
-            <ShieldCheck className="w-4 h-4" />
-            <span>AUTHENTICATED STUDENT DASHBOARD</span>
+      {/* USER DASHBOARD HEADER BAR & PREMIUM BANNER */}
+      <div className="glass-panel p-5 sm:p-7 rounded-3xl border border-slate-800 relative overflow-hidden space-y-4">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
+          <div>
+            <div className="flex items-center space-x-2 text-indigo-400 font-semibold text-[11px] sm:text-xs mb-1">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>AUTHENTICATED STUDENT DASHBOARD • 5-AGENT AI PIPELINE</span>
+            </div>
+            <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-100 tracking-tight">
+              Welcome back, <span className="gradient-text">{user?.full_name || 'Student'}</span>
+            </h1>
+            <p className="text-xs text-slate-400 mt-1">
+              Analyze job postings, recruitment screenshots, or URLs for scam risk signals in seconds.
+            </p>
           </div>
-          <h1 className="text-xl sm:text-3xl font-extrabold text-slate-100">
-            {t('dashboard.title')}
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            {t('dashboard.subtitle')}
-          </p>
-        </div>
 
-        <div className="flex items-center space-x-3 w-full sm:w-auto">
-          <Link
-            to="/history"
-            className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition shadow-sm"
-          >
-            <History className="w-4 h-4 text-emerald-400" />
-            <span>Past Verification History</span>
-          </Link>
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            {/* Account Tier Badge */}
+            <div className="px-3.5 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold flex items-center space-x-2">
+              <Crown className="w-4 h-4 text-amber-400 animate-pulse" />
+              <div>
+                <span className="block text-[10px] text-amber-400/80 font-mono uppercase">Current Plan</span>
+                <span className="text-xs font-bold text-amber-300">Free Tier (LKR 0)</span>
+              </div>
+            </div>
+
+            <Link
+              to="/#pricing"
+              className="flex items-center space-x-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 text-slate-950 font-extrabold text-xs shadow-lg glow-btn-gold"
+            >
+              <Zap className="w-4 h-4" />
+              <span>Upgrade to Pro (LKR 999+)</span>
+            </Link>
+
+            <Link
+              to="/history"
+              className="flex items-center space-x-2 px-4 py-2.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition shadow-sm"
+            >
+              <History className="w-4 h-4 text-emerald-400" />
+              <span>Past Verifications</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -145,53 +167,53 @@ const DashboardPage = () => {
         
         {/* INPUT FORM CONTAINER (7 COLS) */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="glass-panel p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-800 space-y-5 sm:space-y-6">
+          <div className="glass-panel p-5 sm:p-7 rounded-3xl border border-slate-800 space-y-6">
             
             {/* INPUT TYPE TABS */}
-            <div className="flex p-1 bg-slate-900/90 rounded-2xl border border-slate-800/80">
+            <div className="flex p-1.5 bg-slate-900/90 rounded-2xl border border-slate-800/80">
               <button
                 type="button"
                 onClick={() => setActiveTab('text')}
-                className={`flex-1 flex items-center justify-center space-x-1.5 py-2.5 rounded-xl text-[11px] sm:text-xs font-semibold transition ${
+                className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold transition ${
                   activeTab === 'text'
-                    ? 'bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-md'
+                    ? 'bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white shadow-lg'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <FileText className="w-4 h-4" />
                 <span>{t('dashboard.tab_text')}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('image')}
-                className={`flex-1 flex items-center justify-center space-x-1.5 py-2.5 rounded-xl text-[11px] sm:text-xs font-semibold transition ${
+                className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold transition ${
                   activeTab === 'image'
-                    ? 'bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-md'
+                    ? 'bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white shadow-lg'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>{t('dashboard.tab_image')}</span>
+                <ImageIcon className="w-4 h-4" />
+                <span>{t('dashboard.tab_image')} (OCR)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('url')}
-                className={`flex-1 flex items-center justify-center space-x-1.5 py-2.5 rounded-xl text-[11px] sm:text-xs font-semibold transition ${
+                className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold transition ${
                   activeTab === 'url'
-                    ? 'bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-md'
+                    ? 'bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white shadow-lg'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Globe className="w-4 h-4" />
                 <span>{t('dashboard.tab_url')}</span>
               </button>
             </div>
 
             {/* ERROR ALERT */}
             {error && (
-              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center space-x-2">
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center space-x-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
               </div>
@@ -203,15 +225,15 @@ const DashboardPage = () => {
               {/* TAB 1: TEXT */}
               {activeTab === 'text' && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-2">
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">
                     Paste Job Offer / Email / WhatsApp Message:
                   </label>
                   <textarea
-                    rows={6}
+                    rows={7}
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     placeholder={t('dashboard.placeholder_text')}
-                    className="w-full bg-slate-900/90 border border-slate-800 focus:border-indigo-500 rounded-2xl p-4 text-sm sm:text-xs text-slate-100 placeholder-slate-500 outline-none transition resize-none leading-relaxed"
+                    className="w-full bg-slate-900/90 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-2xl p-4 text-xs text-slate-100 placeholder-slate-500 outline-none transition resize-none leading-relaxed"
                   />
                 </div>
               )}
@@ -219,8 +241,8 @@ const DashboardPage = () => {
               {/* TAB 2: IMAGE OCR */}
               {activeTab === 'image' && (
                 <div className="space-y-3">
-                  <label className="block text-xs font-medium text-slate-300">
-                    Upload Screenshot of Job Ad or Chat (OCR Extraction):
+                  <label className="block text-xs font-semibold text-slate-300">
+                    Upload Screenshot of Job Ad or Chat (Gemini 2.5 Vision OCR):
                   </label>
                   <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-2xl p-6 text-center cursor-pointer bg-slate-900/50 transition">
                     <input
@@ -232,16 +254,16 @@ const DashboardPage = () => {
                     />
                     <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center">
                       {previewUrl ? (
-                        <img src={previewUrl} alt="Preview" className="max-h-48 rounded-xl object-contain mb-3" />
+                        <img src={previewUrl} alt="Preview" className="max-h-48 rounded-xl object-contain mb-3 border border-slate-800" />
                       ) : (
-                        <div className="p-4 rounded-full bg-slate-800 text-indigo-400 mb-3">
+                        <div className="p-4 rounded-2xl bg-indigo-500/10 text-indigo-400 mb-3 border border-indigo-500/20">
                           <Upload className="w-8 h-8" />
                         </div>
                       )}
-                      <span className="text-xs font-semibold text-slate-200">
+                      <span className="text-xs font-bold text-slate-200">
                         {selectedFile ? selectedFile.name : 'Click to select image file (PNG, JPG, WEBP)'}
                       </span>
-                      <span className="text-[10px] text-slate-500 mt-1">Automatic Tesseract OCR text extraction will be performed</span>
+                      <span className="text-[10px] text-slate-500 mt-1">Automatic Gemini 2.5 Vision text extraction and poster validation</span>
                     </label>
                   </div>
                 </div>
@@ -250,7 +272,7 @@ const DashboardPage = () => {
               {/* TAB 3: URL */}
               {activeTab === 'url' && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-2">
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">
                     Enter Job Portal URL / Recruiter Domain:
                   </label>
                   <div className="relative">
@@ -260,19 +282,19 @@ const DashboardPage = () => {
                       value={inputUrl}
                       onChange={(e) => setInputUrl(e.target.value)}
                       placeholder={t('dashboard.placeholder_url')}
-                      className="w-full bg-slate-900/90 border border-slate-800 focus:border-indigo-500 rounded-xl pl-10 pr-4 py-3 text-xs text-slate-100 placeholder-slate-500 outline-none transition"
+                      className="w-full bg-slate-900/90 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-2xl pl-10 pr-4 py-3 text-xs text-slate-100 placeholder-slate-500 outline-none transition"
                     />
                   </div>
                 </div>
               )}
 
               {/* TARGET LANGUAGE SELECTOR */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
+              <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
                 <span className="text-xs font-medium text-slate-400">{t('dashboard.select_lang')}:</span>
                 <select
                   value={targetLanguage}
                   onChange={(e) => setTargetLanguage(e.target.value)}
-                  className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none cursor-pointer"
+                  className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none cursor-pointer"
                 >
                   <option value="en">English (EN)</option>
                   <option value="si">Sinhala (සිංහල)</option>
@@ -286,17 +308,17 @@ const DashboardPage = () => {
               <button
                 type="submit"
                 disabled={analyzing}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-500 hover:from-indigo-500 hover:to-sky-400 text-white font-bold text-sm shadow-xl shadow-indigo-500/25 glow-btn transition flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-extrabold text-sm shadow-xl shadow-indigo-500/25 glow-btn transition flex items-center justify-center space-x-2 disabled:opacity-50"
               >
                 {analyzing ? (
                   <>
-                    <Sparkles className="w-5 h-5 animate-spin text-sky-300" />
+                    <Sparkles className="w-5 h-5 animate-spin text-sky-200" />
                     <span>{t('dashboard.analyzing')}</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>{t('dashboard.analyze_btn')}</span>
+                    <span>Run 5-Agent AI Analysis</span>
                   </>
                 )}
               </button>
@@ -372,8 +394,8 @@ const DashboardPage = () => {
 
             </div>
           ) : (
-            <div className="glass-card p-10 rounded-3xl border border-slate-800 text-center flex flex-col items-center justify-center min-h-[400px]">
-              <div className="p-4 rounded-2xl bg-indigo-500/10 text-indigo-400 mb-4">
+            <div className="glass-card p-10 rounded-3xl border border-slate-800 text-center flex flex-col items-center justify-center min-h-[420px]">
+              <div className="p-4 rounded-2xl bg-indigo-500/10 text-indigo-400 mb-4 border border-indigo-500/20">
                 <BrainCircuit className="w-10 h-10" />
               </div>
               <h3 className="text-base font-bold text-slate-200 mb-1">Awaiting Job Offer Input</h3>
