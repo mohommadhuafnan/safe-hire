@@ -195,6 +195,29 @@ class GeminiAPIClient {
             }
         }
 
+        if (!streamSuccess) {
+            try {
+                const backendUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || "";
+                const chatApiEndpoint = `${backendUrl.replace(/\/+$/, '')}/api/chat`;
+
+                const backendRes = await fetch(chatApiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: messages })
+                });
+
+                if (backendRes.ok) {
+                    const data = await backendRes.json();
+                    const replyText = data.content || "";
+                    if (onToken) onToken(replyText, replyText);
+                    if (onComplete) onComplete({ content: replyText });
+                    return this.currentAbortController;
+                }
+            } catch (backendErr) {
+                // Backend call failed
+            }
+        }
+
         if (!streamSuccess && onError) {
             onError(lastErr || new Error("Connection issue with Gemini AI. All model endpoints returned an error."));
         }
