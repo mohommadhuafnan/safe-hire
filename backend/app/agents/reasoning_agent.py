@@ -1,6 +1,7 @@
 import json
 import logging
 import requests
+import base64
 from typing import Dict, Any
 from app.config import settings
 
@@ -42,8 +43,8 @@ class ReasoningAgent:
         }
     }
 
-    def call_gemini_ai_reasoning_api(self, cleaned_text: str, linguistic_data: dict, verification_data: dict, language: str) -> Dict[str, Any]:
-        """Calls Google Gemini API (gemini-2.5-flash) for 100% accurate multi-agent scam reasoning."""
+    def call_gemini_ai_reasoning_api(self, cleaned_text: str, linguistic_data: dict, verification_data: dict, language: str, image_bytes: bytes = None) -> Dict[str, Any]:
+        """Calls Google Gemini API (gemini-2.5-flash / 2.0-flash) with optional multimodal poster image payload for 100% accurate scam reasoning."""
         gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
         if not gemini_key:
             return None
@@ -53,7 +54,7 @@ class ReasoningAgent:
 
         prompt = f"""
         You are SAFE-HIRE's Senior AI Recruitment Scam Analysis Specialist.
-        Perform an exhaustive, deep 100% accurate security evaluation of the candidate job posting below:
+        Perform an exhaustive, deep 100% accurate security evaluation of the candidate job posting/flyer below:
 
         [INPUT CONTENT / POSTER OCR TEXT]:
         "{cleaned_text[:3000]}"
@@ -72,7 +73,7 @@ class ReasoningAgent:
         - Corporate Trust Score: {verification_data.get('verification_trust_score')}
 
         [CRITICAL ACCURACY & CALIBRATION RULES]:
-        1. Read the EXACT company name, job roles offered, website URL, and contact details directly from the post/poster. Mention the specific company name and job details in your explanation!
+        1. Read the EXACT company name, job roles offered, website URL, and contact details directly from the post/poster image. Mention the specific company name and job details in your explanation!
         2. Standard recruitment flyers (e.g., Garuttam Hospitality, Codveda, Virtusa, WSO2, corporate internship/job posts) featuring phrases like "WE'RE HIRING", "WALK IN INTERVIEW", "CORPORATE RELATIONS", technical or hospitality role titles ARE LEGITIMATE RECRUITMENT POSTS.
         3. If there is NO upfront money/fee request, NO brand email impersonation (@gmail for major firm), and NO suspicious Telegram-only channel, classify scam_score between 5 and 15 ("Low Risk").
         4. If there IS a mandatory registration fee, security deposit demand, or clear scam pattern, classify scam_score between 70 and 100 ("Severe Risk" or "High Risk").
@@ -100,46 +101,64 @@ class ReasoningAgent:
         Do not include markdown ```json formatting. Return raw JSON string only.
         """
 
-        try:
-            url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {gemini_key}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "model": "gemini-2.5-flash",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.2,
-                "max_tokens": 4096
-            }
-            res = requests.post(url, json=payload, headers=headers, timeout=12)
-            if res.status_code == 200:
-                data = res.json()
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                clean = content.strip().replace("```json", "").replace("```", "").strip()
-                if "<think>" in clean and "</think>" in clean:
-                    clean = clean.split("</think>")[-1].strip()
-                parsed = json.loads(clean)
-                logger.info("Successfully executed Gemini AI reasoning API!")
-                return parsed
-        except Exception as e:
-            logger.warning(f"Gemini AI reasoning API notice ({e}). Trying REST fallback...")
+        models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"]
 
-        try:
-            rest_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
-            rest_payload = {
-                "contents": [{"parts": [{"text": prompt}]}]
-            }
-            res = requests.post(rest_url, json=rest_payload, timeout=12)
-            if res.status_code == 200:
-                data = res.json()
-                content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                clean = content.strip().replace("```json", "").replace("```", "").strip()
-                parsed = json.loads(clean)
-                logger.info("Successfully executed Gemini AI REST reasoning API!")
-                return parsed
-        except Exception as e:
-            logger.warning(f"Gemini AI REST reasoning API notice: {e}")
+        from app.agents.intake_agent import IntakeAgent
+        mime_type = IntakeAgent.detect_image_mime_type(image_bytes) if image_bytes else "image/png"
+        base64_img = base64.b64encode(image_bytes).decode('utf-8') if image_bytes else None
+
+        # 1. Try Gemini Vision REST Endpoint
+        for model_name in models_to_try:
+            try:
+                parts = [{"text": prompt}]
+                if base64_img:
+                    parts.append({"inline_data": {"mime_type": mime_type, "data": base64_img}})
+                
+                rest_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+                rest_payload = {"contents": [{"parts": parts}]}
+                res = requests.post(rest_url, json=rest_payload, timeout=12)
+                if res.status_code == 200:
+                    data = res.json()
+                    content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    clean = content.strip().replace("```json", "").replace("```", "").strip()
+                    if "<think>" in clean and "</think>" in clean:
+                        clean = clean.split("</think>")[-1].strip()
+                    parsed = json.loads(clean)
+                    logger.info(f"Successfully executed Gemini REST reasoning ({model_name})!")
+                    return parsed
+            except Exception as e:
+                logger.warning(f"Gemini REST reasoning notice for {model_name}: {e}")
+
+        # 2. Try Gemini Vision OpenAI Endpoint
+        for model_name in models_to_try:
+            try:
+                url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+                headers = {
+                    "Authorization": f"Bearer {gemini_key}",
+                    "Content-Type": "application/json"
+                }
+                user_content = [{"type": "text", "text": prompt}]
+                if base64_img:
+                    user_content.append({"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{base64_img}"}})
+                
+                payload = {
+                    "model": model_name,
+                    "messages": [{"role": "user", "content": user_content}],
+                    "temperature": 0.2,
+                    "max_tokens": 4096
+                }
+                res = requests.post(url, json=payload, headers=headers, timeout=12)
+                if res.status_code == 200:
+                    data = res.json()
+                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    clean = content.strip().replace("```json", "").replace("```", "").strip()
+                    if "<think>" in clean and "</think>" in clean:
+                        clean = clean.split("</think>")[-1].strip()
+                    parsed = json.loads(clean)
+                    logger.info(f"Successfully executed Gemini OpenAI reasoning ({model_name})!")
+                    return parsed
+            except Exception as e:
+                logger.warning(f"Gemini OpenAI reasoning notice for {model_name}: {e}")
 
         return None
 
@@ -231,8 +250,8 @@ class ReasoningAgent:
     def synthesize(self, intake_data: dict, linguistic_data: dict, verification_data: dict, language: str = "en", image_bytes: bytes = None) -> dict:
         cleaned_text = intake_data.get("cleaned_text", "")
 
-        # 1. Execute Gemini 3.6 / 2.5 Flash AI Reasoning
-        gemini_res = self.call_gemini_ai_reasoning_api(cleaned_text, linguistic_data, verification_data, language)
+        # 1. Execute Gemini 3.6 / 2.5 Flash AI Reasoning with Multimodal Image Bytes support
+        gemini_res = self.call_gemini_ai_reasoning_api(cleaned_text, linguistic_data, verification_data, language, image_bytes)
         if gemini_res and isinstance(gemini_res, dict) and "scam_score" in gemini_res:
             score = max(0, min(100, int(gemini_res.get("scam_score", 0))))
             return {

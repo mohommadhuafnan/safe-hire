@@ -41,7 +41,7 @@ class GeminiAPIClient {
         const defaultEnvKey = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) || "";
         this.apiKey = config.apiKey || defaultEnvKey;
         this.modelName = config.modelName || "gemini-2.5-flash";
-        this.fallbackModels = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+        this.fallbackModels = ["gemini-2.0-flash", "gemini-2.5-pro"];
         this.apiBaseUrl = (config.apiBaseUrl || "https://generativelanguage.googleapis.com/v1beta/openai").replace(/\/+$/, '');
         this.temperature = config.temperature !== undefined ? config.temperature : 1.0;
         this.topP = config.topP !== undefined ? config.topP : 0.95;

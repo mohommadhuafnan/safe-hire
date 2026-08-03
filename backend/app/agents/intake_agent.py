@@ -39,28 +39,44 @@ class IntakeAgent:
         return "en"
 
     @staticmethod
+    def detect_image_mime_type(image_bytes: bytes) -> str:
+        """Detect MIME type from image bytes header."""
+        if not image_bytes:
+            return "image/jpeg"
+        if image_bytes.startswith(b'\x89PNG\r\n\x1a\n'):
+            return "image/png"
+        elif image_bytes.startswith(b'RIFF') and image_bytes[8:12] == b'WEBP':
+            return "image/webp"
+        elif image_bytes.startswith(b'GIF87a') or image_bytes.startswith(b'GIF89a'):
+            return "image/gif"
+        elif image_bytes.startswith(b'\xff\xd8'):
+            return "image/jpeg"
+        return "image/png"
+
+    @staticmethod
     def analyze_poster_with_gemini_vision(image_bytes: bytes) -> dict:
-        """Analyze poster image directly using Gemini Multimodal Vision API (OCR + visual risk intelligence)."""
+        """Analyze poster image directly using Gemini Multimodal Vision API (OCR + visual risk intelligence) with DeepSeek V4 fallback."""
         if not image_bytes:
             return {"is_job_poster": True, "extracted_text": "", "claimed_brand": "", "validation_error": None}
 
         gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
+        mime_type = IntakeAgent.detect_image_mime_type(image_bytes)
         base64_img = base64.b64encode(image_bytes).decode('utf-8')
 
         prompt = """
         You are SAFE-HIRE's Senior Multimodal Vision & Recruitment Fraud Intelligence Engine.
-        Examine this uploaded image carefully to classify whether it is a Job Recruitment Poster / Career Flyer OR a Non-Job Picture.
+        Examine this uploaded image carefully to classify whether it is a Job Recruitment Poster / Career Flyer / Job Ad Screenshot OR a Non-Job Picture.
 
         CLASSIFICATION RULES:
-        1. A JOB POSTER (`is_job_poster: true`) includes ANY hiring banner, recruitment flyer, walk-in interview notice, corporate relations poster, job ad screenshot (LinkedIn, WhatsApp, Email, Facebook, newspaper), or career vacancy offer.
+        1. A JOB POSTER (`is_job_poster: true`) includes ANY hiring banner, recruitment flyer, walk-in interview notice, corporate relations poster, job ad screenshot (LinkedIn, WhatsApp, Email, Facebook, newspaper), training course flyer with job guarantee, or career vacancy offer.
         2. A NON-JOB IMAGE (`is_job_poster: false`) is an image that has NO recruitment text or career offer context whatsoever (e.g. personal selfie, animal photo, nature/crop landscape, receipt, meme, vehicle, or random object picture).
 
         Return ONLY a raw JSON object with this exact structure (no markdown code blocks, no ```json formatting):
         {
           "is_job_poster": boolean (true for recruitment/hiring poster/flyer, false for non-job pictures),
-          "extracted_text": "Full extracted verbatim text from the image...",
+          "extracted_text": "Full verbatim text extracted from the poster...",
           "claimed_brand": "Extracted company or brand name if present",
-          "job_title": "Position or course title if present",
+          "job_title": "Position, role, or program title if present",
           "contact_email": "Extracted email if present",
           "phone_number": "Extracted phone number if present",
           "has_fee_demand": false,
@@ -68,30 +84,113 @@ class IntakeAgent:
         }
         """
 
-        # 1. Try Gemini Vision OpenAI Compatibility Endpoint
+        models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"]
+
+        # 1. Try Gemini Vision REST generateContent Endpoint (most reliable for multimodal base64)
         if gemini_key:
+            for model_name in models_to_try:
+                try:
+                    rest_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+                    rest_payload = {
+                        "contents": [
+                            {
+                                "parts": [
+                                    {"text": prompt},
+                                    {"inline_data": {"mime_type": mime_type, "data": base64_img}}
+                                ]
+                            }
+                        ]
+                    }
+                    res = requests.post(rest_url, json=rest_payload, timeout=12)
+                    if res.status_code == 200:
+                        data = res.json()
+                        content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                        clean = content.strip().replace("```json", "").replace("```", "").strip()
+                        if "<think>" in clean and "</think>" in clean:
+                            clean = clean.split("</think>")[-1].strip()
+                        parsed = json.loads(clean)
+                        logger.info(f"Gemini Vision ({model_name}) REST poster analysis success: is_job_poster={parsed.get('is_job_poster')}")
+                        return parsed
+                    elif res.status_code == 429:
+                        logger.warning(f"Gemini Vision ({model_name}) HTTP 429 quota notice. Trying next model...")
+                except Exception as e:
+                    logger.warning(f"Gemini Vision REST notice for model {model_name}: {e}")
+
+            # 2. Try Gemini Vision OpenAI Compatibility Endpoint
+            for model_name in models_to_try:
+                try:
+                    url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+                    headers = {
+                        "Authorization": f"Bearer {gemini_key}",
+                        "Content-Type": "application/json"
+                    }
+                    payload = {
+                        "model": model_name,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": prompt},
+                                    {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{base64_img}"}}
+                                ]
+                            }
+                        ],
+                        "temperature": 0.1,
+                        "max_tokens": 4096
+                    }
+
+                    res = requests.post(url, json=payload, headers=headers, timeout=12)
+                    if res.status_code == 200:
+                        data = res.json()
+                        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                        clean = content.strip().replace("```json", "").replace("```", "").strip()
+                        if "<think>" in clean and "</think>" in clean:
+                            clean = clean.split("</think>")[-1].strip()
+                        parsed = json.loads(clean)
+                        logger.info(f"Gemini Vision ({model_name}) OpenAI endpoint success: is_job_poster={parsed.get('is_job_poster')}")
+                        return parsed
+                except Exception as e:
+                    logger.warning(f"Gemini Vision OpenAI endpoint notice for model {model_name}: {e}")
+
+        # 3. Fallback: High-Accuracy OCR + DeepSeek V4 Flash AI Analysis
+        logger.info("Executing Fallback OCR + DeepSeek V4 Flash poster analysis...")
+        ocr_text = IntakeAgent.extract_text_from_image(image_bytes)
+
+        deepseek_key = getattr(settings, "DEEPSEEK_V4_API_KEY", "") or ""
+        deepseek_url = getattr(settings, "DEEPSEEK_API_BASE_URL", "https://router.huggingface.co/v1") + "/chat/completions"
+
+        if deepseek_key and ocr_text:
             try:
-                url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+                ds_prompt = f"""
+                You are SAFE-HIRE's Senior Recruitment Fraud Intelligence Engine.
+                Analyze the following OCR text extracted from an uploaded job poster/flyer image:
+
+                [EXTRACTED OCR TEXT]:
+                "{ocr_text[:3000]}"
+
+                Determine if this text represents a Job Recruitment Poster / Career Flyer / Hiring Notice OR a Non-Job document.
+                Return ONLY a raw JSON object (no markdown):
+                {{
+                  "is_job_poster": boolean,
+                  "extracted_text": "{ocr_text[:2000]}",
+                  "claimed_brand": "Extracted company name",
+                  "job_title": "Position title",
+                  "contact_email": "Extracted email if present",
+                  "phone_number": "Extracted phone if present",
+                  "validation_error": "⚠️ NON-JOB POSTER DETECTED: This image contains no job recruitment details." (ONLY if is_job_poster is false, else null)
+                }}
+                """
                 headers = {
-                    "Authorization": f"Bearer {gemini_key}",
+                    "Authorization": f"Bearer {deepseek_key}",
                     "Content-Type": "application/json"
                 }
                 payload = {
-                    "model": "gemini-2.5-flash",
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": prompt},
-                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_img}"}}
-                            ]
-                        }
-                    ],
+                    "model": getattr(settings, "DEEPSEEK_MODEL_NAME", "deepseek-ai/DeepSeek-V4-Flash"),
+                    "messages": [{"role": "user", "content": ds_prompt}],
                     "temperature": 0.1,
-                    "max_tokens": 4096
+                    "max_tokens": 2048
                 }
-
-                res = requests.post(url, json=payload, headers=headers, timeout=12)
+                res = requests.post(deepseek_url, json=payload, headers=headers, timeout=10)
                 if res.status_code == 200:
                     data = res.json()
                     content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -99,38 +198,14 @@ class IntakeAgent:
                     if "<think>" in clean and "</think>" in clean:
                         clean = clean.split("</think>")[-1].strip()
                     parsed = json.loads(clean)
-                    logger.info(f"Gemini Vision poster analysis: is_job_poster={parsed.get('is_job_poster')}, text_len={len(parsed.get('extracted_text', ''))}")
+                    parsed["extracted_text"] = ocr_text
+                    logger.info("DeepSeek V4 Flash OCR poster classification success!")
                     return parsed
             except Exception as e:
-                logger.warning(f"Gemini Vision OpenAI endpoint notice ({e}). Trying REST fallback...")
+                logger.warning(f"DeepSeek V4 fallback notice: {e}")
 
-            # 2. Try Gemini Vision REST generateContent Endpoint
-            try:
-                rest_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
-                rest_payload = {
-                    "contents": [
-                        {
-                            "parts": [
-                                {"text": prompt},
-                                {"inline_data": {"mime_type": "image/jpeg", "data": base64_img}}
-                            ]
-                        }
-                    ]
-                }
-                res = requests.post(rest_url, json=rest_payload, timeout=12)
-                if res.status_code == 200:
-                    data = res.json()
-                    content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                    clean = content.strip().replace("```json", "").replace("```", "").strip()
-                    parsed = json.loads(clean)
-                    logger.info(f"Gemini Vision REST fallback analysis: is_job_poster={parsed.get('is_job_poster')}")
-                    return parsed
-            except Exception as e:
-                logger.warning(f"Gemini Vision REST fallback notice: {e}")
-
-        # Fallback OCR check
-        ocr_text = IntakeAgent.extract_text_from_image(image_bytes)
-        job_keywords = ["hiring", "job", "career", "vacancy", "intern", "salary", "apply", "recruiter", "interview", "walk-in", "position", "hospitality", "diploma", "management", "developer"]
+        # Rule Engine Fallback check
+        job_keywords = ["hiring", "job", "career", "vacancy", "intern", "salary", "apply", "recruiter", "interview", "walk-in", "position", "hospitality", "diploma", "management", "developer", "required", "contact"]
         has_job_term = any(kw in ocr_text.lower() for kw in job_keywords) if ocr_text else False
 
         return {
@@ -282,7 +357,19 @@ class IntakeAgent:
         telegram_handles = list(set(re.findall(r'@[A-Za-z0-9_]{4,}', combined_text)))
         phone_numbers = list(set(re.findall(r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}', combined_text)))
 
-        # Extract domain from emails if no domain provided
+        # Extract domain from URLs or emails if no domain provided
+        if not extracted_domain and urls_found:
+            try:
+                from urllib.parse import urlparse
+                parsed_u = urlparse(urls_found[0])
+                u_domain = parsed_u.netloc.split(':')[0] if parsed_u.netloc else parsed_u.path.split('/')[0]
+                if u_domain.startswith("www."):
+                    u_domain = u_domain[4:]
+                if u_domain and "." in u_domain:
+                    extracted_domain = u_domain
+            except Exception:
+                pass
+
         if not extracted_domain and emails_found:
             extracted_domain = emails_found[0].split('@')[-1]
 

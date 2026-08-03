@@ -33,7 +33,7 @@ async def chat_assistant(req: ChatRequest):
             break
 
     if gemini_key:
-        models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.6-flash"]
+        models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"]
         for model_name in models:
             try:
                 url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
@@ -56,6 +56,31 @@ async def chat_assistant(req: ChatRequest):
                         return ChatResponse(content=reply, model=model_name)
             except Exception as e:
                 logger.warning(f"Backend chat API notice for model {model_name}: {e}")
+
+    # Fallback to DeepSeek V4 Flash AI Model
+    deepseek_key = getattr(settings, "DEEPSEEK_V4_API_KEY", "") or ""
+    if deepseek_key:
+        try:
+            url = f"{settings.DEEPSEEK_API_BASE_URL.rstrip('/')}/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {deepseek_key}",
+                "Content-Type": "application/json"
+            }
+            formatted_msgs = [{"role": m.role if m.role in ["system", "user", "assistant"] else "user", "content": m.content} for m in req.messages]
+            payload = {
+                "model": getattr(settings, "DEEPSEEK_MODEL_NAME", "deepseek-ai/DeepSeek-V4-Flash"),
+                "messages": formatted_msgs,
+                "temperature": 0.7,
+                "max_tokens": 2048
+            }
+            res = requests.post(url, json=payload, headers=headers, timeout=15)
+            if res.status_code == 200:
+                data = res.json()
+                reply = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if reply:
+                    return ChatResponse(content=reply, model="DeepSeek-V4-Flash")
+        except Exception as e:
+            logger.warning(f"DeepSeek V4 chat fallback notice: {e}")
 
     # Smart fallback intelligence if API is unreachable
     lower = user_prompt.lower()
