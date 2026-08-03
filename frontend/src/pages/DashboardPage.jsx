@@ -442,6 +442,64 @@ const DashboardPage = () => {
                 </div>
               </div>
 
+              {/* LIVE URL & WHOIS DOMAIN SECURITY AUDIT CARD */}
+              {result.verification_data && (
+                <div className="p-5 rounded-2xl bg-slate-950/90 border border-indigo-500/30 space-y-4 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center space-x-2">
+                      <Globe className="w-4 h-4 text-sky-400" />
+                      <span>Live URL & WHOIS Domain Security Audit</span>
+                    </h4>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      WHOIS LIVE AUDIT
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Target Domain / URL</span>
+                      <span className="font-mono text-sky-400 font-bold text-xs truncate">
+                        {result.verification_data.domain || 'Not Specified'}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Domain Age</span>
+                      <span className={`font-semibold text-xs ${result.verification_data.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
+                        {result.verification_data.whois_info?.domain_years 
+                          ? `${result.verification_data.whois_info.domain_years} Years (${result.verification_data.whois_info.registered_days} Days Old)` 
+                          : (result.verification_data.whois_info?.registered_days ? `${result.verification_data.whois_info.registered_days} Days Old` : 'Verified Registry Standard')}
+                      </span>
+                    </div>
+
+                    {result.verification_data.whois_info?.creation_date && (
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase">Registration Date</span>
+                        <span className="font-mono text-slate-200 text-xs">
+                          {new Date(result.verification_data.whois_info.creation_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+
+                    {result.verification_data.whois_info?.registrar && (
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase">Domain Registrar</span>
+                        <span className="font-semibold text-slate-200 text-xs truncate">
+                          {result.verification_data.whois_info.registrar}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-1 sm:col-span-2">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase">WHOIS Domain Security Status</span>
+                      <span className={`font-semibold text-xs ${result.verification_data.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
+                        {result.verification_data.whois_info?.whois_status || 'Domain Registry Standard'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* EXTRACTED CONTENT / OCR SNIPPET */}
               <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between">
