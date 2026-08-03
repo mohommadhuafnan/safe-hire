@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { ShieldCheck, LogOut, User, Globe, History, LayoutDashboard, Menu, X, Crown, Sparkles, ArrowRight } from 'lucide-react';
+import { useAIModal } from '../context/AIModalContext';
+import { ShieldCheck, LogOut, User, Globe, History, LayoutDashboard, Menu, X, Crown, Sparkles, ArrowRight, BrainCircuit } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { t, i18n } = useTranslation();
+  const { openAIModal } = useAIModal();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -63,6 +65,15 @@ const Navbar = () => {
             {/* Desktop Controls (Floating Pill Style) */}
             <div className="hidden md:flex items-center space-x-3">
               
+              {/* Universal Gemini AI Analyzer Button */}
+              <button
+                onClick={() => openAIModal({ title: 'Gemini 3.6 Flash Universal AI Analyzer' })}
+                className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-sky-300 hover:text-white bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-400/40 transition-all duration-300 shadow-md glow-btn"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
+                <span>AI Analyzer</span>
+              </button>
+
               {/* Pricing Link Button */}
               <button
                 onClick={scrollToPricing}

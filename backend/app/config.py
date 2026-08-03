@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
+    # Gemini AI Settings
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+
     # DeepSeek V4 AI Settings (Hugging Face Router)
     DEEPSEEK_V4_API_KEY: str = os.getenv("DEEPSEEK_V4_API_KEY", "")
     DEEPSEEK_API_BASE_URL: str = os.getenv("DEEPSEEK_API_BASE_URL", "https://router.huggingface.co/v1")

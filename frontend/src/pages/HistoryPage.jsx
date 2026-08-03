@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useAIModal } from '../context/AIModalContext';
 import api from '../services/api';
 import AgentBreakdown from '../components/AgentBreakdown';
 import ScamGauge from '../components/ScamGauge';
 import { exportAnalysisReport } from '../services/reportExporter';
-import { History as HistoryIcon, Search, ShieldCheck, X, ExternalLink, Calendar, AlertTriangle, Download } from 'lucide-react';
+import { History as HistoryIcon, Search, ShieldCheck, X, ExternalLink, Calendar, AlertTriangle, Download, Sparkles } from 'lucide-react';
 
 const HistoryPage = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { openAIModal } = useAIModal();
   const [historyItems, setHistoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedResult, setSelectedResult] = useState(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -32,7 +33,13 @@ const HistoryPage = () => {
   const handleSelectDetail = async (subId) => {
     try {
       const response = await api.get(`/api/history/${subId}`);
-      setSelectedResult(response.data);
+      const detail = response.data;
+      openAIModal({
+        title: `Gemini 3.6 Flash Historical Scam Audit (Score: ${detail.scam_score}/100)`,
+        initialPrompt: `Re-analyze this past verification report from ${new Date(detail.created_at).toLocaleDateString()}:\nSnippet: "${detail.snippet || detail.explanation_text}"\nRisk Score: ${detail.scam_score}/100 (${detail.risk_level})\nWhat safety actions should the user take?`,
+        category: 'history_audit',
+        contextData: detail
+      });
     } catch (err) {
       console.error('Failed to fetch detail:', err);
     }
@@ -128,47 +135,6 @@ const HistoryPage = () => {
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* DETAIL MODAL */}
-      {selectedResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="glass-panel w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-3xl border border-slate-800 space-y-6 relative">
-            <button 
-              onClick={() => setSelectedResult(null)}
-              className="absolute top-5 right-5 p-2 rounded-xl bg-slate-900 text-slate-400 hover:text-white transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center space-x-3">
-                <ShieldCheck className="w-6 h-6 text-indigo-400" />
-                <div>
-                  <h3 className="text-lg font-bold text-slate-100">Historical Scam Analysis Report</h3>
-                  <span className="text-xs text-slate-400">Analyzed on {new Date(selectedResult.created_at).toLocaleString()}</span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => exportAnalysisReport(selectedResult, user)}
-                className="mr-10 flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-xs font-semibold text-slate-200 transition"
-              >
-                <Download className="w-3.5 h-3.5 text-sky-400" />
-                <span>Export PDF</span>
-              </button>
-            </div>
-
-            <ScamGauge score={selectedResult.scam_score} riskLevel={selectedResult.risk_level} />
-
-            <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800">
-              <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2">Reasoning Rationale</h4>
-              <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">{selectedResult.explanation_text}</p>
-            </div>
-
-            <AgentBreakdown result={selectedResult} />
-          </div>
         </div>
       )}
 

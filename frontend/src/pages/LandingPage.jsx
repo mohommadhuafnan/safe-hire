@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useAIModal } from '../context/AIModalContext';
 import { 
   ShieldCheck, 
   Search, 
@@ -25,10 +26,10 @@ const LandingPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { openAIModal } = useAIModal();
 
   // Pricing State: 'monthly' (1 Month) vs 'annual' (1 Year)
   const [billingCycle, setBillingCycle] = useState('monthly');
-  const [selectedPlanModal, setSelectedPlanModal] = useState(null);
 
   // Redirect authenticated user directly to Dashboard
   useEffect(() => {
@@ -38,7 +39,12 @@ const LandingPage = () => {
   }, [user, navigate]);
 
   const handlePlanSelect = (plan) => {
-    setSelectedPlanModal(plan);
+    openAIModal({
+      title: `Gemini AI Analysis: ${plan.name}`,
+      initialPrompt: `Please analyze the ${plan.name} priced at ${plan.price}. What features are included, what is the ROI for job seekers, and how does it protect against employment fraud?`,
+      category: 'plan_analysis',
+      contextData: plan
+    });
   };
 
   return (
@@ -463,54 +469,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* PLAN SELECT MODAL / FEEDBACK POPUP */}
-      {selectedPlanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="glass-panel max-w-md w-full p-6 sm:p-8 rounded-3xl border border-indigo-500/40 relative space-y-4">
-            <button
-              onClick={() => setSelectedPlanModal(null)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-slate-900 border border-slate-800"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 inline-block">
-              <Crown className="w-6 h-6" />
-            </div>
-
-            <h3 className="text-xl font-extrabold text-slate-100">
-              Upgrade to {selectedPlanModal.name}
-            </h3>
-            
-            <p className="text-xs text-slate-300 leading-relaxed">
-              You selected the <strong className="text-indigo-400">{selectedPlanModal.name}</strong> at <span className="text-emerald-400 font-bold">{selectedPlanModal.price}</span>.
-            </p>
-
-            <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 space-y-1.5">
-              <div className="font-semibold text-slate-200">Payment Methods Accepted:</div>
-              <div className="text-[11px] text-slate-400">Sri Lankan Bank Transfer, Visa / Mastercard, PayHere, & Mobile Wallet.</div>
-            </div>
-
-            <div className="pt-2 flex space-x-3">
-              <Link
-                to="/signup"
-                onClick={() => setSelectedPlanModal(null)}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white font-bold text-xs text-center shadow-lg glow-btn"
-              >
-                Proceed to Checkout
-              </Link>
-              <button
-                onClick={() => setSelectedPlanModal(null)}
-                className="px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-semibold"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* KEY FEATURES GRID */}
+
       <section className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-100">

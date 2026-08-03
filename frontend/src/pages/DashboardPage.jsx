@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useAIModal } from '../context/AIModalContext';
 import api from '../services/api';
 import ScamGauge from '../components/ScamGauge';
 import AgentBreakdown from '../components/AgentBreakdown';
@@ -28,6 +29,8 @@ import { Link } from 'react-router-dom';
 const DashboardPage = () => {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
+  const { openAIModal } = useAIModal();
+
 
   // Tab State: 'text', 'image', 'url'
   const [activeTab, setActiveTab] = useState('text');
@@ -143,6 +146,17 @@ const DashboardPage = () => {
                 <span className="text-xs font-bold text-amber-300">Free Tier (LKR 0)</span>
               </div>
             </div>
+
+            <button
+              onClick={() => openAIModal({
+                title: 'Gemini 3.6 Flash Dashboard AI Audit',
+                initialPrompt: inputText ? `Analyze this job text snippet:\n"${inputText}"` : 'Analyze job offer authenticity, fee risks, or recruiter details using Gemini 3.6 Flash:'
+              })}
+              className="flex items-center space-x-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white font-extrabold text-xs shadow-lg glow-btn"
+            >
+              <Sparkles className="w-4 h-4 text-sky-200 animate-pulse" />
+              <span>Instant AI Audit</span>
+            </button>
 
             <Link
               to="/#pricing"
