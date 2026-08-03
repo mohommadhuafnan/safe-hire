@@ -270,7 +270,7 @@ const LandingPage = () => {
           </h2>
           
           <p className="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">
-            Get unlimited AI scam verifications, Gemini 2.5 Vision OCR image scans, WHOIS domain age lookups, and downloadable PDF reports.
+            Get unlimited AI scam verifications, AI OCR screenshot scans, WHOIS domain age lookups, and downloadable PDF reports.
           </p>
 
           {/* BILLING DURATION TOGGLE (1 MONTH vs 1 YEAR) */}
@@ -387,7 +387,7 @@ const LandingPage = () => {
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>Gemini 2.5 Vision OCR Poster Scans</span>
+                  <span>AI OCR Poster & Screenshot Scans</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />

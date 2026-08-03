@@ -172,10 +172,10 @@ const AgentBreakdown = ({ result }) => {
     {
       id: 'agent-4',
       number: '4',
-      title: 'Reasoning Agent (Google Gemini 2.5 Flash AI)',
+      title: 'Reasoning Agent (Deep AI Engine)',
       icon: BrainCircuit,
       summary: `AI Explainable Rationale Synthesized`,
-      badge: 'Gemini AI',
+      badge: 'Deep AI',
       content: (
         <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 text-xs leading-relaxed whitespace-pre-line">
           {result.explanation_text}

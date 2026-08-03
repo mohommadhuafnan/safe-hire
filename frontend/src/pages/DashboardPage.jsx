@@ -242,7 +242,7 @@ const DashboardPage = () => {
               {activeTab === 'image' && (
                 <div className="space-y-3">
                   <label className="block text-xs font-semibold text-slate-300">
-                    Upload Screenshot of Job Ad or Chat (Gemini 2.5 Vision OCR):
+                    Upload Screenshot of Job Ad or Chat (SAFE-HIRE AI Scanner):
                   </label>
                   <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-2xl p-6 text-center cursor-pointer bg-slate-900/50 transition">
                     <input
@@ -263,7 +263,7 @@ const DashboardPage = () => {
                       <span className="text-xs font-bold text-slate-200">
                         {selectedFile ? selectedFile.name : 'Click to select image file (PNG, JPG, WEBP)'}
                       </span>
-                      <span className="text-[10px] text-slate-500 mt-1">Automatic Gemini 2.5 Vision text extraction and poster validation</span>
+                      <span className="text-[10px] text-slate-500 mt-1">Automatic AI OCR text extraction and poster validation</span>
                     </label>
                   </div>
                 </div>

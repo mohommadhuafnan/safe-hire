@@ -39,36 +39,48 @@ class IntakeAgent:
 
     @staticmethod
     def analyze_image_with_deepseek_v4(image_bytes: bytes) -> dict:
-        """Analyze image text OCR using DeepSeek-V4-Flash to validate if it's a job poster or non-job photo (human, animal, etc.)."""
+        """Analyze image text OCR using DeepSeek-V4-Flash to validate if it's a job poster or non-job photo (human, animal, crops, etc.)."""
         if not image_bytes:
             return {"is_job_poster": True, "extracted_text": "", "validation_error": None}
 
-        # 1. First extract text via OCR
+        # 1. Extract text via OCR
         extracted_text = IntakeAgent.extract_text_from_image(image_bytes)
+        clean_text = extracted_text.strip() if extracted_text else ""
 
+        # 2. If NO text or very short non-text image (e.g. millet crop field, nature, selfie, animal picture)
+        if len(clean_text) < 15:
+            logger.info("Image contains no readable job text (non-job image detected).")
+            return {
+                "is_job_poster": False,
+                "image_category": "non_job_photo",
+                "validation_error": "⚠️ NON-JOB POSTER DETECTED: The uploaded picture contains no job advertisement text or career vacancy details. Please upload a valid job offer flyer, recruitment ad screenshot, or offer letter.",
+                "extracted_text": clean_text
+            }
+
+        # 3. Analyze extracted text using DeepSeek-V4-Flash
         api_key = settings.DEEPSEEK_V4_API_KEY
-        if api_key and extracted_text and len(extracted_text.strip()) > 10:
+        if api_key:
             import json
 
             try:
                 url = f"{settings.DEEPSEEK_API_BASE_URL.rstrip('/')}/chat/completions"
                 prompt = f"""
                 You are SAFE-HIRE's Senior Image & Document Verification Specialist.
-                Examine the extracted text from an uploaded image below to classify its content type.
+                Examine the extracted OCR text from an uploaded image below to classify its content type.
 
                 [EXTRACTED OCR TEXT FROM IMAGE]:
-                "{extracted_text[:2000]}"
+                "{clean_text[:2000]}"
 
                 CLASSIFICATION GUIDELINES:
                 1. A JOB POSTER (`is_job_poster: true`) includes ANY recruitment flyer, hiring banner, job advertisement screenshot (from LinkedIn, WhatsApp, Email, Facebook, newspaper, job site), or career vacancy announcement.
                 
-                2. A NON-JOB IMAGE (`is_job_poster: false`) is an image that has NO job recruitment text or career context whatsoever, such as a casual personal selfie, a pet/animal photo, a vehicle, nature landscape, meme, or random object picture.
+                2. A NON-JOB IMAGE (`is_job_poster: false`) is an image that has NO job recruitment text or career context whatsoever, such as a casual personal selfie, a pet/animal photo, nature/crop landscape, meme, document receipt, or random object picture.
 
                 Return a raw JSON object with this exact structure:
                 {{
-                  "is_job_poster": boolean (true for any job ad/recruitment poster/screenshot/hiring banner, false ONLY for non-job photos),
-                  "image_category": "job_advertisement" or "human_photo" or "animal_photo" or "other_non_job",
-                  "validation_error": "This is not a job poster image. Please upload a suitable job advertisement application or screenshot." (Provide this message ONLY if is_job_poster is false, else null)
+                  "is_job_poster": boolean (true for any job ad/recruitment poster/screenshot/hiring banner, false for non-job photos/documents),
+                  "image_category": "job_advertisement" or "human_photo" or "animal_photo" or "nature_crop_photo" or "other_non_job",
+                  "validation_error": "⚠️ NON-JOB POSTER DETECTED: This image does not contain a job recruitment ad or career offer." (Provide this message ONLY if is_job_poster is false, else null)
                 }}
                 Do not include markdown code block formatting. Return raw JSON string only.
                 """
@@ -91,18 +103,29 @@ class IntakeAgent:
                     if "<think>" in clean and "</think>" in clean:
                         clean = clean.split("</think>")[-1].strip()
                     parsed = json.loads(clean)
-                    parsed["extracted_text"] = extracted_text
+                    parsed["extracted_text"] = clean_text
                     logger.info(f"DeepSeek V4 image classification result: is_job_poster={parsed.get('is_job_poster')}")
                     return parsed
             except Exception as e:
                 logger.warning(f"DeepSeek V4 image classification notice: {e}")
 
-        # Fallback default
+        # 4. Fallback Keyword Rule Engine
+        job_keywords = ["hiring", "job", "career", "vacancy", "intern", "salary", "apply", "recruiter", "work from home", "full time", "part time", "walk-in", "position", "urgently", "bpo", "developer", "designer", "manager", "staff", "opportunity", "earn"]
+        has_job_keyword = any(kw in clean_text.lower() for kw in job_keywords)
+
+        if not has_job_keyword:
+            return {
+                "is_job_poster": False,
+                "image_category": "non_job_photo",
+                "validation_error": "⚠️ NON-JOB POSTER DETECTED: The text in this uploaded image does not contain any job vacancy or recruitment details.",
+                "extracted_text": clean_text
+            }
+
         return {
             "is_job_poster": True,
             "image_category": "job_advertisement",
             "validation_error": None,
-            "extracted_text": extracted_text
+            "extracted_text": clean_text
         }
 
     @staticmethod
@@ -127,8 +150,8 @@ class IntakeAgent:
         except Exception as e:
             logger.info(f"Tesseract OCR notice ({e}). Using intelligent image text parser.")
 
-        # Fallback intelligent image parser output for screenshot analysis
-        return "[OCR EXTRACTED TEXT FROM IMAGE SCREENSHOT]: Urgent hiring! Data Entry Specialist wanted. Earn $500 weekly working 1 hour daily. Registration fee of $30 required for laptop shipment kit. Contact recruiter on Telegram @job_recruiter_fast or email job_careers@gmail.com."
+        # Fallback when no OCR text is extracted from image
+        return ""
 
     @staticmethod
     def extract_text_from_url(url: str) -> dict:
