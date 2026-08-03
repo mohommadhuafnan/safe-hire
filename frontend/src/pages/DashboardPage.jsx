@@ -139,7 +139,7 @@ const DashboardPage = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             {/* Account Tier Badge */}
             <div className="px-3.5 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold flex items-center space-x-2">
               <Crown className="w-4 h-4 text-amber-400 animate-pulse" />
@@ -148,25 +148,6 @@ const DashboardPage = () => {
                 <span className="text-xs font-bold text-amber-300">Free Tier (LKR 0)</span>
               </div>
             </div>
-
-            <button
-              onClick={() => openAIModal({
-                title: 'Gemini 3.6 Flash Dashboard AI Audit',
-                initialPrompt: inputText ? `Analyze this job text snippet:\n"${inputText}"` : 'Analyze job offer authenticity, fee risks, or recruiter details using Gemini 3.6 Flash:'
-              })}
-              className="flex items-center space-x-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white font-extrabold text-xs shadow-lg glow-btn"
-            >
-              <Sparkles className="w-4 h-4 text-sky-200 animate-pulse" />
-              <span>Instant AI Audit</span>
-            </button>
-
-            <Link
-              to="/#pricing"
-              className="flex items-center space-x-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 text-slate-950 font-extrabold text-xs shadow-lg glow-btn-gold"
-            >
-              <Zap className="w-4 h-4" />
-              <span>Upgrade to Pro (LKR 999+)</span>
-            </Link>
 
             <Link
               to="/history"
@@ -414,7 +395,7 @@ const DashboardPage = () => {
 
                   <button
                     onClick={() => exportAnalysisReport(result, user, i18n.language)}
-                    className="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white font-extrabold text-xs shadow-lg glow-btn transition hover:scale-105"
+                    className="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl btn-primary font-bold text-xs shadow-md transition hover:scale-105"
                   >
                     <Download className="w-4 h-4 text-white" />
                     <span>{t('dashboard.download_report')}</span>
@@ -542,9 +523,9 @@ const DashboardPage = () => {
               <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
                 <button
                   onClick={() => exportAnalysisReport(result, user, i18n.language)}
-                  className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-xs font-semibold text-slate-200 transition glow-btn"
+                  className="w-full flex items-center justify-center space-x-2 px-5 py-3 rounded-xl btn-primary font-bold text-xs shadow-md transition hover:scale-[1.02]"
                 >
-                  <Download className="w-4 h-4 text-sky-400" />
+                  <Download className="w-4 h-4 text-white" />
                   <span>{t('dashboard.download_report')}</span>
                 </button>
               </div>
