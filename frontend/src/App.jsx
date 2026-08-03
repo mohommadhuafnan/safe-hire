@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { AIModalProvider } from './context/AIModalContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import FloatingAIChatbot from './components/FloatingAIChatbot';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -56,6 +57,7 @@ function AppRoutes() {
         </Routes>
       </main>
       <Footer />
+      <FloatingAIChatbot />
     </div>
   );
 }
