@@ -80,38 +80,20 @@ const Navbar = () => {
             {/* Desktop Controls (Floating Pill Style) */}
             <div className="hidden md:flex items-center space-x-3">
               
-              {/* Universal Gemini AI Analyzer Button */}
-              <button
-                onClick={() => openAIModal({ title: 'Gemini 3.6 Flash Universal AI Analyzer' })}
-                className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-sky-300 hover:text-white bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-400/40 transition-all duration-300 shadow-md glow-btn"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
-                <span>AI Analyzer</span>
-              </button>
-
-              {/* Pricing Link Button */}
-              <button
-                onClick={scrollToPricing}
-                className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all duration-300 hover:scale-105"
-              >
-                <Crown className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                <span>Pricing (LKR)</span>
-              </button>
-
-              {/* Language Selector Dropdown */}
-              <div className="relative flex items-center bg-slate-900/80 border border-white/10 rounded-full px-3 py-1.5 text-xs text-slate-200 hover:border-indigo-400/50 transition duration-300">
+              {/* Compact Language Selector Dropdown */}
+              <div className="relative flex items-center bg-slate-900/80 border border-white/10 rounded-full px-2.5 py-1 text-xs text-slate-200 hover:border-indigo-400/50 transition duration-300">
                 <Globe className="w-3.5 h-3.5 mr-1.5 text-sky-400" />
                 <select
                   value={isSystemDefault ? 'system' : (i18n.resolvedLanguage || i18n.language?.split('-')[0] || 'en')}
                   onChange={handleLanguageChange}
                   className="bg-transparent border-none outline-none text-slate-200 cursor-pointer pr-1 focus:ring-0 text-xs font-semibold"
                 >
-                  <option value="system" className="bg-slate-900">🌐 {t('nav.system_default', 'System Default')}</option>
-                  <option value="en" className="bg-slate-900">English</option>
-                  <option value="si" className="bg-slate-900">සිංහල</option>
-                  <option value="ta" className="bg-slate-900">தமிழ்</option>
-                  <option value="hi" className="bg-slate-900">हिंदी</option>
-                  <option value="bn" className="bg-slate-900">বাংলা</option>
+                  <option value="system" className="bg-slate-900">Auto (System)</option>
+                  <option value="en" className="bg-slate-900">EN</option>
+                  <option value="si" className="bg-slate-900">SI</option>
+                  <option value="ta" className="bg-slate-900">TA</option>
+                  <option value="hi" className="bg-slate-900">HI</option>
+                  <option value="bn" className="bg-slate-900">BN</option>
                 </select>
               </div>
 
@@ -224,18 +206,6 @@ const Navbar = () => {
                 </button>
               </div>
 
-              {/* Pricing Callout Banner */}
-              <button
-                onClick={scrollToPricing}
-                className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center justify-between shadow-md"
-              >
-                <div className="flex items-center space-x-2">
-                  <Crown className="w-4 h-4 text-amber-400 animate-pulse" />
-                  <span>Pricing Plans (LKR)</span>
-                </div>
-                <span className="text-[10px] text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full font-mono uppercase">LKR 999+</span>
-              </button>
-
               {/* Language Selector */}
               <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/90 border border-white/10 text-xs">
                 <span className="flex items-center text-slate-400 font-medium">
@@ -247,7 +217,7 @@ const Navbar = () => {
                   onChange={handleLanguageChange}
                   className="bg-slate-950 border border-white/10 rounded-xl px-2.5 py-1 text-slate-200 font-semibold cursor-pointer outline-none"
                 >
-                  <option value="system">🌐 {t('nav.system_default', 'System Default')}</option>
+                  <option value="system">Auto (System)</option>
                   <option value="en">English (EN)</option>
                   <option value="si">සිංහල (SI)</option>
                   <option value="ta">தமிழ் (TA)</option>
