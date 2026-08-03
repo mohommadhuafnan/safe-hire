@@ -42,30 +42,29 @@ class IntakeAgent:
     def analyze_poster_with_gemini_vision(image_bytes: bytes) -> dict:
         """Analyze poster image directly using Gemini Multimodal Vision API (OCR + visual risk intelligence)."""
         if not image_bytes:
-            return {"is_job_poster": True, "extracted_text": "", "claimed_brand": ""}
+            return {"is_job_poster": True, "extracted_text": "", "claimed_brand": "", "validation_error": None}
 
         gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
         base64_img = base64.b64encode(image_bytes).decode('utf-8')
 
         prompt = """
         You are SAFE-HIRE's Senior Multimodal Vision & Recruitment Fraud Intelligence Engine.
-        Examine this uploaded hiring flyer, job poster, screenshot, or recruitment image carefully.
+        Examine this uploaded image carefully to classify whether it is a Job Recruitment Poster / Career Flyer OR a Non-Job Picture.
 
-        Task:
-        1. Extract ALL readable text from the image verbatim (OCR).
-        2. Identify company/organization name (claimed_brand), job positions, contact emails, phone numbers, WhatsApp, Telegram, salary, and fees/payments requested.
-        3. Evaluate scam risk indicators (upfront fees, personal bank transfer, generic gmail/yahoo, artificial urgency, unrealistic salary).
+        CLASSIFICATION RULES:
+        1. A JOB POSTER (`is_job_poster: true`) includes ANY hiring banner, recruitment flyer, walk-in interview notice, corporate relations poster, job ad screenshot (LinkedIn, WhatsApp, Email, Facebook, newspaper), or career vacancy offer.
+        2. A NON-JOB IMAGE (`is_job_poster: false`) is an image that has NO recruitment text or career offer context whatsoever (e.g. personal selfie, animal photo, nature/crop landscape, receipt, meme, vehicle, or random object picture).
 
         Return ONLY a raw JSON object with this exact structure (no markdown code blocks, no ```json formatting):
         {
-          "is_job_poster": true,
-          "extracted_text": "Full extracted verbatim text from the poster...",
-          "claimed_brand": "Extracted company or brand name",
+          "is_job_poster": boolean (true for recruitment/hiring poster/flyer, false for non-job pictures),
+          "extracted_text": "Full extracted verbatim text from the image...",
+          "claimed_brand": "Extracted company or brand name if present",
           "job_title": "Position or course title if present",
           "contact_email": "Extracted email if present",
           "phone_number": "Extracted phone number if present",
           "has_fee_demand": false,
-          "summary": "Brief 1-2 sentence summary of poster content"
+          "validation_error": "⚠️ NON-JOB POSTER DETECTED: This uploaded image contains no job recruitment advertisement or career offer." (Provide ONLY if is_job_poster is false, else null)
         }
         """
 
@@ -100,7 +99,7 @@ class IntakeAgent:
                     if "<think>" in clean and "</think>" in clean:
                         clean = clean.split("</think>")[-1].strip()
                     parsed = json.loads(clean)
-                    logger.info(f"Gemini Vision successfully extracted poster text ({len(parsed.get('extracted_text', ''))} chars)")
+                    logger.info(f"Gemini Vision poster analysis: is_job_poster={parsed.get('is_job_poster')}, text_len={len(parsed.get('extracted_text', ''))}")
                     return parsed
             except Exception as e:
                 logger.warning(f"Gemini Vision OpenAI endpoint notice ({e}). Trying REST fallback...")
@@ -124,18 +123,21 @@ class IntakeAgent:
                     content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
                     clean = content.strip().replace("```json", "").replace("```", "").strip()
                     parsed = json.loads(clean)
-                    logger.info("Gemini Vision REST fallback successfully extracted poster details.")
+                    logger.info(f"Gemini Vision REST fallback analysis: is_job_poster={parsed.get('is_job_poster')}")
                     return parsed
             except Exception as e:
                 logger.warning(f"Gemini Vision REST fallback notice: {e}")
 
-        # Fallback to local OCR / OCR.space
+        # Fallback OCR check
         ocr_text = IntakeAgent.extract_text_from_image(image_bytes)
+        job_keywords = ["hiring", "job", "career", "vacancy", "intern", "salary", "apply", "recruiter", "interview", "walk-in", "position", "hospitality", "diploma", "management", "developer"]
+        has_job_term = any(kw in ocr_text.lower() for kw in job_keywords) if ocr_text else False
+
         return {
-            "is_job_poster": True,
-            "extracted_text": ocr_text or "Recruitment flyer/poster screenshot uploaded for fraud inspection.",
+            "is_job_poster": has_job_term or len(ocr_text) > 20,
+            "extracted_text": ocr_text or "Uploaded recruitment image.",
             "claimed_brand": "",
-            "summary": "Poster uploaded for automated 5-agent scam verification."
+            "validation_error": None if (has_job_term or len(ocr_text) > 20) else "⚠️ NON-JOB POSTER DETECTED: This image does not contain recruitment or career vacancy details."
         }
 
     @staticmethod
@@ -246,12 +248,17 @@ class IntakeAgent:
         extracted_domain = ""
         ocr_extracted_text = ""
         claimed_brand = ""
+        is_job_poster = True
+        validation_error = None
 
         if input_text and input_text.strip():
             combined_text += input_text.strip() + "\n"
 
         if image_bytes:
             vision_res = self.analyze_poster_with_gemini_vision(image_bytes)
+            is_job_poster = vision_res.get("is_job_poster", True)
+            validation_error = vision_res.get("validation_error")
+
             ocr_extracted_text = vision_res.get("extracted_text", "")
             if not ocr_extracted_text:
                 ocr_extracted_text = self.extract_text_from_image(image_bytes)
@@ -290,8 +297,8 @@ class IntakeAgent:
             "domain": extracted_domain,
             "detected_language": detected_lang,
             "final_language": final_lang,
-            "is_job_poster": True,
-            "validation_error": None,
+            "is_job_poster": is_job_poster,
+            "validation_error": validation_error,
             "metadata_extracted": {
                 "emails": emails_found,
                 "urls": urls_found,

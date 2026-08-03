@@ -25,6 +25,31 @@ class AgentPipeline:
         final_lang = intake_res.get("final_language", "en")
         domain = intake_res.get("domain", "")
 
+        # Check if non-job picture was uploaded (e.g., selfie, animal photo, nature landscape)
+        if intake_res.get("is_job_poster") is False:
+            validation_msg = intake_res.get("validation_error", "⚠️ NON-JOB POSTER DETECTED: This image does not contain any recruitment flyer, job advertisement, or career offer details.")
+            return {
+                "intake_data": intake_res,
+                "linguistic_data": {},
+                "verification_data": {},
+                "reasoning_data": {},
+                "recommendations": [
+                    "Please upload a valid job advertisement screenshot, recruitment flyer, or paste a job posting URL.",
+                    "Avoid uploading photos of people, animals, pets, or non-career related pictures."
+                ],
+                "scam_score": 100,
+                "confidence_score": 100,
+                "sub_scores": {
+                    "financial_fee_risk": 100,
+                    "impersonation_risk": 100,
+                    "domain_reputation_risk": 100,
+                    "urgency_pressure_risk": 100
+                },
+                "risk_level": "Non-Job Image (100% Risk Alert)",
+                "language": final_lang,
+                "explanation_text": f"{validation_msg}\n\nUploading non-career images (personal photos, animals, or unrelated pictures) cannot be verified for recruitment authenticity and is flagged with a 100% Risk Alert."
+            }
+
         logger.info("Executing Agent Pipeline Stage 2: Linguistic Risk Agent")
         linguistic_res = self.linguistic_agent.analyze(cleaned_text, final_lang)
 
