@@ -130,7 +130,7 @@ ${prompt}`
         <button
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle AI Assistant Chat"
-          className="w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-600 via-sky-500 to-emerald-400 p-0.5 shadow-2xl shadow-indigo-500/50 hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center group"
+          className="w-14 h-14 rounded-full bg-indigo-600 p-0.5 shadow-2xl shadow-indigo-500/50 hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center group border border-indigo-400/40"
         >
           <div className="w-full h-full bg-slate-950 rounded-full flex items-center justify-center relative overflow-hidden">
             {isOpen ? (
@@ -268,7 +268,7 @@ ${prompt}`
               <button
                 type="submit"
                 disabled={!inputPrompt.trim() || isStreaming}
-                className="p-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-bold transition disabled:opacity-40"
+                className="p-2.5 rounded-xl btn-primary transition disabled:opacity-40"
               >
                 <Send className="w-4 h-4" />
               </button>

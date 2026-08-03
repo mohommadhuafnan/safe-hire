@@ -192,16 +192,16 @@ const LandingPage = () => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             to="/signup"
-            className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-bold text-sm shadow-xl shadow-indigo-500/25 glow-btn flex items-center justify-center space-x-2"
+            className="w-full sm:w-auto px-8 py-4 rounded-xl btn-primary font-bold text-sm flex items-center justify-center space-x-2 shadow-lg hover:scale-105 transition"
           >
             <span>{t('landing.cta_start')}</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
             to="/login"
-            className="w-full sm:w-auto px-8 py-4 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 text-slate-200 font-semibold text-sm transition flex items-center justify-center space-x-2"
+            className="w-full sm:w-auto px-8 py-4 rounded-xl btn-secondary font-semibold text-sm flex items-center justify-center space-x-2 hover:scale-105 transition"
           >
-            <Lock className="w-4 h-4 text-sky-400" />
+            <Lock className="w-4 h-4 text-indigo-400" />
             <span>{t('landing.cta_login')}</span>
           </Link>
         </div>
@@ -535,7 +535,7 @@ const LandingPage = () => {
 
             <button
               onClick={() => handlePlanSelect({ name: 'Pro Student Plan', price: billingCycle === 'annual' ? 'LKR 1,599.00/mo' : 'LKR 1,999.00/mo' })}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-extrabold text-xs shadow-xl glow-btn"
+              className="w-full py-4 rounded-xl btn-primary font-extrabold text-xs shadow-xl hover:scale-[1.02] transition"
             >
               Get Pro Plan (LKR 1,999.00)
             </button>
@@ -764,7 +764,7 @@ const LandingPage = () => {
           </p>
           <Link
             to="/signup"
-            className="inline-flex items-center space-x-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white font-bold text-sm glow-btn"
+            className="inline-flex items-center space-x-2 px-8 py-3.5 rounded-xl btn-primary font-bold text-sm shadow-xl hover:scale-105 transition"
           >
             <span>Create Free Account</span>
             <ArrowRight className="w-4 h-4" />

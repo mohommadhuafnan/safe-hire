@@ -13,9 +13,19 @@
     background-attachment: fixed;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
+
+  body.light {
+    background-color: #f8fafc;
+    color: #0f172a;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.08) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
 }
 
-/* Glassmorphism Styles */
+/* Glassmorphism Styles (Dark Default) */
 .glass-panel {
   background: rgba(15, 23, 42, 0.82);
   backdrop-filter: blur(20px);
@@ -44,8 +54,45 @@
   box-shadow: 0 0 40px -5px rgba(99, 102, 241, 0.35);
 }
 
+/* Glassmorphism Styles (Light Mode Overrides) */
+body.light .glass-panel {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 10px 40px 0 rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+body.light .glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+body.light .glass-card:hover {
+  border-color: #6366f1;
+  box-shadow: 0 12px 30px -5px rgba(99, 102, 241, 0.15);
+}
+
+body.light .glass-pricing-popular {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  border: 2px solid #6366f1;
+  box-shadow: 0 10px 40px -5px rgba(99, 102, 241, 0.2);
+}
+
+/* Gradients & Buttons */
 .gradient-text {
   background: linear-gradient(135deg, #a5b4fc 0%, #38bdf8 50%, #34d399 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+body.light .gradient-text {
+  background: linear-gradient(135deg, #4338ca 0%, #0284c7 50%, #059669 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -56,24 +103,91 @@
   -webkit-text-fill-color: transparent;
 }
 
+body.light .gradient-text-gold {
+  background: linear-gradient(135deg, #ca8a04 0%, #d97706 50%, #b45309 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Unified Professional Single-Color Primary Buttons with Dark Subtle Border */
+.btn-primary {
+  background-color: #4f46e5;
+  color: #ffffff;
+  border: 1px solid #3730a3;
+  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+  border-color: #312e81;
+  box-shadow: 0 6px 20px 0 rgba(79, 70, 229, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: rgba(30, 41, 59, 0.8);
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(51, 65, 85, 0.9);
+  border-color: #475569;
+  color: #ffffff;
+}
+
+body.light .btn-secondary {
+  background-color: #ffffff;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+}
+
+body.light .btn-secondary:hover {
+  background-color: #f8fafc;
+  border-color: #6366f1;
+  color: #0f172a;
+}
+
 .glow-btn {
-  box-shadow: 0 0 25px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
   transition: all 0.3s ease;
 }
 
 .glow-btn:hover {
-  box-shadow: 0 0 35px rgba(99, 102, 241, 0.8);
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
   transform: translateY(-1px);
 }
 
-.glow-btn-gold {
-  box-shadow: 0 0 25px rgba(245, 158, 11, 0.45);
-  transition: all 0.3s ease;
+/* Light Mode Comprehensive Typography & Color Overrides */
+body.light text-slate-100, body.light .text-slate-100 { color: #0f172a !important; }
+body.light text-slate-200, body.light .text-slate-200 { color: #1e293b !important; }
+body.light text-slate-300, body.light .text-slate-300 { color: #334155 !important; }
+body.light text-slate-400, body.light .text-slate-400 { color: #475569 !important; }
+
+body.light .bg-slate-950 { background-color: #f8fafc !important; }
+body.light .bg-slate-900 { background-color: #ffffff !important; }
+body.light .bg-slate-900\/90 { background-color: rgba(255, 255, 255, 0.95) !important; }
+body.light .bg-slate-900\/80 { background-color: rgba(255, 255, 255, 0.9) !important; }
+body.light .bg-slate-900\/70 { background-color: rgba(255, 255, 255, 0.85) !important; }
+body.light .bg-slate-900\/60 { background-color: rgba(248, 250, 252, 0.9) !important; }
+body.light .bg-slate-800 { background-color: #f1f5f9 !important; }
+
+body.light .border-slate-800 { border-color: #cbd5e1 !important; }
+body.light .border-slate-800\/80 { border-color: #cbd5e1 !important; }
+body.light .border-slate-800\/90 { border-color: #cbd5e1 !important; }
+body.light .border-slate-700 { border-color: #94a3b8 !important; }
+body.light .border-white\/10 { border-color: rgba(0, 0, 0, 0.1) !important; }
+body.light .border-white\/15 { border-color: rgba(0, 0, 0, 0.15) !important; }
+
+body.light input, body.light select, body.light textarea {
+  color: #0f172a !important;
 }
 
-.glow-btn-gold:hover {
-  box-shadow: 0 0 35px rgba(245, 158, 11, 0.8);
-  transform: translateY(-1px);
+body.light option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
 }
 
 /* Custom Keyframe Animations */
@@ -122,9 +236,15 @@
 ::-webkit-scrollbar-track {
   background: #090d16;
 }
+body.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
 ::-webkit-scrollbar-thumb {
   background: #1e293b;
   border-radius: 4px;
+}
+body.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;

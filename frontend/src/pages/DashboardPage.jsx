@@ -192,7 +192,7 @@ const DashboardPage = () => {
                 onClick={() => setActiveTab('text')}
                 className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold transition ${
                   activeTab === 'text'
-                    ? 'bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white shadow-lg'
+                    ? 'bg-indigo-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -205,7 +205,7 @@ const DashboardPage = () => {
                 onClick={() => setActiveTab('image')}
                 className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold transition ${
                   activeTab === 'image'
-                    ? 'bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white shadow-lg'
+                    ? 'bg-indigo-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -218,7 +218,7 @@ const DashboardPage = () => {
                 onClick={() => setActiveTab('url')}
                 className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold transition ${
                   activeTab === 'url'
-                    ? 'bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white shadow-lg'
+                    ? 'bg-indigo-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -324,7 +324,7 @@ const DashboardPage = () => {
               <button
                 type="submit"
                 disabled={analyzing}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-extrabold text-sm shadow-xl shadow-indigo-500/25 glow-btn transition flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="w-full py-4 rounded-2xl btn-primary font-extrabold text-sm shadow-xl transition flex items-center justify-center space-x-2 disabled:opacity-50 hover:scale-[1.01]"
               >
                 {analyzing ? (
                   <>

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AIModalProvider } from './context/AIModalContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FloatingAIChatbot from './components/FloatingAIChatbot';
@@ -64,12 +65,14 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AIModalProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
-      </AIModalProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AIModalProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+        </AIModalProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

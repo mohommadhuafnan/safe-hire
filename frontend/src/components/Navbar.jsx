@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useAIModal } from '../context/AIModalContext';
-import { ShieldCheck, LogOut, User, Globe, History, LayoutDashboard, Menu, X, Crown, Sparkles, ArrowRight, BrainCircuit } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { ShieldCheck, LogOut, User, Globe, History, LayoutDashboard, Menu, X, Crown, Sparkles, ArrowRight, BrainCircuit, Sun, Moon } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { t, i18n } = useTranslation();
   const { openAIModal } = useAIModal();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSystemDefault, setIsSystemDefault] = useState(
@@ -96,6 +98,20 @@ const Navbar = () => {
                   <option value="bn" className="bg-slate-900">BN</option>
                 </select>
               </div>
+
+              {/* Theme Toggle Button (Light / Dark Mode) */}
+              <button
+                onClick={toggleTheme}
+                className="p-1.5 rounded-full bg-slate-900/80 border border-white/10 hover:border-indigo-400/50 text-amber-400 transition"
+                title={theme === 'dark' ? 'Switch to Light Mode ☀️' : 'Switch to Dark Mode 🌙'}
+                aria-label="Toggle Theme Mode"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Moon className="w-4 h-4 text-indigo-600" />
+                )}
+              </button>
 
               {/* Logged in User Menu */}
               {user ? (
@@ -224,6 +240,20 @@ const Navbar = () => {
                   <option value="hi">हिंदी (HI)</option>
                   <option value="bn">বাংলা (BN)</option>
                 </select>
+              </div>
+
+              {/* Theme Mode Toggle (Mobile) */}
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/90 border border-white/10 text-xs">
+                <span className="flex items-center text-slate-400 font-medium">
+                  {theme === 'dark' ? <Moon className="w-4 h-4 mr-2 text-sky-400" /> : <Sun className="w-4 h-4 mr-2 text-amber-400" />}
+                  Theme Mode:
+                </span>
+                <button
+                  onClick={toggleTheme}
+                  className="px-3 py-1 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow hover:bg-indigo-500 transition"
+                >
+                  {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+                </button>
               </div>
 
               {/* Main Nav Actions */}
