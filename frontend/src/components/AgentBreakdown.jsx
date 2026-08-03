@@ -152,11 +152,32 @@ const AgentBreakdown = ({ result }) => {
         <div className="space-y-3 text-xs">
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
             <span className="text-slate-300 font-medium">Target Domain:</span>
-            <span className="font-mono text-sky-400">{verificationData.domain || 'Not Specified'}</span>
+            <span className="font-mono text-sky-400 font-bold">{verificationData.domain || 'Not Specified'}</span>
           </div>
 
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">WHOIS Domain Record:</span>
+            <span className="text-slate-300 font-medium">Domain Age:</span>
+            <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
+              {verificationData.whois_info?.domain_years ? `${verificationData.whois_info.domain_years} Years (${verificationData.whois_info.registered_days} Days Old)` : (verificationData.whois_info?.registered_days ? `${verificationData.whois_info.registered_days} Days Old` : 'Verified Registry Standard')}
+            </span>
+          </div>
+
+          {verificationData.whois_info?.creation_date && (
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+              <span className="text-slate-300 font-medium">Domain Registration Date:</span>
+              <span className="font-mono text-slate-200">{new Date(verificationData.whois_info.creation_date).toLocaleDateString()}</span>
+            </div>
+          )}
+
+          {verificationData.whois_info?.registrar && (
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+              <span className="text-slate-300 font-medium">Domain Registrar:</span>
+              <span className="font-semibold text-slate-300">{verificationData.whois_info.registrar}</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+            <span className="text-slate-300 font-medium">WHOIS Domain Security Status:</span>
             <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
               {verificationData.whois_info?.whois_status || 'Domain Registry Standard'}
             </span>

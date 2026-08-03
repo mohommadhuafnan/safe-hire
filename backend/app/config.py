@@ -23,8 +23,9 @@ class Settings(BaseSettings):
     DEEPSEEK_MODEL_NAME: str = os.getenv("DEEPSEEK_MODEL_NAME", "deepseek-ai/DeepSeek-V4-Flash")
     GOOGLE_SAFE_BROWSING_API_KEY: str = os.getenv("GOOGLE_SAFE_BROWSING_API_KEY", "")
 
-    # APILayer WHOIS API Settings
+    # APILayer & WHOIS API Settings
     APILAYER_KEY: str = os.getenv("APILAYER_KEY", "nIvPeI99eWBDMSArYAf2YcrshDCOVvJ3")
+    WHOIS_IS_API_KEY: str = os.getenv("WHOIS_IS_API_KEY", "wis_live_KyVkL7gYMiXFivIQG46K9Xe4sh5THeAPT7rqgbAb")
 
     # Firebase Settings
     FIREBASE_SERVICE_ACCOUNT_PATH: str = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "serviceAccountKey.json")
