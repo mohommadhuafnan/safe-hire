@@ -38,70 +38,71 @@ class IntakeAgent:
         return "en"
 
     @staticmethod
-    def analyze_image_with_gemini(image_bytes: bytes) -> dict:
-        """Analyze image using Google Gemini 2.5 Flash Vision to validate if it's a job poster or non-job photo (human, animal, etc.)."""
+    def analyze_image_with_deepseek_v4(image_bytes: bytes) -> dict:
+        """Analyze image text OCR using DeepSeek-V4-Flash to validate if it's a job poster or non-job photo (human, animal, etc.)."""
         if not image_bytes:
             return {"is_job_poster": True, "extracted_text": "", "validation_error": None}
 
-        api_key = settings.GEMINI_API_KEY
-        if api_key:
-            import base64
+        # 1. First extract text via OCR
+        extracted_text = IntakeAgent.extract_text_from_image(image_bytes)
+
+        api_key = settings.DEEPSEEK_V4_API_KEY
+        if api_key and extracted_text and len(extracted_text.strip()) > 10:
             import json
 
             try:
-                base64_image = base64.b64encode(image_bytes).decode('utf-8')
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-                
-                prompt = """
-                You are SAFE-HIRE's Senior Multimodal Image Verification Specialist.
-                Examine the attached image very carefully.
+                url = f"{settings.DEEPSEEK_API_BASE_URL.rstrip('/')}/chat/completions"
+                prompt = f"""
+                You are SAFE-HIRE's Senior Image & Document Verification Specialist.
+                Examine the extracted text from an uploaded image below to classify its content type.
+
+                [EXTRACTED OCR TEXT FROM IMAGE]:
+                "{extracted_text[:2000]}"
 
                 CLASSIFICATION GUIDELINES:
-                1. A JOB POSTER (`is_job_poster: true`) includes ANY recruitment flyer, hiring banner, job advertisement screenshot (from LinkedIn, WhatsApp, Email, Facebook, newspaper, job site), or career vacancy announcement. NOTE: It IS a valid job poster even if it contains photos of people, human models, office workers, logos, or graphic designs as long as it pertains to hiring/careers/jobs.
+                1. A JOB POSTER (`is_job_poster: true`) includes ANY recruitment flyer, hiring banner, job advertisement screenshot (from LinkedIn, WhatsApp, Email, Facebook, newspaper, job site), or career vacancy announcement.
                 
-                2. A NON-JOB IMAGE (`is_job_poster: false`) is an image that has NO job recruitment text or career context whatsoever, such as a casual personal selfie/portrait, a pet or animal photo, a vehicle, nature landscape, meme, or random object picture.
+                2. A NON-JOB IMAGE (`is_job_poster: false`) is an image that has NO job recruitment text or career context whatsoever, such as a casual personal selfie, a pet/animal photo, a vehicle, nature landscape, meme, or random object picture.
 
                 Return a raw JSON object with this exact structure:
-                {
-                  "is_job_poster": boolean (true for any job ad/recruitment poster/screenshot/hiring banner, false ONLY for casual selfies/pets/nature/non-job photos),
+                {{
+                  "is_job_poster": boolean (true for any job ad/recruitment poster/screenshot/hiring banner, false ONLY for non-job photos),
                   "image_category": "job_advertisement" or "human_photo" or "animal_photo" or "other_non_job",
-                  "validation_error": "This is not a job poster image. Please upload a suitable job advertisement application or screenshot." (Provide this message ONLY if is_job_poster is false, else null),
-                  "extracted_text": "<Extract ALL visible text from the image accurately>"
-                }
+                  "validation_error": "This is not a job poster image. Please upload a suitable job advertisement application or screenshot." (Provide this message ONLY if is_job_poster is false, else null)
+                }}
                 Do not include markdown code block formatting. Return raw JSON string only.
                 """
 
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
                 payload = {
-                    "contents": [{
-                        "parts": [
-                            {"text": prompt},
-                            {
-                                "inline_data": {
-                                    "mime_type": "image/png",
-                                    "data": base64_image
-                                }
-                            }
-                        ]
-                    }]
+                    "model": settings.DEEPSEEK_MODEL_NAME,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.1,
+                    "max_tokens": 512
                 }
 
-                res = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=10)
+                res = requests.post(url, json=payload, headers=headers, timeout=12)
                 if res.status_code == 200:
-                    raw_text = res.json().get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                    clean = raw_text.strip().replace("```json", "").replace("```", "").strip()
+                    content = res.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                    clean = content.strip().replace("```json", "").replace("```", "").strip()
+                    if "<think>" in clean and "</think>" in clean:
+                        clean = clean.split("</think>")[-1].strip()
                     parsed = json.loads(clean)
-                    logger.info(f"Gemini Vision classification result: is_job_poster={parsed.get('is_job_poster')}")
+                    parsed["extracted_text"] = extracted_text
+                    logger.info(f"DeepSeek V4 image classification result: is_job_poster={parsed.get('is_job_poster')}")
                     return parsed
             except Exception as e:
-                logger.warning(f"Gemini Vision classification notice: {e}")
+                logger.warning(f"DeepSeek V4 image classification notice: {e}")
 
-        # Fallback to Tesseract OCR if Gemini is unavailable or errors out
-        extracted = IntakeAgent.extract_text_from_image(image_bytes)
+        # Fallback default
         return {
             "is_job_poster": True,
             "image_category": "job_advertisement",
             "validation_error": None,
-            "extracted_text": extracted
+            "extracted_text": extracted_text
         }
 
     @staticmethod
@@ -196,7 +197,7 @@ class IntakeAgent:
             combined_text += input_text.strip() + "\n"
 
         if image_bytes:
-            img_eval = self.analyze_image_with_gemini(image_bytes)
+            img_eval = self.analyze_image_with_deepseek_v4(image_bytes)
             if img_eval.get("is_job_poster") is False:
                 is_job_poster = False
                 validation_error = img_eval.get("validation_error", "This is not a job poster image. Please provide a suitable job advertisement application or screenshot.")

@@ -1,0 +1,148 @@
+================================================================================
+                     SAFE-HIRE PROJECT - FULL PROJECT EXPLANATION
+                     Complete Technical & Functional Documentation
+================================================================================
+
+1. PROJECT OVERVIEW & EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+SAFE-HIRE is a production-ready, full-stack AI security application engineered to 
+protect university students, fresh graduates, and job seekers from recruitment 
+scams, fraudulent job offers, fake internship postings, and phishing campaigns.
+
+The system ingests raw job text, screenshot images (e.g. WhatsApp/LinkedIn/Email 
+screenshots), and website URLs. It runs them through an autonomous 5-Agent AI 
+Pipeline to calculate a transparent 0–100 Scam Probability Score accompanied by 
+plain-language reasoning, risk indicators, safety recommendations, and support 
+for 5 regional languages (English, Sinhala, Tamil, Hindi, Bengali).
+
+
+2. PROBLEM STATEMENT
+--------------------------------------------------------------------------------
+Recruitment fraud has escalated dramatically:
+ 1. Financial Losses: Job seekers lose over $300 million annually to fake upfront 
+    registration fees, laptop deposit scams, and processing fee demands.
+ 2. Identity Theft: Scammers harvest passport numbers, national IDs, and bank details 
+    under the guise of employment onboarding.
+ 3. Target Vulnerability: Students and recent graduates are eager for employment, 
+    making them uniquely susceptible to urgent pressure tactics and brand impersonation 
+    (e.g., emails sent from `@gmail.com` claiming to represent Fortune 500 companies).
+
+
+3. THE 5-AGENT AI PIPELINE ARCHITECTURE
+--------------------------------------------------------------------------------
+Rather than relying on a single prompt, SAFE-HIRE divides scam detection across 
+5 specialized micro-agents (`/backend/app/agents/`):
+
+[Agent 1: Intake Agent] (`intake_agent.py`)
+  - Responsibilities: Input ingestion, multi-modal processing, and language detection.
+  - Features:
+      * Text Parsing: Extracts sender email, phone numbers, salary claims, and domain URLs.
+      * Optical Character Recognition (OCR): Uses `pytesseract` to extract text from 
+        uploaded screenshot images.
+      * URL Scraper: Fetches and parses target website content.
+      * Language Detection: Identifies input language (EN, SI, TA, HI, BN).
+
+[Agent 2: Linguistic Risk Agent] (`linguistic_risk_agent.py`)
+  - Responsibilities: Analyzes text against EMSCAD dataset risk indicators.
+  - Flags:
+      * Upfront Payment Requests (registration fees, training costs, equipment deposits).
+      * Urgency & Pressure Tactics ("Immediate hiring", "Respond within 2 hours").
+      * Email Domain Mismatch (e.g., company claims to be Google but sender uses `@gmail.com`).
+      * Vague Job Descriptions & Guaranteed High Pay for Minimal Effort.
+
+[Agent 3: Verification Agent] (`verification_agent.py`)
+  - Responsibilities: Deterministic security checks on web infrastructure and domains.
+  - Checks:
+      * WHOIS Domain Age Lookup: Identifies domains registered less than 90 days ago (High Risk).
+      * Google Safe Browsing API: Checks if the target URL is flagged for phishing or malware.
+      * Corporate Identity Verification: Checks domain consistency against registered brands.
+
+[Agent 4: Reasoning Agent] (`reasoning_agent.py`)
+  - Responsibilities: Synthesizes multi-agent signals into a final score.
+  - Output:
+      * 0-100 Scam Probability Score (0-29: Low Risk / Safe, 30-69: Moderate Risk, 70-100: High Risk Scam).
+      * Transparent, plain-language breakdown explaining EXACTLY why the score was given.
+
+[Agent 5: Recommendation Agent] (`recommendation_agent.py`)
+  - Responsibilities: Actionable advice generation.
+  - Outputs:
+      * Immediate Safety Steps (e.g., "Do not pay any fee", "Do not share bank details").
+      * Reporting Guidance: Contact details for university career guidance units and cyber-crime helplines.
+
+
+4. TECHNICAL ARCHITECTURE & TECHNOLOGY STACK
+--------------------------------------------------------------------------------
+Frontend (SPA Web Client):
+  - React 18 (Component-based architecture)
+  - Vite (Ultra-fast modern build tool & HMR dev server)
+  - Tailwind CSS (Utility-first styling, dark/light security theme)
+  - Recharts (Visual gauge meters and history trend charts)
+  - Lucide Icons (Security & UI icons)
+  - react-i18next (Internationalization for EN, Sinhala, Tamil, Hindi, Bengali)
+
+Backend (REST API):
+  - Python 3.11+
+  - FastAPI (Asynchronous, high-throughput ASGI framework built on Starlette and Pydantic)
+  - PyJWT & Passlib (Bcrypt) (JSON Web Token authentication & encrypted password hashing)
+  - Pydantic v2 (Strict data validation and response typing)
+
+Database & Resilience:
+  - MongoDB Atlas / Local MongoDB
+  - Motor (Asynchronous Python driver for MongoDB)
+  - Graceful In-Memory Fallback (`in_memory_store.py`): Built-in in-memory fallback database 
+    that guarantees 100% application execution even if local MongoDB is not running!
+
+Security Tools & Libraries:
+  - pytesseract (Tesseract OCR wrapper for screenshot text extraction)
+  - python-whois (Domain registration date and metadata parser)
+  - Google Safe Browsing API Client (Malicious URL verification)
+
+DevOps & Containerization:
+  - Docker & Docker Compose (`docker-compose.yml`)
+  - Vercel (`vercel.json`) configuration for cloud deployment
+
+
+5. REST API ENDPOINTS
+--------------------------------------------------------------------------------
+Auth Routes:
+  - `POST /api/auth/register`: User registration -> returns JWT session token.
+  - `POST /api/auth/login`: Authenticate email/password -> returns JWT session token.
+
+User Routes:
+  - `GET /api/user/profile`: Retrieve authenticated user details.
+
+Analysis & Verification Routes:
+  - `POST /api/analyze`: Ingests text, screenshot image, or URL -> executes 5-Agent pipeline -> returns scam evaluation.
+  - `GET /api/history`: Returns user's past scam verification history log.
+  - `GET /api/history/{submission_id}`: Retrieves detailed report for a specific past submission.
+
+
+6. LOCAL RUNNING & SETUP COMMANDS
+--------------------------------------------------------------------------------
+Step 1: Start Backend (FastAPI)
+  cd backend
+  python -m venv venv
+  .\venv\Scripts\Activate.ps1   # (On Windows)
+  pip install -r requirements.txt
+  uvicorn app.main:app --reload --port 8000
+  (Backend API live at: http://localhost:8000 | Docs at: http://localhost:8000/docs)
+
+Step 2: Start Frontend (React + Vite)
+  cd frontend
+  npm install
+  npm run dev
+  (Frontend live at: http://localhost:5173)
+
+Step 3: Run via Docker Compose (Optional)
+  docker-compose up --build
+
+
+7. PRESENTATION & DEFENSE HIGHLIGHTS
+--------------------------------------------------------------------------------
+- Explainable AI (XAI): Unlike "black-box" models, SAFE-HIRE explains every point of its 0-100 score.
+- Multi-Modal & Multilingual: Handles text, screenshots, and URLs in 5 languages, protecting diverse student communities.
+- Fault-Tolerant System Design: Built-in in-memory fallback guarantees zero system downtime even during database connection loss.
+
+================================================================================
+                          END OF SAFE-HIRE DOCUMENTATION
+================================================================================
