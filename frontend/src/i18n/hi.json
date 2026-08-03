@@ -6,7 +6,8 @@
     "login": "लॉग इन",
     "signup": "साइन अप",
     "logout": "लॉग आउट",
-    "welcome": "स्वागत है"
+    "welcome": "स्वागत है",
+    "system_default": "सिस्टम डिफॉल्ट (Auto)"
   },
   "landing": {
     "tagline": "आवेदन करने से पहले जांचें",

@@ -11,9 +11,24 @@ const Navbar = () => {
   const { openAIModal } = useAIModal();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSystemDefault, setIsSystemDefault] = useState(
+    !localStorage.getItem('i18nextLng') || localStorage.getItem('i18nextLng') === 'system'
+  );
 
   const handleLanguageChange = (e) => {
-    i18n.changeLanguage(e.target.value);
+    const val = e.target.value;
+    if (val === 'system') {
+      localStorage.removeItem('i18nextLng');
+      setIsSystemDefault(true);
+      const detected = i18n.services?.languageDetector?.detect() || navigator.language || 'en';
+      const primary = (Array.isArray(detected) ? detected[0] : detected).split('-')[0].toLowerCase();
+      const supported = ['en', 'si', 'ta', 'hi', 'bn'].includes(primary) ? primary : 'en';
+      i18n.changeLanguage(supported);
+    } else {
+      localStorage.setItem('i18nextLng', val);
+      setIsSystemDefault(false);
+      i18n.changeLanguage(val);
+    }
   };
 
   const handleLogout = () => {
@@ -87,10 +102,11 @@ const Navbar = () => {
               <div className="relative flex items-center bg-slate-900/80 border border-white/10 rounded-full px-3 py-1.5 text-xs text-slate-200 hover:border-indigo-400/50 transition duration-300">
                 <Globe className="w-3.5 h-3.5 mr-1.5 text-sky-400" />
                 <select
-                  value={i18n.language}
+                  value={isSystemDefault ? 'system' : (i18n.resolvedLanguage || i18n.language?.split('-')[0] || 'en')}
                   onChange={handleLanguageChange}
                   className="bg-transparent border-none outline-none text-slate-200 cursor-pointer pr-1 focus:ring-0 text-xs font-semibold"
                 >
+                  <option value="system" className="bg-slate-900">🌐 {t('nav.system_default', 'System Default')}</option>
                   <option value="en" className="bg-slate-900">English</option>
                   <option value="si" className="bg-slate-900">සිංහල</option>
                   <option value="ta" className="bg-slate-900">தமிழ்</option>
@@ -227,10 +243,11 @@ const Navbar = () => {
                   Language:
                 </span>
                 <select
-                  value={i18n.language}
+                  value={isSystemDefault ? 'system' : (i18n.resolvedLanguage || i18n.language?.split('-')[0] || 'en')}
                   onChange={handleLanguageChange}
                   className="bg-slate-950 border border-white/10 rounded-xl px-2.5 py-1 text-slate-200 font-semibold cursor-pointer outline-none"
                 >
+                  <option value="system">🌐 {t('nav.system_default', 'System Default')}</option>
                   <option value="en">English (EN)</option>
                   <option value="si">සිංහල (SI)</option>
                   <option value="ta">தமிழ் (TA)</option>

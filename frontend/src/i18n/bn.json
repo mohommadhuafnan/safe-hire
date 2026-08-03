@@ -6,7 +6,8 @@
     "login": "লগইন",
     "signup": "সাইন আপ",
     "logout": "লগআউট",
-    "welcome": "স্বাগতম"
+    "welcome": "স্বাগতম",
+    "system_default": "সিস্টেম ডিফল্ট (Auto)"
   },
   "landing": {
     "tagline": "আবেদন করার আগে যাচাই করুন",

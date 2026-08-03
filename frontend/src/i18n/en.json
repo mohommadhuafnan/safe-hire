@@ -6,7 +6,8 @@
     "login": "Login",
     "signup": "Sign Up",
     "logout": "Logout",
-    "welcome": "Welcome"
+    "welcome": "Welcome",
+    "system_default": "System Default (Auto)"
   },
   "landing": {
     "tagline": "Verify Before You Apply",

@@ -20,6 +20,14 @@ i18n
       bn: { translation: bn }
     },
     fallbackLng: 'en',
+    supportedLngs: ['en', 'si', 'ta', 'hi', 'bn'],
+    nonExplicitSupportedLngs: true,
+    load: 'languageOnly',
+    detection: {
+      order: ['querystring', 'cookie', 'localStorage', 'navigator', 'htmlTag'],
+      lookupLocalStorage: 'i18nextLng',
+      caches: ['localStorage', 'cookie']
+    },
     interpolation: {
       escapeValue: false
     }

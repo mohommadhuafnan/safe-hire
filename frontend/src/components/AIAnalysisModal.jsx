@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import GeminiAPIClient from '../services/GeminiAPIClient';
+import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { exportAnalysisReport } from '../services/reportExporter';
 import { 
   Sparkles, 
   X, 
@@ -15,10 +18,13 @@ import {
   Globe, 
   Lock, 
   Crown,
-  StopCircle
+  StopCircle,
+  Download
 } from 'lucide-react';
 
 const AIAnalysisModal = ({ isOpen, onClose, title, initialPrompt, category, contextData }) => {
+  const { user } = useAuth();
+  const { i18n } = useTranslation();
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [analysisOutput, setAnalysisOutput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -159,6 +165,17 @@ ${contextData ? `Additional Technical Context:\n${JSON.stringify(contextData, nu
           </div>
 
           <div className="flex items-center space-x-2">
+            {contextData && contextData.scam_score !== undefined && (
+              <button
+                onClick={() => exportAnalysisReport(contextData, user, i18n.language)}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 text-xs font-semibold text-sky-300 transition border border-indigo-400/40"
+                title="Export PDF Report"
+              >
+                <Download className="w-3.5 h-3.5 text-sky-400" />
+                <span className="hidden sm:inline">Export PDF</span>
+              </button>
+            )}
+
             {analysisOutput && (
               <button
                 onClick={handleCopy}

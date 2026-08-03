@@ -10,7 +10,7 @@ import { History as HistoryIcon, Search, ShieldCheck, X, ExternalLink, Calendar,
 
 const HistoryPage = () => {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { openAIModal } = useAIModal();
   const [historyItems, setHistoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,9 +128,21 @@ const HistoryPage = () => {
                     <Calendar className="w-3.5 h-3.5 text-slate-500" />
                     <span>{new Date(item.created_at).toLocaleDateString()}</span>
                   </div>
-                  <span className="text-indigo-400 font-semibold hover:underline flex items-center">
-                    Report <ExternalLink className="w-3 h-3 ml-1" />
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        exportAnalysisReport(item, user, i18n.language);
+                      }}
+                      className="p-1 text-slate-400 hover:text-sky-300 transition"
+                      title="Export PDF Report"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-indigo-400 font-semibold hover:underline flex items-center">
+                      Report <ExternalLink className="w-3 h-3 ml-1" />
+                    </span>
+                  </div>
                 </div>
               </div>
             );
