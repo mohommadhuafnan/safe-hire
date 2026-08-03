@@ -365,6 +365,131 @@ const DashboardPage = () => {
               </div>
             </div>
           )}
+
+          {/* FULL ANALYZED REPORT DISPLAY PANEL (BOTTOM LEFT) */}
+          {result && (
+            <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-indigo-500/30 bg-slate-900/80 space-y-6 animate-fade-in shadow-2xl">
+              
+              {/* REPORT HEADER BAR */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+                <div className="flex items-center space-x-3">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20 flex-shrink-0">
+                    <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-sky-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-base sm:text-lg font-extrabold text-slate-100 tracking-tight">
+                        Full AI Audit Report & Verification Certificate
+                      </h3>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        VERIFIED
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Analyzed on {new Date(result.created_at || Date.now()).toLocaleString()} • Target: {user?.full_name || 'Student'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                  <button
+                    onClick={() => exportAnalysisReport(result, user)}
+                    className="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white font-extrabold text-xs shadow-lg glow-btn transition hover:scale-105"
+                  >
+                    <Download className="w-4 h-4 text-white" />
+                    <span>Download PDF Report</span>
+                  </button>
+
+                  <button
+                    onClick={() => openAIModal({
+                      title: `Gemini 3.6 Flash Deep AI Audit (Report #${result.id.slice(-6)})`,
+                      initialPrompt: `Provide an in-depth security breakdown and safety advice for this job verification report:\nScam Score: ${result.scam_score}/100\nRisk Level: ${result.risk_level}\nExplanation: "${result.explanation_text}"`,
+                      category: 'full_report_audit',
+                      contextData: result
+                    })}
+                    className="p-2.5 rounded-2xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-sky-300 hover:text-white transition"
+                    title="Interactive Gemini AI Chat Audit"
+                  >
+                    <Sparkles className="w-4 h-4 animate-pulse" />
+                  </button>
+                </div>
+              </div>
+
+              {/* VERDICT BANNER & METADATA GRID */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Risk Level Verdict</span>
+                  <span className={`text-sm font-extrabold block ${
+                    result.scam_score >= 60 ? 'text-rose-400' : result.scam_score >= 30 ? 'text-amber-400' : 'text-emerald-400'
+                  }`}>
+                    {result.risk_level}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Scam Risk Score</span>
+                  <span className="text-sm font-extrabold text-slate-100 font-mono block">
+                    {result.scam_score} / 100
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Language & Pipeline</span>
+                  <span className="text-xs font-bold text-sky-400 uppercase block">
+                    {result.language || 'EN'} • 5-Agent Engine
+                  </span>
+                </div>
+              </div>
+
+              {/* EXTRACTED CONTENT / OCR SNIPPET */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+                    <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Ingested Content & OCR Verbatim Snippet</span>
+                  </h4>
+                  <span className="text-[10px] font-mono text-slate-500">
+                    Source: {result.risk_factors?.source || 'Automated OCR'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 font-mono leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 line-clamp-4 select-all">
+                  "{result.risk_factors?.ocr_text || result.explanation_text || 'Job posting data analyzed.'}"
+                </p>
+              </div>
+
+              {/* STUDENT SAFETY ACTION PLAN */}
+              {result.recommendations && result.recommendations.length > 0 && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-3">
+                  <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Tailored Student Safety Recommendations</span>
+                  </h4>
+                  <ul className="space-y-2">
+                    {result.recommendations.map((rec, idx) => (
+                      <li key={idx} className="flex items-start space-x-2 text-xs text-slate-200 leading-relaxed">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" />
+                        <span>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* VERIFICATION SIGNATURE FOOTER */}
+              <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] text-slate-400 gap-2">
+                <div className="flex items-center space-x-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Verified by <strong>SAFE-HIRE Agentic AI Engine</strong></span>
+                </div>
+                <div className="flex items-center space-x-2 font-mono text-[10px] text-slate-500">
+                  <span>Report Hash: {result.id}</span>
+                </div>
+              </div>
+
+            </div>
+          )}
         </div>
 
         {/* RESULTS CARD DISPLAY (5 COLS) */}
