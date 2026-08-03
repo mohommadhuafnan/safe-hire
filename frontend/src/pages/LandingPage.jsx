@@ -210,15 +210,15 @@ const LandingPage = () => {
         <div className="mt-12 pt-8 border-t border-slate-900 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-400 font-medium">
           <div className="flex items-center space-x-2">
             <GraduationCap className="w-4 h-4 text-indigo-400" />
-            <span>Built for University Students</span>
+            <span>{t('landing.badge_students', 'Built for University Students')}</span>
           </div>
           <div className="flex items-center space-x-2">
             <Globe2 className="w-4 h-4 text-sky-400" />
-            <span>5 South Asian Languages Supported</span>
+            <span>{t('landing.badge_languages', '5 South Asian Languages Supported')}</span>
           </div>
           <div className="flex items-center space-x-2">
             <BrainCircuit className="w-4 h-4 text-emerald-400" />
-            <span>5-Agent AI Pipeline</span>
+            <span>{t('landing.badge_pipeline', '5-Agent AI Pipeline')}</span>
           </div>
         </div>
       </section>
@@ -230,13 +230,13 @@ const LandingPage = () => {
         <div className="text-center mb-12 space-y-3">
           <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
             <AlertTriangle className="w-4 h-4" />
-            <span>REAL-WORLD SCAM DEMONSTRATION</span>
+            <span>{t('landing.demo_tag', 'REAL-WORLD SCAM DEMONSTRATION')}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-100">
-            Spot Fake Job Posters vs Genuine Ads
+            {t('landing.demo_title', 'Spot Fake Job Posters vs Genuine Ads')}
           </h2>
           <p className="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">
-            Fraudulent recruiters target students on WhatsApp, Facebook, and Telegram. Here is how SAFE-HIRE's 5-Agent AI automatically identifies high-risk scams.
+            {t('landing.demo_desc', 'Fraudulent recruiters target students on WhatsApp, Facebook, and Telegram. Here is how SAFE-HIRE\'s 5-Agent AI automatically identifies high-risk scams.')}
           </p>
         </div>
 
@@ -333,10 +333,10 @@ const LandingPage = () => {
       <section className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-100">
-            How SAFE-HIRE 5-Agent AI Works
+            {t('landing.workflow_title', 'How SAFE-HIRE 5-Agent AI Works')}
           </h2>
           <p className="text-slate-400 text-sm mt-2">
-            An automated multi-agent pipeline analyzes job postings, screenshots, and URLs in seconds.
+            {t('landing.workflow_desc', 'An automated multi-agent pipeline analyzes job postings, screenshots, and URLs in seconds.')}
           </p>
         </div>
 
@@ -599,15 +599,15 @@ const LandingPage = () => {
         <div className="text-center max-w-3xl mx-auto px-6 space-y-3">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold">
             <Users className="w-4 h-4 text-indigo-400" />
-            <span>VERIFIED STUDENT & RECRUITER REVIEWS</span>
+            <span>{t('landing.reviews_tag', 'VERIFIED STUDENT & RECRUITER REVIEWS')}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
-            Trusted by <span className="gradient-text">10,000+ Students & Graduates</span>
+            {t('landing.reviews_title', 'Trusted by 10,000+ Students & Graduates')}
           </h2>
           
           <p className="text-slate-400 text-sm leading-relaxed">
-            See how SAFE-HIRE's 5-Agent AI helps undergraduates and job seekers across South Asia identify job scams, avoid fake fees, and secure authentic opportunities.
+            {t('landing.reviews_desc', 'See how SAFE-HIRE\'s 5-Agent AI helps undergraduates and job seekers across South Asia identify job scams, avoid fake fees, and secure authentic opportunities.')}
           </p>
         </div>
 
@@ -758,15 +758,15 @@ const LandingPage = () => {
       {/* BOTTOM CALL TO ACTION */}
       <section className="max-w-4xl mx-auto px-6 text-center">
         <div className="glass-panel p-10 rounded-3xl border border-indigo-500/20 bg-gradient-to-b from-indigo-950/40 to-slate-950 relative overflow-hidden">
-          <h2 className="text-3xl font-extrabold text-slate-100 mb-3">Protect Your Career Today</h2>
+          <h2 className="text-3xl font-extrabold text-slate-100 mb-3">{t('landing.cta_bottom_title', 'Protect Your Career Today')}</h2>
           <p className="text-slate-400 text-sm max-w-xl mx-auto mb-6">
-            Join thousands of graduates using SAFE-HIRE to verify job postings before sharing personal details.
+            {t('landing.cta_bottom_desc', 'Join thousands of graduates using SAFE-HIRE to verify job postings before sharing personal details.')}
           </p>
           <Link
             to="/signup"
             className="inline-flex items-center space-x-2 px-8 py-3.5 rounded-xl btn-primary font-bold text-sm shadow-xl hover:scale-105 transition"
           >
-            <span>Create Free Account</span>
+            <span>{t('landing.cta_create_account', 'Create Free Account')}</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 
 const AgentBreakdown = ({ result }) => {
+  const { t } = useTranslation();
   const [openAgent, setOpenAgent] = useState('agent-2');
 
   if (!result) return null;
@@ -35,20 +37,20 @@ const AgentBreakdown = ({ result }) => {
   };
 
   const subScoreBars = [
-    { label: 'Financial & Fee Demand Risk', score: subScores.financial_fee_risk || 0, color: 'from-rose-500 to-red-600' },
-    { label: 'Brand & Email Impersonation', score: subScores.impersonation_risk || 0, color: 'from-orange-500 to-amber-500' },
-    { label: 'Domain WHOIS & Web Reputation Risk', score: subScores.domain_reputation_risk || 0, color: 'from-amber-500 to-yellow-500' },
-    { label: 'Urgency & Pressure Tactics Risk', score: subScores.urgency_pressure_risk || 0, color: 'from-sky-500 to-indigo-500' }
+    { label: t('dashboard.financial_risk', 'Financial & Fee Demand Risk'), score: subScores.financial_fee_risk || 0, color: 'from-rose-500 to-red-600' },
+    { label: t('dashboard.impersonation_risk', 'Brand & Email Impersonation'), score: subScores.impersonation_risk || 0, color: 'from-orange-500 to-amber-500' },
+    { label: t('dashboard.domain_risk', 'Domain WHOIS & Web Reputation Risk'), score: subScores.domain_reputation_risk || 0, color: 'from-amber-500 to-yellow-500' },
+    { label: t('dashboard.urgency_risk', 'Urgency & Pressure Tactics Risk'), score: subScores.urgency_pressure_risk || 0, color: 'from-sky-500 to-indigo-500' }
   ];
 
   const agents = [
     {
       id: 'agent-1',
       number: '1',
-      title: 'Intake Agent (OCR & Entity Mining)',
+      title: t('agents.agent_1_title', 'Intake Agent (OCR & Entity Mining)'),
       icon: FileSearch,
-      summary: `Extracted Language: ${result.language?.toUpperCase() || 'EN'}`,
-      badge: 'Processed',
+      summary: `${t('agents.extracted_lang', 'Extracted Language')}: ${result.language?.toUpperCase() || 'EN'}`,
+      badge: t('agents.agent_1_badge', 'Processed'),
       content: (
         <div className="space-y-3 text-xs text-slate-300">
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
@@ -75,10 +77,10 @@ const AgentBreakdown = ({ result }) => {
     {
       id: 'agent-2',
       number: '2',
-      title: 'Linguistic Risk Agent (EMSCAD NLP)',
+      title: t('agents.agent_2_title', 'Linguistic Risk Agent (EMSCAD NLP)'),
       icon: AlertTriangle,
-      summary: `Linguistic Risk Score: ${riskFactors.linguistic_score || 0}/100`,
-      badge: (riskFactors.linguistic_score || 0) > 40 ? 'Risk Signals' : 'Clean Text',
+      summary: `${t('agents.linguistic_score', 'Linguistic Risk Score')}: ${riskFactors.linguistic_score || 0}/100`,
+      badge: (riskFactors.linguistic_score || 0) > 40 ? t('agents.agent_2_badge_risk', 'Risk Signals') : t('agents.agent_2_badge_clean', 'Clean Text'),
       content: (
         <div className="space-y-3 text-xs">
           {/* Payment Demand Indicator */}
@@ -142,10 +144,10 @@ const AgentBreakdown = ({ result }) => {
     {
       id: 'agent-3',
       number: '3',
-      title: 'Verification Agent (WHOIS & Safe Browsing)',
+      title: t('agents.agent_3_title', 'Verification Agent (WHOIS & Safe Browsing)'),
       icon: Globe,
-      summary: `Domain Trust Rating: ${verificationData.verification_trust_score || 80}/100`,
-      badge: verificationData.verification_trust_score > 60 ? 'Trusted Domain' : 'Suspicious Web Record',
+      summary: `${t('agents.domain_trust', 'Domain Trust Rating')}: ${verificationData.verification_trust_score || 80}/100`,
+      badge: verificationData.verification_trust_score > 60 ? t('agents.agent_3_badge_trusted', 'Trusted Domain') : t('agents.agent_3_badge_suspicious', 'Suspicious Web Record'),
       content: (
         <div className="space-y-3 text-xs">
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
@@ -172,10 +174,10 @@ const AgentBreakdown = ({ result }) => {
     {
       id: 'agent-4',
       number: '4',
-      title: 'Reasoning Agent (Deep AI Engine)',
+      title: t('agents.agent_4_title', 'Reasoning Agent (Deep AI Engine)'),
       icon: BrainCircuit,
-      summary: `AI Explainable Rationale Synthesized`,
-      badge: 'Deep AI',
+      summary: t('agents.reasoning_summary', 'AI Explainable Rationale Synthesized'),
+      badge: t('agents.agent_4_badge', 'Deep AI'),
       content: (
         <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 text-xs leading-relaxed whitespace-pre-line">
           {result.explanation_text}
@@ -185,10 +187,10 @@ const AgentBreakdown = ({ result }) => {
     {
       id: 'agent-5',
       number: '5',
-      title: 'Recommendation Agent',
+      title: t('agents.agent_5_title', 'Recommendation Agent'),
       icon: ShieldCheck,
-      summary: `${result.recommendations?.length || 0} Tailored Safety Action Items`,
-      badge: 'Action Plan',
+      summary: `${result.recommendations?.length || 0} ${t('agents.tailored_items', 'Tailored Safety Action Items')}`,
+      badge: t('agents.agent_5_badge', 'Action Plan'),
       content: (
         <ul className="space-y-2 text-xs">
           {result.recommendations?.map((rec, idx) => (
@@ -209,7 +211,7 @@ const AgentBreakdown = ({ result }) => {
       <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
         <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center">
           <BarChart3 className="w-4 h-4 mr-2 text-sky-400" />
-          Categorized Multi-Signal Risk Breakdown
+          {t('dashboard.risk_breakdown', 'Categorized Multi-Signal Risk Breakdown')}
         </h3>
 
         <div className="space-y-2.5">
@@ -234,7 +236,7 @@ const AgentBreakdown = ({ result }) => {
       <div className="space-y-3">
         <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2 flex items-center">
           <Layers className="w-4 h-4 mr-2 text-indigo-400" />
-          5-Agent AI Pipeline Findings
+          {t('dashboard.pipeline_findings', '5-AGENT AI PIPELINE FINDINGS')}
         </h3>
 
         {agents.map((agent) => {
