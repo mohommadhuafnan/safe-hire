@@ -7,6 +7,11 @@ from bs4 import BeautifulSoup
 from typing import Dict, Any
 from app.config import settings
 
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
+
 logger = logging.getLogger("safe_hire.intake_agent")
 
 class IntakeAgent:
@@ -222,21 +227,21 @@ class IntakeAgent:
             return ""
 
         # 1. Local Tesseract OCR
-        try:
-            from PIL import Image, ImageEnhance
-            import io
-            import pytesseract
+        if pytesseract is not None:
+            try:
+                from PIL import Image, ImageEnhance
+                import io
 
-            image = Image.open(io.BytesIO(image_bytes))
-            image_gray = image.convert('L')
-            image_contrast = ImageEnhance.Contrast(image_gray).enhance(2.0)
-            
-            extracted_text = pytesseract.image_to_string(image_contrast)
-            if extracted_text and len(extracted_text.strip()) > 8:
-                logger.info("Successfully extracted text via local Tesseract OCR.")
-                return extracted_text.strip()
-        except Exception as e:
-            logger.info(f"Local Tesseract OCR notice ({e}). Switching to Cloud OCR fallback.")
+                image = Image.open(io.BytesIO(image_bytes))
+                image_gray = image.convert('L')
+                image_contrast = ImageEnhance.Contrast(image_gray).enhance(2.0)
+                
+                extracted_text = pytesseract.image_to_string(image_contrast)
+                if extracted_text and len(extracted_text.strip()) > 8:
+                    logger.info("Successfully extracted text via local Tesseract OCR.")
+                    return extracted_text.strip()
+            except Exception as e:
+                logger.info(f"Local Tesseract OCR notice ({e}). Switching to Cloud OCR fallback.")
 
         # 2. High-Accuracy Cloud OCR API Fallback (OCR.space)
         try:
