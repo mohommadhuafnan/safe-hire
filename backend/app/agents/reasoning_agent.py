@@ -54,7 +54,7 @@ class ReasoningAgent:
 
         prompt = f"""
         You are SAFE-HIRE's Senior AI Recruitment Scam Analysis Specialist.
-        Perform an exhaustive, deep 100% accurate security evaluation of the candidate job posting/flyer below:
+        Perform an exhaustive, deep 100% accurate security evaluation of the candidate job posting/flyer below to determine if it is a FAKE / SCAM POSTER or a GENUINE RECRUITMENT POSTER:
 
         [INPUT CONTENT / POSTER OCR TEXT]:
         "{cleaned_text[:3000]}"
@@ -72,11 +72,21 @@ class ReasoningAgent:
         - Safe Browsing Rating: {verification_data.get('safe_browsing', {}).get('status')}
         - Corporate Trust Score: {verification_data.get('verification_trust_score')}
 
-        [CRITICAL ACCURACY & CALIBRATION RULES]:
-        1. Read the EXACT company name, job roles offered, website URL, and contact details directly from the post/poster image. Mention the specific company name and job details in your explanation!
-        2. Standard recruitment flyers (e.g., Garuttam Hospitality, Codveda, Virtusa, WSO2, corporate internship/job posts) featuring phrases like "WE'RE HIRING", "WALK IN INTERVIEW", "CORPORATE RELATIONS", technical or hospitality role titles ARE LEGITIMATE RECRUITMENT POSTS.
-        3. If there is NO upfront money/fee request, NO brand email impersonation (@gmail for major firm), and NO suspicious Telegram-only channel, classify scam_score between 5 and 15 ("Low Risk").
-        4. If there IS a mandatory registration fee, security deposit demand, or clear scam pattern, classify scam_score between 70 and 100 ("Severe Risk" or "High Risk").
+        [CRITICAL FAKE VS GENUINE EVALUATION RULES]:
+        1. FIRST, carefully classify whether this job offer / poster is a FAKE / SCAM RECRUITMENT POSTER or a GENUINE RECRUITMENT POSTER.
+        2. A poster is a FAKE / SCAM POSTER (classify scam_score between 75 and 100, "Severe Risk" or "High Risk") if ANY of the following apply:
+           - It requests ANY money payment, registration fee, application charge, security deposit, laptop fee, uniform fee, or training charge (even if claimed "refundable").
+           - It demands payment or contact via mobile cash transfer (GPay, PhonePe, Paytm, EasyCash, Bkash, Nagad, or personal bank accounts).
+           - It directs applicants ONLY to Telegram channels (@handle or t.me) or personal WhatsApp numbers without official corporate emails or domain portals.
+           - It offers unrealistically high income for simple work-from-home tasks (e.g. data entry, typing, copying-pasting) with zero qualifications or interview required.
+           - It impersonates a recognized corporate brand (e.g. Google, Virtusa, WSO2, Dialog, TCS, Amazon, Garuttam) while using a generic free email (@gmail, @yahoo) or fake domain.
+        3. A poster is a GENUINE RECRUITMENT POSTER (classify scam_score between 5 and 20, "Low Risk") ONLY if:
+           - There are NO upfront money or fee demands of any kind.
+           - It directs candidates to an official corporate website (e.g. company.com/careers) or verifiable corporate HR email.
+           - It follows standard, authentic recruitment practices.
+        4. The "explanation" field MUST start with an explicit verdict header in {target_lang_name}:
+           - If Fake/Scam: "🚨 FAKE / SCAM POSTER DETECTED: [Explain the exact scam factors, fee demands, suspicious contacts, or brand impersonation found in this poster]"
+           - If Genuine: "✅ GENUINE RECRUITMENT POSTER: [Explain why this job offer is legitimate, citing the company name, role, official domain, and absence of fee demands]"
 
         [TARGET LANGUAGE]: {target_lang_name} ({language})
 
@@ -85,7 +95,7 @@ class ReasoningAgent:
           "scam_score": <integer 0 to 100 representing exact scam risk probability>,
           "confidence_score": 98,
           "risk_level": "<Severe Risk | High Risk | Moderate Risk | Low Risk>",
-          "explanation": "<Write a custom 3-4 sentence detailed explanation natively in {target_lang_name} mentioning the exact company name, roles, website, and security factors found in this specific post>",
+          "explanation": "<Write a custom 3-4 sentence detailed explanation natively in {target_lang_name} starting with 🚨 FAKE / SCAM POSTER DETECTED or ✅ GENUINE RECRUITMENT POSTER>",
           "reasons": [
             "<Specific signal point 1 mentioning exact details from this post in {target_lang_name}>",
             "<Specific signal point 2 mentioning exact details from this post in {target_lang_name}>",
@@ -175,7 +185,7 @@ class ReasoningAgent:
 
         prompt = f"""
         You are SAFE-HIRE's Senior AI Recruitment Scam Analysis Specialist.
-        Perform an exhaustive, deep 100% accurate security evaluation of the candidate job posting below:
+        Perform an exhaustive, deep 100% accurate security evaluation of the candidate job posting below to determine if it is a FAKE / SCAM POSTER or a GENUINE RECRUITMENT POSTER:
 
         [INPUT CONTENT]:
         "{cleaned_text[:2000]}"
@@ -193,6 +203,21 @@ class ReasoningAgent:
         - Safe Browsing Rating: {verification_data.get('safe_browsing', {}).get('status')}
         - Corporate Trust Score: {verification_data.get('verification_trust_score')}
 
+        [CRITICAL FAKE VS GENUINE EVALUATION RULES]:
+        1. FIRST, classify whether this job posting is a FAKE / SCAM RECRUITMENT POSTER or a GENUINE RECRUITMENT POSTER.
+        2. A posting is a FAKE / SCAM POSTER (scam_score: 75 to 100, "Severe Risk" or "High Risk") if ANY of the following apply:
+           - Requests ANY money payment, registration fee, processing charge, laptop fee, uniform deposit, or training charge.
+           - Demands payment or contact via mobile payment apps (GPay, PhonePe, Paytm, EasyCash, Bkash, Nagad, personal account).
+           - Directs candidates ONLY to Telegram or personal WhatsApp numbers without an official corporate email or domain.
+           - Promises unrealistically high salary for simple work-from-home tasks without qualifications or formal interview.
+           - Impersonates a major corporate brand while using a generic free email (@gmail, @yahoo) or fake domain.
+        3. A posting is a GENUINE RECRUITMENT POSTER (scam_score: 5 to 20, "Low Risk") ONLY if:
+           - There are NO upfront fee demands of any kind.
+           - It connects applicants to official corporate portals (e.g. company.com/careers) or verifiable corporate HR email.
+        4. The "explanation" field MUST start with an explicit verdict header in {target_lang_name}:
+           - If Fake/Scam: "🚨 FAKE / SCAM POSTER DETECTED: [Explain the exact scam factors, fee demands, suspicious contacts, or impersonation]"
+           - If Genuine: "✅ GENUINE RECRUITMENT POSTER: [Explain why this job offer is legitimate, citing company name, role, and official domain]"
+
         [TARGET LANGUAGE]: {target_lang_name} ({language})
 
         [REQUIREMENTS]:
@@ -201,7 +226,7 @@ class ReasoningAgent:
           "scam_score": <integer 0 to 100 representing exact scam risk probability>,
           "confidence_score": <integer 90 to 99 representing AI analysis confidence %>,
           "risk_level": "<Severe Risk | High Risk | Moderate Risk | Low Risk>",
-          "explanation": "<Write a 100% custom 3-4 sentence detailed explanation natively in {target_lang_name}>",
+          "explanation": "<Write a 100% custom 3-4 sentence detailed explanation natively in {target_lang_name} starting with 🚨 FAKE / SCAM POSTER DETECTED or ✅ GENUINE RECRUITMENT POSTER>",
           "reasons": [
             "<Specific signal point 1>",
             "<Specific signal point 2>",
