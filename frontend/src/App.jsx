@@ -18,13 +18,29 @@ const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-400 text-xs">
-        Loading session...
+      <div className="min-h-screen flex items-center justify-center text-slate-400 text-xs font-mono">
+        Authenticating session...
       </div>
     );
   }
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
+// Public Auth Route (Redirects logged in user straight to Dashboard)
+const PublicAuthRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-400 text-xs font-mono">
+        Authenticating session...
+      </div>
+    );
+  }
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
   }
   return children;
 };
@@ -36,8 +52,22 @@ function AppRoutes() {
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
+          <Route 
+            path="/login" 
+            element={
+              <PublicAuthRoute>
+                <LoginPage />
+              </PublicAuthRoute>
+            } 
+          />
+          <Route 
+            path="/signup" 
+            element={
+              <PublicAuthRoute>
+                <SignupPage />
+              </PublicAuthRoute>
+            } 
+          />
           <Route 
             path="/dashboard" 
             element={
