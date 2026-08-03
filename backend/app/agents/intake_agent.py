@@ -130,27 +130,51 @@ class IntakeAgent:
 
     @staticmethod
     def extract_text_from_image(image_bytes: bytes) -> str:
-        """Attempt Tesseract OCR on image bytes with OCR preprocessing & intelligent parser fallback."""
+        """Extract text from poster image using local Tesseract OCR with automatic Cloud OCR API fallback."""
         if not image_bytes:
             return ""
 
+        # 1. Attempt Tesseract OCR locally if binary/pytesseract is available
         try:
-            from PIL import Image, ImageEnhance, ImageFilter
+            from PIL import Image, ImageEnhance
             import io
             import pytesseract
 
             image = Image.open(io.BytesIO(image_bytes))
-            # Image Preprocessing for enhanced OCR accuracy
             image_gray = image.convert('L')
             image_contrast = ImageEnhance.Contrast(image_gray).enhance(2.0)
             
             extracted_text = pytesseract.image_to_string(image_contrast)
             if extracted_text and len(extracted_text.strip()) > 8:
+                logger.info("Successfully extracted text via local Tesseract OCR.")
                 return extracted_text.strip()
         except Exception as e:
-            logger.info(f"Tesseract OCR notice ({e}). Using intelligent image text parser.")
+            logger.info(f"Local Tesseract OCR notice ({e}). Switching to Cloud OCR fallback.")
 
-        # Fallback when no OCR text is extracted from image
+        # 2. High-Accuracy Cloud OCR API Fallback (OCR.space)
+        try:
+            import base64
+            url = "https://api.ocr.space/parse/image"
+            base64_str = "data:image/png;base64," + base64.b64encode(image_bytes).decode('utf-8')
+            payload = {
+                "apikey": "K88888888888957",
+                "base64Image": base64_str,
+                "language": "eng",
+                "isOverlayRequired": False,
+                "OCREngine": 2
+            }
+            res = requests.post(url, data=payload, timeout=12)
+            if res.status_code == 200:
+                data = res.json()
+                parsed_results = data.get("ParsedResults", [])
+                if parsed_results:
+                    cloud_text = parsed_results[0].get("ParsedText", "").strip()
+                    if cloud_text and len(cloud_text) > 5:
+                        logger.info("Successfully extracted poster text via Cloud OCR API.")
+                        return cloud_text
+        except Exception as e:
+            logger.warning(f"Cloud OCR API notice: {e}")
+
         return ""
 
     @staticmethod

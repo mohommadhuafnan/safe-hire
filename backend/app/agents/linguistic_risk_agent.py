@@ -39,12 +39,16 @@ class LinguisticRiskAgent:
                 if kw in text_lower:
                     urgency_matches.append(kw)
 
-        # 2. Payment/Fee Request Detection
+        # 2. Payment/Fee Request Detection (ignoring negative disclaimer phrases)
+        negative_fee_phrases = ["no registration fee", "no fee", "no deposit", "no payment", "free application", "never charge", "no upfront", "zero cost", "without any fee", "without payment", "no money"]
+        has_negative_disclaimer = any(neg in text_lower for neg in negative_fee_phrases)
+
         payment_matches = []
-        for lang_code, kw_list in self.PAYMENT_KEYWORDS.items():
-            for kw in kw_list:
-                if kw in text_lower:
-                    payment_matches.append(kw)
+        if not has_negative_disclaimer:
+            for lang_code, kw_list in self.PAYMENT_KEYWORDS.items():
+                for kw in kw_list:
+                    if kw in text_lower:
+                        payment_matches.append(kw)
 
         # 3. Impersonation & Free Email Domain Risk
         impersonation_flags = []
