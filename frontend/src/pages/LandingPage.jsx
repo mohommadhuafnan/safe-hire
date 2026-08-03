@@ -32,6 +32,9 @@ const LandingPage = () => {
   const { t } = useTranslation();
   const { openAIModal } = useAIModal();
 
+  // Pricing State: 'monthly' (1 Month) vs 'annual' (1 Year)
+  const [billingCycle, setBillingCycle] = useState('monthly');
+
   const reviewsRow1 = [
     {
       id: 1,
