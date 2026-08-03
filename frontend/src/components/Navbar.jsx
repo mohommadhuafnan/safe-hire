@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useAIModal } from '../context/AIModalContext';
 import { useTheme } from '../context/ThemeContext';
-import { ShieldCheck, LogOut, User, Globe, History, LayoutDashboard, Menu, X, Crown, Sparkles, ArrowRight, BrainCircuit, Sun, Moon } from 'lucide-react';
+import { ShieldCheck, LogOut, User, Globe, History, LayoutDashboard, Menu, X, Crown, Sparkles, ArrowRight, BrainCircuit, Sun, Moon, ChevronDown, Check } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -17,8 +17,7 @@ const Navbar = () => {
     !localStorage.getItem('i18nextLng') || localStorage.getItem('i18nextLng') === 'system'
   );
 
-  const handleLanguageChange = (e) => {
-    const val = e.target.value;
+  const selectLanguage = (val) => {
     if (val === 'system') {
       localStorage.removeItem('i18nextLng');
       setIsSystemDefault(true);
@@ -31,6 +30,10 @@ const Navbar = () => {
       setIsSystemDefault(false);
       i18n.changeLanguage(val);
     }
+  };
+
+  const handleLanguageChange = (e) => {
+    selectLanguage(e.target.value);
   };
 
   const handleLogout = () => {
@@ -82,21 +85,55 @@ const Navbar = () => {
             {/* Desktop Controls (Floating Pill Style) */}
             <div className="hidden md:flex items-center space-x-3">
               
-              {/* Compact Language Selector Dropdown */}
-              <div className="relative flex items-center bg-slate-900/80 border border-white/10 rounded-full px-2.5 py-1 text-xs text-slate-200 hover:border-indigo-400/50 transition duration-300">
-                <Globe className="w-3.5 h-3.5 mr-1.5 text-sky-400" />
-                <select
-                  value={isSystemDefault ? 'system' : (i18n.resolvedLanguage || i18n.language?.split('-')[0] || 'en')}
-                  onChange={handleLanguageChange}
-                  className="bg-transparent border-none outline-none text-slate-200 cursor-pointer pr-1 focus:ring-0 text-xs font-semibold"
+              {/* Animated Hover Language Selector */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  className="flex items-center space-x-1.5 bg-slate-900/80 border border-white/10 rounded-full px-3 py-1 text-xs text-slate-200 hover:border-indigo-400/50 transition duration-300"
                 >
-                  <option value="system" className="bg-slate-900">Auto (System)</option>
-                  <option value="en" className="bg-slate-900">EN</option>
-                  <option value="si" className="bg-slate-900">SI</option>
-                  <option value="ta" className="bg-slate-900">TA</option>
-                  <option value="hi" className="bg-slate-900">HI</option>
-                  <option value="bn" className="bg-slate-900">BN</option>
-                </select>
+                  <Globe className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="font-semibold text-xs">
+                    {isSystemDefault
+                      ? 'Auto'
+                      : (i18n.resolvedLanguage || i18n.language || 'en').substring(0, 2).toUpperCase()}
+                  </span>
+                  <ChevronDown className="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform duration-300" />
+                </button>
+
+                {/* Smooth Animated Hover Menu */}
+                <div className="absolute left-0 mt-1.5 w-44 rounded-2xl bg-slate-900/95 border border-indigo-500/30 shadow-2xl p-1.5 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all duration-200 ease-out backdrop-blur-xl">
+                  <div className="text-[10px] font-bold text-slate-400 px-2.5 py-1 tracking-wider uppercase border-b border-white/10 mb-1">
+                    Select Language
+                  </div>
+
+                  {[
+                    { code: 'system', name: 'Auto (System)', flag: '🌐' },
+                    { code: 'en', name: 'English', flag: '🇬🇧' },
+                    { code: 'si', name: 'සිංහල (Sinhala)', flag: '🇱🇰' },
+                    { code: 'ta', name: 'தமிழ் (Tamil)', flag: '🇱🇰' },
+                    { code: 'hi', name: 'हिंदी (Hindi)', flag: '🇮🇳' },
+                    { code: 'bn', name: 'বাংলা (Bengali)', flag: '🇧🇩' }
+                  ].map((lang) => {
+                    const active = (isSystemDefault && lang.code === 'system') || (!isSystemDefault && (i18n.resolvedLanguage === lang.code || i18n.language === lang.code));
+                    return (
+                      <button
+                        key={lang.code}
+                        onClick={() => selectLanguage(lang.code)}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                          active
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                        }`}
+                      >
+                        <span className="flex items-center space-x-2">
+                          <span>{lang.flag}</span>
+                          <span>{lang.name}</span>
+                        </span>
+                        {active && <Check className="w-3.5 h-3.5 text-white" />}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Theme Toggle Button (Light / Dark Mode) */}
@@ -161,7 +198,7 @@ const Navbar = () => {
                   </Link>
                   <Link
                     to="/signup"
-                    className="px-5 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 text-slate-950 shadow-lg shadow-indigo-500/20 hover:scale-105 transition-all duration-300"
+                    className="px-5 py-1.5 rounded-full text-xs font-bold btn-primary hover:scale-105 transition-all duration-300 shadow-md"
                   >
                     {t('nav.signup')}
                   </Link>
@@ -315,7 +352,7 @@ const Navbar = () => {
                   <Link
                     to="/signup"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full flex items-center justify-center py-3.5 rounded-2xl text-xs font-bold text-slate-950 bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 shadow-lg glow-btn transition"
+                    className="w-full flex items-center justify-center py-3.5 rounded-2xl text-xs font-bold btn-primary shadow-md transition"
                   >
                     {t('nav.signup')}
                   </Link>
