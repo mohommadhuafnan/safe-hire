@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useAIModal } from '../context/AIModalContext';
-import AIScamDetectorShowcase from '../components/AIScamDetectorShowcase';
 import { 
   ShieldCheck, 
   Search, 
@@ -225,9 +224,110 @@ const LandingPage = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* FUTURISTIC AI SCAM DETECTOR LIVE DEMONSTRATION SHOWCASE */}
+      {/* FAKE VS REAL JOB POSTER DEMONSTRATION SHOWCASE */}
       {/* ========================================================================= */}
-      <AIScamDetectorShowcase />
+      <section className="max-w-6xl mx-auto px-6">
+        <div className="text-center mb-12 space-y-3">
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
+            <AlertTriangle className="w-4 h-4" />
+            <span>{t('landing.demo_tag', 'REAL-WORLD SCAM DEMONSTRATION')}</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-100">
+            {t('landing.demo_title', 'Spot Fake Job Posters vs Genuine Ads')}
+          </h2>
+          <p className="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">
+            {t('landing.demo_desc', 'Fraudulent recruiters target students on WhatsApp, Facebook, and Telegram. Here is how SAFE-HIRE\'s 5-Agent AI automatically identifies high-risk scams.')}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* FAKE SCAM POSTER DEMO */}
+          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-rose-500/30 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 px-4 py-1.5 rounded-bl-2xl bg-rose-500/20 border-b border-l border-rose-500/30 text-rose-400 text-xs font-bold flex items-center space-x-1.5">
+              <AlertTriangle className="w-4 h-4" />
+              <span>HIGH RISK SCAM (95/100)</span>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-lg font-bold text-slate-100 flex items-center space-x-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping inline-block" />
+                  <span className="text-rose-400">Suspicious Scam Job Poster</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">Detected Flags: Upfront Fee Demand, Telegram-only Contact, High Unrealistic Pay</p>
+              </div>
+
+              {/* DEMO IMAGE */}
+              <div className="relative rounded-2xl overflow-hidden border border-rose-500/20 bg-slate-950 max-h-72 flex items-center justify-center">
+                <img 
+                  src="/images/scam_job_poster.png" 
+                  alt="Scam Job Poster Demonstration" 
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
+                <div className="absolute bottom-3 left-3 right-3 p-3 rounded-xl bg-slate-900/90 border border-rose-500/30 text-[11px] text-slate-200">
+                  <span className="font-bold text-rose-400 block mb-0.5">⚠️ Red Flags Triggered:</span>
+                  <p className="text-[10px] text-slate-300">"Registration fee of $30 required for laptop shipment kit. Contact recruiter on Telegram @job_recruiter_fast"</p>
+                </div>
+              </div>
+
+              {/* AI SIGNAL BREAKDOWN */}
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300">
+                  <span className="font-bold block">Fee Demand:</span> $30 Required
+                </div>
+                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300">
+                  <span className="font-bold block">Recruiter Channel:</span> Telegram @job_fast
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* GENUINE JOB POSTER DEMO */}
+          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-emerald-500/30 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 px-4 py-1.5 rounded-bl-2xl bg-emerald-500/20 border-b border-l border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center space-x-1.5">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>VERIFIED LEGITIMATE (5/100)</span>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-lg font-bold text-slate-100 flex items-center space-x-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
+                  <span className="text-emerald-400">Verified Corporate Internship Poster</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">Verified Signals: Official Domain, Zero Payment Demand, Corporate Email</p>
+              </div>
+
+              {/* DEMO IMAGE */}
+              <div className="relative rounded-2xl overflow-hidden border border-emerald-500/20 bg-slate-950 max-h-72 flex items-center justify-center">
+                <img 
+                  src="/images/genuine_job_poster.png" 
+                  alt="Genuine Corporate Internship Poster" 
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
+                <div className="absolute bottom-3 left-3 right-3 p-3 rounded-xl bg-slate-900/90 border border-emerald-500/30 text-[11px] text-slate-200">
+                  <span className="font-bold text-emerald-400 block mb-0.5">✅ Verified Corporate Listing:</span>
+                  <p className="text-[10px] text-slate-300">"Apply via official career portal: www.techcorp.com/careers. No application or equipment fees."</p>
+                </div>
+              </div>
+
+              {/* AI SIGNAL BREAKDOWN */}
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+                  <span className="font-bold block">Domain WHOIS:</span> Verified 12+ Yrs
+                </div>
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+                  <span className="font-bold block">Application Fee:</span> FREE ($0)
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
 
       {/* 5 AGENTS VISUAL WORKFLOW */}
       <section className="max-w-6xl mx-auto px-6">
