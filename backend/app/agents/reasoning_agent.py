@@ -110,7 +110,7 @@ class ReasoningAgent:
                 "model": "gemini-2.5-flash",
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.2,
-                "max_tokens": 1024
+                "max_tokens": 4096
             }
             res = requests.post(url, json=payload, headers=headers, timeout=12)
             if res.status_code == 200:

@@ -454,7 +454,7 @@ const DashboardPage = () => {
                     Source: {result.risk_factors?.source || 'Automated OCR'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-300 font-mono leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 line-clamp-4 select-all">
+                <p className="text-xs sm:text-sm text-slate-200 font-mono leading-relaxed bg-slate-900/90 p-4 rounded-xl border border-slate-800/80 whitespace-pre-wrap max-h-[500px] overflow-y-auto select-all">
                   "{result.risk_factors?.ocr_text || result.explanation_text || 'Job posting data analyzed.'}"
                 </p>
               </div>

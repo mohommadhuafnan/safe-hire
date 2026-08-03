@@ -88,7 +88,7 @@ class IntakeAgent:
                         }
                     ],
                     "temperature": 0.1,
-                    "max_tokens": 1024
+                    "max_tokens": 4096
                 }
 
                 res = requests.post(url, json=payload, headers=headers, timeout=12)
