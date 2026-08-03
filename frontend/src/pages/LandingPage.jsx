@@ -181,8 +181,8 @@ const LandingPage = () => {
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-100 leading-tight mb-6">
-          AI-Powered Protection Against <br className="hidden sm:inline" />
-          <span className="gradient-text">Recruitment & Job Scams</span>
+          {t('landing.headline', 'AI-Powered Protection Against')} <br className="hidden sm:inline" />
+          <span className="gradient-text">{t('landing.headline_accent', 'Recruitment & Job Scams')}</span>
         </h1>
 
         <p className="text-base sm:text-lg text-slate-400 max-w-3xl mx-auto leading-relaxed mb-8">

@@ -11,7 +11,8 @@
   },
   "landing": {
     "tagline": "Verify Before You Apply",
-    "headline": "AI-Powered Protection Against Recruitment & Job Scams",
+    "headline": "AI-Powered Protection Against",
+    "headline_accent": "Recruitment & Job Scams",
     "subhead": "Empowering South Asian students and job seekers with instant, explainable 5-Agent AI scam verification for job offers, emails, WhatsApp messages, and recruiter URLs.",
     "cta_start": "Analyze Job Offer Now",
     "cta_login": "Login to Dashboard",
