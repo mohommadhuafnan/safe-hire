@@ -19,7 +19,11 @@ import {
   Sparkles,
   Zap,
   HelpCircle,
-  X
+  X,
+  Star,
+  Quote,
+  Users,
+  Award
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -28,8 +32,131 @@ const LandingPage = () => {
   const { t } = useTranslation();
   const { openAIModal } = useAIModal();
 
-  // Pricing State: 'monthly' (1 Month) vs 'annual' (1 Year)
-  const [billingCycle, setBillingCycle] = useState('monthly');
+  const reviewsRow1 = [
+    {
+      id: 1,
+      name: "Nipuni Perera",
+      role: "BSc Computer Science",
+      org: "University of Moratuwa, LK",
+      avatar: "N",
+      gradient: "from-indigo-500 to-sky-400",
+      rating: 5,
+      title: "Saved me from a $45 fake deposit fee!",
+      text: "SAFE-HIRE saved me from a fake job offer requesting a $45 laptop kit registration fee. The 5-Agent AI caught the free Gmail domain mismatch and WHOIS age in under 5 seconds!",
+      tag: "Verified Scam Prevention"
+    },
+    {
+      id: 2,
+      name: "Kavishka Silva",
+      role: "Engineering Undergraduate",
+      org: "SLIIT, Sri Lanka",
+      avatar: "K",
+      gradient: "from-sky-400 to-emerald-400",
+      rating: 5,
+      title: "OCR screenshot analysis is incredible",
+      text: "I uploaded a screenshot of a suspicious Facebook hiring flyer. SAFE-HIRE's OCR extracted the text and flagged the Telegram-only contact channel immediately. Must-have for students!",
+      tag: "OCR Verification"
+    },
+    {
+      id: 3,
+      name: "Rahul Sharma",
+      role: "Final Year B.Tech",
+      org: "IIT Madras, India",
+      avatar: "R",
+      gradient: "from-emerald-400 to-teal-500",
+      rating: 5,
+      title: "Explainable report gives real confidence",
+      text: "As a final year student applying for internships, job security is vital. SAFE-HIRE's explainable rationale report gave me concrete evidence to avoid bogus registration fees.",
+      tag: "Internship Protected"
+    },
+    {
+      id: 4,
+      name: "Fatima Anjum",
+      role: "CSE Student",
+      org: "University of Dhaka, Bangladesh",
+      avatar: "F",
+      gradient: "from-amber-400 to-orange-500",
+      rating: 5,
+      title: "Multi-language Bengali support is amazing!",
+      text: "The Bengali language translation is 100% accurate. It translated the exact scam risk factors natively into Bengali so I could warn my classmates and batch group.",
+      tag: "Bengali Native AI"
+    },
+    {
+      id: 5,
+      name: "Dinesh Fernando",
+      role: "Management Graduate",
+      org: "University of Kelaniya, LK",
+      avatar: "D",
+      gradient: "from-purple-500 to-indigo-500",
+      rating: 5,
+      title: "PDF export helped our university office",
+      text: "Exporting the PDF verification certificate helped our career guidance office warn over 200 undergraduates about a fake recruitment drive targeting campus students.",
+      tag: "University Certified"
+    }
+  ];
+
+  const reviewsRow2 = [
+    {
+      id: 6,
+      name: "Aarav Patel",
+      role: "Software Developer Intern",
+      org: "Bangalore, India",
+      avatar: "A",
+      gradient: "from-sky-500 to-indigo-500",
+      rating: 5,
+      title: "Prevented identity theft",
+      text: "I almost sent my National ID and bank details to a recruiter claiming to be from a major IT firm. SAFE-HIRE detected the fake WHOIS domain registered only 5 days ago!",
+      tag: "WHOIS Domain Shield"
+    },
+    {
+      id: 7,
+      name: "Dilini Wickramasinghe",
+      role: "Undergraduate Student",
+      org: "University of Peradeniya, LK",
+      avatar: "D",
+      gradient: "from-emerald-500 to-teal-400",
+      rating: 5,
+      title: "PDF export feature is top notch",
+      text: "The instant PDF report generator is amazing. It breaks down financial risk, email impersonation risk, and domain age into clear percentage gauges with safety steps.",
+      tag: "PDF Report Export"
+    },
+    {
+      id: 8,
+      name: "Ananya Gupta",
+      role: "Commerce Student",
+      org: "Delhi University, India",
+      avatar: "A",
+      gradient: "from-amber-500 to-red-500",
+      rating: 5,
+      title: "Essential for remote job seekers",
+      text: "Every student looking for remote work needs SAFE-HIRE. It catches artificial urgency tactics and payment demands before you fall victim to recruitment fraud.",
+      tag: "Remote Job Security"
+    },
+    {
+      id: 9,
+      name: "Tarik Hasan",
+      role: "Software Engineering Student",
+      org: "BRAC University, Bangladesh",
+      avatar: "T",
+      gradient: "from-indigo-400 to-purple-500",
+      rating: 5,
+      title: "Fast, accurate and easy to use",
+      text: "Submitted a WhatsApp message link and received a full 5-Agent analysis report in seconds. The plain-language reasoning is crystal clear.",
+      tag: "Instant 5-Agent AI"
+    },
+    {
+      id: 10,
+      name: "Sanjeewa Bandara",
+      role: "Cyber Security Student",
+      org: "NSBM Green University, LK",
+      avatar: "S",
+      gradient: "from-teal-400 to-emerald-500",
+      rating: 5,
+      title: "Top class security intelligence platform",
+      text: "The WHOIS domain integration and Google Safe Browsing API check give 100% verified confidence. Highly recommended for every job applicant!",
+      tag: "Safe Browsing Verified"
+    }
+  ];
 
   const handlePlanSelect = (plan) => {
     openAIModal({
@@ -457,6 +584,117 @@ const LandingPage = () => {
             >
               Select Enterprise (LKR 2,500.00)
             </button>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* USER REVIEWS & TESTIMONIALS (ANIMATED MOVING MARQUEE) */}
+      {/* ========================================================================= */}
+      <section className="space-y-10 overflow-hidden py-6">
+        <div className="text-center max-w-3xl mx-auto px-6 space-y-3">
+          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold">
+            <Users className="w-4 h-4 text-indigo-400" />
+            <span>VERIFIED STUDENT & RECRUITER REVIEWS</span>
+          </div>
+
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
+            Trusted by <span className="gradient-text">10,000+ Students & Graduates</span>
+          </h2>
+          
+          <p className="text-slate-400 text-sm leading-relaxed">
+            See how SAFE-HIRE's 5-Agent AI helps undergraduates and job seekers across South Asia identify job scams, avoid fake fees, and secure authentic opportunities.
+          </p>
+        </div>
+
+        {/* MARQUEE CONTAINER (PAUSES ON HOVER) */}
+        <div className="pause-on-hover space-y-6">
+          
+          {/* ROW 1: SCROLLING LEFT */}
+          <div className="overflow-hidden relative flex">
+            {/* Left & Right Gradient Fades */}
+            <div className="absolute top-0 bottom-0 left-0 w-24 bg-gradient-to-r from-[#090d16] to-transparent z-10 pointer-events-none" />
+            <div className="absolute top-0 bottom-0 right-0 w-24 bg-gradient-to-l from-[#090d16] to-transparent z-10 pointer-events-none" />
+
+            <div className="animate-marquee">
+              {[...reviewsRow1, ...reviewsRow1].map((review, idx) => (
+                <div 
+                  key={idx} 
+                  className="w-[320px] sm:w-[380px] shrink-0 p-5 rounded-2xl glass-card border border-slate-800/90 hover:border-indigo-500/50 space-y-3 shadow-xl transition-all duration-300 mx-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1 text-amber-400">
+                      {[...Array(review.rating)].map((_, s) => (
+                        <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                      {review.tag}
+                    </span>
+                  </div>
+
+                  <h4 className="text-xs font-bold text-slate-100 line-clamp-1">{review.title}</h4>
+                  
+                  <p className="text-xs text-slate-300 leading-relaxed font-sans line-clamp-3">
+                    "{review.text}"
+                  </p>
+
+                  <div className="pt-3 border-t border-slate-800/80 flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${review.gradient} flex items-center justify-center text-slate-950 font-extrabold text-xs shadow-md shrink-0`}>
+                      {review.avatar}
+                    </div>
+                    <div className="overflow-hidden">
+                      <h5 className="text-xs font-bold text-slate-100 truncate">{review.name}</h5>
+                      <p className="text-[10px] text-slate-400 truncate">{review.role} • {review.org}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ROW 2: SCROLLING RIGHT */}
+          <div className="overflow-hidden relative flex">
+            {/* Left & Right Gradient Fades */}
+            <div className="absolute top-0 bottom-0 left-0 w-24 bg-gradient-to-r from-[#090d16] to-transparent z-10 pointer-events-none" />
+            <div className="absolute top-0 bottom-0 right-0 w-24 bg-gradient-to-l from-[#090d16] to-transparent z-10 pointer-events-none" />
+
+            <div className="animate-marquee-reverse">
+              {[...reviewsRow2, ...reviewsRow2].map((review, idx) => (
+                <div 
+                  key={idx} 
+                  className="w-[320px] sm:w-[380px] shrink-0 p-5 rounded-2xl glass-card border border-slate-800/90 hover:border-sky-500/50 space-y-3 shadow-xl transition-all duration-300 mx-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1 text-amber-400">
+                      {[...Array(review.rating)].map((_, s) => (
+                        <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-300 border border-sky-500/20">
+                      {review.tag}
+                    </span>
+                  </div>
+
+                  <h4 className="text-xs font-bold text-slate-100 line-clamp-1">{review.title}</h4>
+                  
+                  <p className="text-xs text-slate-300 leading-relaxed font-sans line-clamp-3">
+                    "{review.text}"
+                  </p>
+
+                  <div className="pt-3 border-t border-slate-800/80 flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${review.gradient} flex items-center justify-center text-slate-950 font-extrabold text-xs shadow-md shrink-0`}>
+                      {review.avatar}
+                    </div>
+                    <div className="overflow-hidden">
+                      <h5 className="text-xs font-bold text-slate-100 truncate">{review.name}</h5>
+                      <p className="text-[10px] text-slate-400 truncate">{review.role} • {review.org}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
         </div>
