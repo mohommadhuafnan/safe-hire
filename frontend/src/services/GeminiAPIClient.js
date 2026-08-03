@@ -31,15 +31,17 @@ class GeminiAPIClient {
     /**
      * @param {Object} [config]
      * @param {string} [config.apiKey] - Your Google AI Studio API Key
-     * @param {string} [config.modelName] - Default: "gemini-3.6-flash" (or "gemini-2.0-flash")
+     * @param {string} [config.modelName] - Default: "gemini-2.5-flash"
      * @param {string} [config.apiBaseUrl] - OpenAI compatibility or REST endpoint
      * @param {number} [config.temperature] - 0.0 to 2.0 (Default: 1.0)
      * @param {number} [config.topP] - 0.0 to 1.0 (Default: 0.95)
      * @param {number} [config.maxTokens] - Max output tokens (Default: 4096)
      */
     constructor(config = {}) {
-        this.apiKey = config.apiKey || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) || "";
-        this.modelName = config.modelName || "gemini-3.6-flash";
+        const defaultEnvKey = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) || "";
+        this.apiKey = config.apiKey || defaultEnvKey;
+        this.modelName = config.modelName || "gemini-2.5-flash";
+        this.fallbackModels = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
         this.apiBaseUrl = (config.apiBaseUrl || "https://generativelanguage.googleapis.com/v1beta/openai").replace(/\/+$/, '');
         this.temperature = config.temperature !== undefined ? config.temperature : 1.0;
         this.topP = config.topP !== undefined ? config.topP : 0.95;
@@ -53,32 +55,45 @@ class GeminiAPIClient {
      * @returns {Promise<string>} Model response text
      */
     async sendMessage(input) {
-        const messages = typeof input === 'string' ? [{ role: 'user', content: input }] : input;
-        const endpoint = `${this.apiBaseUrl}/chat/completions`;
+        const rawMessages = typeof input === 'string' ? [{ role: 'user', content: input }] : input;
+        const messages = rawMessages.map(m => ({
+            role: m.role === 'system' ? 'system' : (m.role === 'user' ? 'user' : 'assistant'),
+            content: m.content
+        }));
 
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.apiKey}`
-            },
-            body: JSON.stringify({
-                model: this.modelName,
-                messages: messages,
-                temperature: this.temperature,
-                top_p: this.topP,
-                max_tokens: this.maxTokens,
-                stream: false
-            })
-        });
+        const modelsToTry = [this.modelName, ...this.fallbackModels.filter(m => m !== this.modelName)];
+        let lastError = null;
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Gemini API Error (HTTP ${response.status}): ${errorText}`);
+        for (const model of modelsToTry) {
+            try {
+                const endpoint = `${this.apiBaseUrl}/chat/completions`;
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: messages,
+                        temperature: this.temperature,
+                        top_p: this.topP,
+                        max_tokens: this.maxTokens,
+                        stream: false
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.choices?.[0]?.message?.content || "";
+                }
+                lastError = new Error(`Gemini API Error (HTTP ${response.status}) for model ${model}`);
+            } catch (err) {
+                lastError = err;
+            }
         }
 
-        const data = await response.json();
-        return data.choices?.[0]?.message?.content || "";
+        throw lastError || new Error("Failed to connect to Gemini AI after testing available models.");
     }
 
     /**
@@ -94,76 +109,94 @@ class GeminiAPIClient {
         this.cancelActiveStream();
         this.currentAbortController = new AbortController();
 
-        const messages = typeof input === 'string' ? [{ role: 'user', content: input }] : input;
-        const endpoint = `${this.apiBaseUrl}/chat/completions`;
+        const rawMessages = typeof input === 'string' ? [{ role: 'user', content: input }] : input;
+        const messages = rawMessages.map(m => ({
+            role: m.role === 'system' ? 'system' : (m.role === 'user' ? 'user' : 'assistant'),
+            content: m.content
+        }));
 
-        let accumulatedContent = '';
+        const modelsToTry = [this.modelName, ...this.fallbackModels.filter(m => m !== this.modelName)];
+        let streamSuccess = false;
+        let lastErr = null;
 
-        try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`
-                },
-                body: JSON.stringify({
-                    model: this.modelName,
-                    messages: messages,
-                    temperature: this.temperature,
-                    top_p: this.topP,
-                    max_tokens: this.maxTokens,
-                    stream: true
-                }),
-                signal: this.currentAbortController.signal
-            });
+        for (const model of modelsToTry) {
+            if (this.currentAbortController?.signal.aborted) break;
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Gemini API Error (HTTP ${response.status}): ${errorText}`);
-            }
+            try {
+                const endpoint = `${this.apiBaseUrl}/chat/completions`;
+                let accumulatedContent = '';
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder('utf-8');
-            let buffer = '';
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: messages,
+                        temperature: this.temperature,
+                        top_p: this.topP,
+                        max_tokens: this.maxTokens,
+                        stream: true
+                    }),
+                    signal: this.currentAbortController.signal
+                });
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    lastErr = new Error(`Gemini API Error (HTTP ${response.status}): ${errorText}`);
+                    continue; // Try next model
+                }
 
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
 
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (!trimmed || trimmed.startsWith(':')) continue;
-                    if (trimmed === 'data: [DONE]') break;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-                    if (trimmed.startsWith('data: ')) {
-                        try {
-                            const parsed = JSON.parse(trimmed.substring(6));
-                            const token = parsed.choices?.[0]?.delta?.content;
-                            if (token) {
-                                accumulatedContent += token;
-                                if (onToken) onToken(accumulatedContent, token);
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (!trimmed || trimmed.startsWith(':')) continue;
+                        if (trimmed === 'data: [DONE]') break;
+
+                        if (trimmed.startsWith('data: ')) {
+                            try {
+                                const parsed = JSON.parse(trimmed.substring(6));
+                                const token = parsed.choices?.[0]?.delta?.content;
+                                if (token) {
+                                    accumulatedContent += token;
+                                    if (onToken) onToken(accumulatedContent, token);
+                                }
+                            } catch (e) {
+                                // Skip invalid SSE JSON chunk
                             }
-                        } catch (e) {
-                            // Skip invalid SSE JSON chunk
                         }
                     }
                 }
-            }
 
-            if (onComplete) {
-                onComplete({ content: accumulatedContent });
-            }
+                streamSuccess = true;
+                if (onComplete) {
+                    onComplete({ content: accumulatedContent });
+                }
+                break; // Model succeeded!
 
-        } catch (err) {
-            if (err.name !== 'AbortError' && onError) {
-                onError(err);
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    return this.currentAbortController;
+                }
+                lastErr = err;
             }
-        } finally {
-            this.currentAbortController = null;
+        }
+
+        if (!streamSuccess && onError) {
+            onError(lastErr || new Error("Connection issue with Gemini AI. All model endpoints returned an error."));
         }
 
         return this.currentAbortController;

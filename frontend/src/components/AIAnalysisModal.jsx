@@ -89,8 +89,8 @@ const AIAnalysisModal = ({ isOpen, onClose, title, initialPrompt, category, cont
     setChatHistory(newHistory);
 
     const systemContextMessage = {
-      role: 'user',
-      content: `System Context: You are SAFE-HIRE Gemini 3.6 Flash AI Analyzer, a top-tier security and recruitment risk intelligence engine.
+      role: 'system',
+      content: `You are SAFE-HIRE Gemini 3.6 Flash AI Analyzer, a top-tier security and recruitment risk intelligence engine.
 Analyze the following content thoroughly. Highlight risk factors (0-100 score), scam tactics (EMSCAD/WHOIS/Phishing), fee demands, and give actionable recommendations for job seekers.
 
 User Query/Data to Analyze:

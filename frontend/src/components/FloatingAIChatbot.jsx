@@ -62,13 +62,10 @@ const FloatingAIChatbot = () => {
 
     // System prompt directing AI as SAFE-HIRE's Assistant
     const systemInstruction = {
-      role: 'user',
-      content: `System Prompt: You are SAFE-HIRE's friendly and authoritative AI Recruitment Security Assistant.
+      role: 'system',
+      content: `You are SAFE-HIRE's friendly and authoritative AI Recruitment Security Assistant.
 Answer questions about employment fraud, job scam verification, WHOIS domain security, payment demands, and safe career guidance. Keep answers concise, informative, clear, and helpful for students and job seekers.
-Language preference: ${i18n.language || 'en'}.
-
-User Query:
-${prompt}`
+Language preference: ${i18n.language || 'en'}.`
     };
 
     const apiMessages = [
@@ -92,9 +89,21 @@ ${prompt}`
         },
         onError: (err) => {
           setIsStreaming(false);
+          let fallbackReply = "⚠️ Connection notice: ";
+          const lower = prompt.toLowerCase();
+          if (lower.includes("fee") || lower.includes("registration") || lower.includes("money") || lower.includes("payment")) {
+            fallbackReply += "**No, registration fees are NOT normal.** Legitimate employers NEVER charge candidates for job placement, application processing, laptop security deposits, or training modules.";
+          } else if (lower.includes("scam") || lower.includes("spot") || lower.includes("fake")) {
+            fallbackReply += "Here is how to spot job scams:\n\n1. **Upfront Fee Demands**: Asking money for registration/training.\n2. **Free Mail Domain**: Using @gmail.com for claimed major corporations.\n3. **Chat-Only Channels**: Telegram or WhatsApp-only hiring without real interviews.\n4. **Unrealistic Pay**: Exceptionally high pay for simple data entry tasks.";
+          } else if (lower.includes("verify") || lower.includes("email") || lower.includes("domain")) {
+            fallbackReply += "To verify recruiters:\n\n1. Always check official corporate careers pages.\n2. Run a domain WHOIS search to check domain registration age.\n3. Never share bank OTPs, national ID copies, or payments.";
+          } else {
+            fallbackReply += (err.message || "Encountered a temporary network glitch. Please try again.");
+          }
+
           setMessages(prev => [
             ...prev,
-            { role: 'assistant', content: "⚠️ Sorry, I encountered an issue connecting to Gemini AI. Please try again." }
+            { role: 'assistant', content: fallbackReply }
           ]);
           setStreamingContent('');
         }

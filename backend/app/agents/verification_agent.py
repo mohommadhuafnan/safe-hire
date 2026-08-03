@@ -25,53 +25,95 @@ class VerificationAgent:
         return clean
 
     def query_apilayer_whois(self, domain: str) -> Dict[str, Any]:
-        """Query APILayer WHOIS API for live domain creation date, registrar, and domain age."""
+        """Query APILayer WHOIS API for live domain creation date, expiration, registrar, and fake URL analysis."""
         api_key = getattr(settings, 'APILAYER_KEY', 'nIvPeI99eWBDMSArYAf2YcrshDCOVvJ3')
         if not api_key or not domain:
             return None
 
         try:
             import requests
-            url = f"https://api.apilayer.com/whois/query?domain={domain}"
             headers = {"apikey": api_key}
-            res = requests.get(url, headers=headers, timeout=4)
             
+            # 1. Query endpoint for full domain WHOIS payload
+            query_url = f"https://api.apilayer.com/whois/query?domain={domain}"
+            res = requests.get(query_url, headers=headers, timeout=5)
+            
+            whois_data = None
             if res.status_code == 200:
                 data = res.json()
-                whois_result = data.get("result")
-                
-                if isinstance(whois_result, dict):
-                    creation_str = whois_result.get("creation_date")
-                    registrar = whois_result.get("registrar") or "Domain Registrar"
-                    
-                    if creation_str:
+                whois_data = data.get("result")
+
+            if isinstance(whois_data, dict):
+                creation_str = whois_data.get("creation_date")
+                expiration_str = whois_data.get("expiration_date")
+                registrar = whois_data.get("registrar") or "Domain Registrar"
+                name_servers = whois_data.get("name_servers") or []
+
+                age_days = None
+                years = None
+                is_new = False
+                exp_days = None
+
+                now = datetime.now(timezone.utc)
+                if creation_str:
+                    try:
                         from dateutil import parser
                         creation_date = parser.parse(creation_str)
-                        now = datetime.now(timezone.utc)
                         if creation_date.tzinfo is None:
                             creation_date = creation_date.replace(tzinfo=timezone.utc)
-                        
                         age_days = max(0, (now - creation_date).days)
                         years = age_days // 365
-                        is_new = age_days < 180
-                        
-                        status_text = (
-                            f"⚠️ Newly Registered Domain: {age_days} days old (< 6 Mos)"
-                            if is_new else
-                            f"✅ Established Corporate Domain: {years} Yrs Old ({age_days} days) • {registrar}"
-                        )
-                        
-                        return {
-                            "domain": domain,
-                            "creation_date": creation_str,
-                            "expiration_date": whois_result.get("expiration_date"),
-                            "registrar": registrar,
-                            "registered_days": age_days,
-                            "domain_years": years,
-                            "is_new_domain": is_new,
-                            "whois_status": status_text,
-                            "api_verified": True
-                        }
+                        is_new = age_days < 90
+                    except Exception as e:
+                        logger.info(f"Creation date parse notice: {e}")
+
+                if expiration_str:
+                    try:
+                        from dateutil import parser
+                        exp_date = parser.parse(expiration_str)
+                        if exp_date.tzinfo is None:
+                            exp_date = exp_date.replace(tzinfo=timezone.utc)
+                        exp_days = (exp_date - now).days
+                    except Exception as e:
+                        logger.info(f"Expiration date parse notice: {e}")
+
+                fake_url_reasons = []
+                is_fake_risk = False
+
+                if is_new:
+                    is_fake_risk = True
+                    fake_url_reasons.append(f"Newly Registered Domain: Created only {age_days} days ago (< 90 days). High scam probability.")
+                
+                if exp_days is not None and exp_days < 30:
+                    is_fake_risk = True
+                    fake_url_reasons.append(f"Short Lifespan Domain: Expires in {exp_days} days.")
+
+                is_suspicious_tld = any(domain.endswith(tld) for tld in self.SUSPICIOUS_TLDS)
+                if is_suspicious_tld:
+                    is_fake_risk = True
+                    fake_url_reasons.append(f"Suspicious Extension: Domain uses '.{domain.split('.')[-1]}' extension.")
+
+                status_text = (
+                    f"⚠️ HIGH RISK DOMAIN: Created {age_days} days ago (< 90 days) • {registrar}"
+                    if is_fake_risk else
+                    f"✅ ESTABLISHED DOMAIN: {years or 1}+ Yrs Old ({age_days or 365} days) • {registrar}"
+                )
+
+                return {
+                    "domain": domain,
+                    "creation_date": creation_str or "N/A",
+                    "expiration_date": expiration_str or "N/A",
+                    "registrar": registrar,
+                    "name_servers": name_servers,
+                    "registered_days": age_days if age_days is not None else 365,
+                    "domain_years": years if years is not None else 1,
+                    "expiration_days_remaining": exp_days,
+                    "is_new_domain": is_new,
+                    "is_fake_url_risk": is_fake_risk,
+                    "fake_url_reasons": fake_url_reasons,
+                    "whois_status": status_text,
+                    "api_verified": True
+                }
         except Exception as e:
             logger.info(f"APILayer WHOIS API query failed for {domain}: {e}")
         return None
