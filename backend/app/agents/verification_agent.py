@@ -24,8 +24,60 @@ class VerificationAgent:
             clean = clean[4:]
         return clean
 
+    def query_apilayer_whois(self, domain: str) -> Dict[str, Any]:
+        """Query APILayer WHOIS API for live domain creation date, registrar, and domain age."""
+        api_key = getattr(settings, 'APILAYER_KEY', 'nIvPeI99eWBDMSArYAf2YcrshDCOVvJ3')
+        if not api_key or not domain:
+            return None
+
+        try:
+            import requests
+            url = f"https://api.apilayer.com/whois/query?domain={domain}"
+            headers = {"apikey": api_key}
+            res = requests.get(url, headers=headers, timeout=4)
+            
+            if res.status_code == 200:
+                data = res.json()
+                whois_result = data.get("result")
+                
+                if isinstance(whois_result, dict):
+                    creation_str = whois_result.get("creation_date")
+                    registrar = whois_result.get("registrar") or "Domain Registrar"
+                    
+                    if creation_str:
+                        from dateutil import parser
+                        creation_date = parser.parse(creation_str)
+                        now = datetime.now(timezone.utc)
+                        if creation_date.tzinfo is None:
+                            creation_date = creation_date.replace(tzinfo=timezone.utc)
+                        
+                        age_days = max(0, (now - creation_date).days)
+                        years = age_days // 365
+                        is_new = age_days < 180
+                        
+                        status_text = (
+                            f"⚠️ Newly Registered Domain: {age_days} days old (< 6 Mos)"
+                            if is_new else
+                            f"✅ Established Corporate Domain: {years} Yrs Old ({age_days} days) • {registrar}"
+                        )
+                        
+                        return {
+                            "domain": domain,
+                            "creation_date": creation_str,
+                            "expiration_date": whois_result.get("expiration_date"),
+                            "registrar": registrar,
+                            "registered_days": age_days,
+                            "domain_years": years,
+                            "is_new_domain": is_new,
+                            "whois_status": status_text,
+                            "api_verified": True
+                        }
+        except Exception as e:
+            logger.info(f"APILayer WHOIS API query failed for {domain}: {e}")
+        return None
+
     def check_whois(self, domain: str) -> Dict[str, Any]:
-        """Check domain WHOIS records for age and registrant privacy with robust type conversion."""
+        """Check domain WHOIS records for age and registrant privacy via APILayer & python-whois fallback."""
         domain_clean = self.extract_clean_domain(domain)
         if not domain_clean:
             return {
@@ -35,16 +87,20 @@ class VerificationAgent:
                 "whois_status": "No Domain Provided"
             }
 
+        # 1. Primary: APILayer WHOIS API
+        apilayer_res = self.query_apilayer_whois(domain_clean)
+        if apilayer_res:
+            return apilayer_res
+
+        # 2. Secondary: python-whois library
         try:
             import whois
             w = whois.whois(domain_clean)
             creation_date = w.creation_date
             
-            # Handle list of dates
             if isinstance(creation_date, list):
                 creation_date = creation_date[0] if len(creation_date) > 0 else None
             
-            # Convert string date if necessary
             if isinstance(creation_date, str):
                 try:
                     from dateutil import parser
@@ -72,7 +128,7 @@ class VerificationAgent:
         except Exception as e:
             logger.info(f"WHOIS lookup fallback for {domain_clean}: {e}")
 
-        # Fallback heuristic for suspicious TLDs or domains without WHOIS server response
+        # 3. Fallback heuristic for suspicious TLDs
         is_suspicious_tld = any(domain_clean.endswith(tld) for tld in self.SUSPICIOUS_TLDS)
         return {
             "domain": domain_clean,
