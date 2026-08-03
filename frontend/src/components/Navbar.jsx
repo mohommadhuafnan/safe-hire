@@ -66,7 +66,7 @@ const Navbar = () => {
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block shadow-sm shadow-emerald-500/50" />
               </div>
 
-              <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2.5 group">
+              <Link to="/" className="flex items-center space-x-2.5 group">
                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-900 border border-white/20 p-0.5 shadow-lg shadow-indigo-500/30 group-hover:scale-110 transition-transform duration-300 overflow-hidden flex items-center justify-center">
                   <img src="/images/logo.png" alt="SAFE-HIRE AI Logo" className="w-full h-full object-cover rounded-full" />
                 </div>

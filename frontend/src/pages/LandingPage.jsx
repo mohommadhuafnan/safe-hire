@@ -31,13 +31,6 @@ const LandingPage = () => {
   // Pricing State: 'monthly' (1 Month) vs 'annual' (1 Year)
   const [billingCycle, setBillingCycle] = useState('monthly');
 
-  // Redirect authenticated user directly to Dashboard
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, navigate]);
-
   const handlePlanSelect = (plan) => {
     openAIModal({
       title: `Gemini AI Analysis: ${plan.name}`,
