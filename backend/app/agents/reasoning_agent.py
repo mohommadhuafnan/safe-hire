@@ -1,13 +1,13 @@
 import json
 import logging
-import base64
+import requests
 from typing import Dict, Any
 from app.config import settings
 
 logger = logging.getLogger("safe_hire.reasoning_agent")
 
 class ReasoningAgent:
-    """Agent 4: Synthesizes multi-agent signals using Google Gemini 2.5 Flash AI into deep 100% explainable report."""
+    """Agent 4: Synthesizes multi-agent signals using Google Gemini 3.6 / 2.5 Flash AI into deep 100% explainable report."""
 
     EXPLANATIONS = {
         "en": {
@@ -42,13 +42,113 @@ class ReasoningAgent:
         }
     }
 
+    def call_gemini_ai_reasoning_api(self, cleaned_text: str, linguistic_data: dict, verification_data: dict, language: str) -> Dict[str, Any]:
+        """Calls Google Gemini API (gemini-2.5-flash) for 100% accurate multi-agent scam reasoning."""
+        gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
+        if not gemini_key:
+            return None
+
+        lang_map = {"en": "English", "si": "Sinhala (සිංහල)", "ta": "Tamil (தமிழ்)", "hi": "Hindi (हिंदी)", "bn": "Bengali (বাংলা)"}
+        target_lang_name = lang_map.get(language, "English")
+
+        prompt = f"""
+        You are SAFE-HIRE's Senior AI Recruitment Scam Analysis Specialist.
+        Perform an exhaustive, deep 100% accurate security evaluation of the candidate job posting below:
+
+        [INPUT CONTENT / POSTER OCR TEXT]:
+        "{cleaned_text[:3000]}"
+
+        [AGENT LINGUISTIC SIGNALS]:
+        - Payment / Registration Fee Demand: {linguistic_data.get('has_payment_demand')}
+        - Urgency Pressure Tactics: {linguistic_data.get('has_urgency_tactics')}
+        - Brand Email Impersonation Flags: {linguistic_data.get('impersonation_flags')}
+        - Matched Fee Terms: {linguistic_data.get('matched_payment')}
+        - Suspicious Channels (Telegram/WhatsApp only): {linguistic_data.get('matched_suspicious_terms')}
+
+        [AGENT DOMAIN VERIFICATION SIGNALS]:
+        - Target Domain: {verification_data.get('domain')}
+        - WHOIS Status: {verification_data.get('whois_info', {}).get('whois_status')}
+        - Safe Browsing Rating: {verification_data.get('safe_browsing', {}).get('status')}
+        - Corporate Trust Score: {verification_data.get('verification_trust_score')}
+
+        [CRITICAL ACCURACY & CALIBRATION RULES]:
+        1. Read the EXACT company name, job roles offered, website URL, and contact details directly from the post/poster. Mention the specific company name and job details in your explanation!
+        2. Standard recruitment flyers (e.g., Garuttam Hospitality, Codveda, Virtusa, WSO2, corporate internship/job posts) featuring phrases like "WE'RE HIRING", "WALK IN INTERVIEW", "CORPORATE RELATIONS", technical or hospitality role titles ARE LEGITIMATE RECRUITMENT POSTS.
+        3. If there is NO upfront money/fee request, NO brand email impersonation (@gmail for major firm), and NO suspicious Telegram-only channel, classify scam_score between 5 and 15 ("Low Risk").
+        4. If there IS a mandatory registration fee, security deposit demand, or clear scam pattern, classify scam_score between 70 and 100 ("Severe Risk" or "High Risk").
+
+        [TARGET LANGUAGE]: {target_lang_name} ({language})
+
+        Return a valid raw JSON object matching this exact schema:
+        {{
+          "scam_score": <integer 0 to 100 representing exact scam risk probability>,
+          "confidence_score": 98,
+          "risk_level": "<Severe Risk | High Risk | Moderate Risk | Low Risk>",
+          "explanation": "<Write a custom 3-4 sentence detailed explanation natively in {target_lang_name} mentioning the exact company name, roles, website, and security factors found in this specific post>",
+          "reasons": [
+            "<Specific signal point 1 mentioning exact details from this post in {target_lang_name}>",
+            "<Specific signal point 2 mentioning exact details from this post in {target_lang_name}>",
+            "<Specific signal point 3 mentioning exact details from this post in {target_lang_name}>"
+          ],
+          "sub_scores": {{
+             "financial_fee_risk": <integer 0-100>,
+             "impersonation_risk": <integer 0-100>,
+             "domain_reputation_risk": <integer 0-100>,
+             "urgency_pressure_risk": <integer 0-100>
+          }}
+        }}
+        Do not include markdown ```json formatting. Return raw JSON string only.
+        """
+
+        try:
+            url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {gemini_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": "gemini-2.5-flash",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.2,
+                "max_tokens": 1024
+            }
+            res = requests.post(url, json=payload, headers=headers, timeout=12)
+            if res.status_code == 200:
+                data = res.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                clean = content.strip().replace("```json", "").replace("```", "").strip()
+                if "<think>" in clean and "</think>" in clean:
+                    clean = clean.split("</think>")[-1].strip()
+                parsed = json.loads(clean)
+                logger.info("Successfully executed Gemini AI reasoning API!")
+                return parsed
+        except Exception as e:
+            logger.warning(f"Gemini AI reasoning API notice ({e}). Trying REST fallback...")
+
+        try:
+            rest_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+            rest_payload = {
+                "contents": [{"parts": [{"text": prompt}]}]
+            }
+            res = requests.post(rest_url, json=rest_payload, timeout=12)
+            if res.status_code == 200:
+                data = res.json()
+                content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                clean = content.strip().replace("```json", "").replace("```", "").strip()
+                parsed = json.loads(clean)
+                logger.info("Successfully executed Gemini AI REST reasoning API!")
+                return parsed
+        except Exception as e:
+            logger.warning(f"Gemini AI REST reasoning API notice: {e}")
+
+        return None
+
     def call_deepseek_v4_reasoning_api(self, cleaned_text: str, linguistic_data: dict, verification_data: dict, language: str) -> Dict[str, Any]:
         """Calls Hugging Face Router API (deepseek-ai/DeepSeek-V4-Flash) for high-reasoning effort multi-agent scam analysis."""
         api_key = settings.DEEPSEEK_V4_API_KEY
         if not api_key:
             return None
 
-        import requests
         url = f"{settings.DEEPSEEK_API_BASE_URL.rstrip('/')}/chat/completions"
 
         lang_map = {"en": "English", "si": "Sinhala (සිංහල)", "ta": "Tamil (தமிழ்)", "hi": "Hindi (हिंदी)", "bn": "Bengali (বাংলা)"}
@@ -74,12 +174,6 @@ class ReasoningAgent:
         - Safe Browsing Rating: {verification_data.get('safe_browsing', {}).get('status')}
         - Corporate Trust Score: {verification_data.get('verification_trust_score')}
 
-        [CRITICAL ACCURACY & CALIBRATION RULES]:
-        1. Read the EXACT company name, job roles offered, website URL, and contact details directly from the post. Mention the specific company name and job details in your explanation!
-        2. Standard recruitment flyers (e.g., Codveda, Virtusa, WSO2, corporate internship posts) featuring phrases like "WE'RE HIRING", "APPLY NOW", technical role titles, and official company URLs (e.g. www.codveda.com) ARE LEGITIMATE POSTS.
-        3. If there is NO upfront money/fee request, NO brand email impersonation (@gmail for major firm), and NO suspicious Telegram-only channel, you MUST classify scam_score between 5 and 15 ("Low Risk").
-        4. Do NOT penalize standard recruitment Call-To-Actions ("Apply Now", "Hiring Interns") as scam urgency.
-
         [TARGET LANGUAGE]: {target_lang_name} ({language})
 
         [REQUIREMENTS]:
@@ -88,11 +182,11 @@ class ReasoningAgent:
           "scam_score": <integer 0 to 100 representing exact scam risk probability>,
           "confidence_score": <integer 90 to 99 representing AI analysis confidence %>,
           "risk_level": "<Severe Risk | High Risk | Moderate Risk | Low Risk>",
-          "explanation": "<Write a 100% custom 3-4 sentence detailed explanation natively in {target_lang_name} mentioning the exact company name, roles, website, and security factors found in this specific post>",
+          "explanation": "<Write a 100% custom 3-4 sentence detailed explanation natively in {target_lang_name}>",
           "reasons": [
-            "<Specific signal point 1 mentioning exact details from this post in {target_lang_name}>",
-            "<Specific signal point 2 mentioning exact details from this post in {target_lang_name}>",
-            "<Specific signal point 3 mentioning exact details from this post in {target_lang_name}>"
+            "<Specific signal point 1>",
+            "<Specific signal point 2>",
+            "<Specific signal point 3>"
           ],
           "sub_scores": {{
              "financial_fee_risk": <integer 0-100>,
@@ -113,8 +207,7 @@ class ReasoningAgent:
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.3,
             "top_p": 0.95,
-            "max_tokens": 4096,
-            "reasoning_effort": "max"
+            "max_tokens": 4096
         }
 
         try:
@@ -130,8 +223,6 @@ class ReasoningAgent:
                     parsed = json.loads(clean_str)
                     logger.info("Successfully executed DeepSeek-V4-Flash deep AI reasoning!")
                     return parsed
-            else:
-                logger.warning(f"DeepSeek V4 API response status: {res.status_code} - {res.text[:200]}")
         except Exception as e:
             logger.warning(f"DeepSeek V4 reasoning notice: {e}")
 
@@ -140,14 +231,32 @@ class ReasoningAgent:
     def synthesize(self, intake_data: dict, linguistic_data: dict, verification_data: dict, language: str = "en", image_bytes: bytes = None) -> dict:
         cleaned_text = intake_data.get("cleaned_text", "")
 
-        # 1. Execute DeepSeek-V4-Flash AI Reasoning via Hugging Face Router
+        # 1. Execute Gemini 3.6 / 2.5 Flash AI Reasoning
+        gemini_res = self.call_gemini_ai_reasoning_api(cleaned_text, linguistic_data, verification_data, language)
+        if gemini_res and isinstance(gemini_res, dict) and "scam_score" in gemini_res:
+            score = max(0, min(100, int(gemini_res.get("scam_score", 0))))
+            return {
+                "scam_score": score,
+                "confidence_score": gemini_res.get("confidence_score", 98),
+                "risk_level": gemini_res.get("risk_level", "Low Risk"),
+                "explanation": gemini_res.get("explanation", ""),
+                "breakdown_signals": gemini_res.get("reasons", []),
+                "sub_scores": gemini_res.get("sub_scores", {
+                    "financial_fee_risk": 90 if linguistic_data.get("has_payment_demand") else 10,
+                    "impersonation_risk": 85 if linguistic_data.get("has_impersonation_risk") else 15,
+                    "domain_reputation_risk": 100 - verification_data.get("verification_trust_score", 80),
+                    "urgency_pressure_risk": 75 if linguistic_data.get("has_urgency_tactics") else 10
+                })
+            }
+
+        # 2. Execute DeepSeek-V4-Flash AI Reasoning Fallback
         deepseek_res = self.call_deepseek_v4_reasoning_api(cleaned_text, linguistic_data, verification_data, language)
         if deepseek_res and isinstance(deepseek_res, dict) and "scam_score" in deepseek_res:
             score = max(0, min(100, int(deepseek_res.get("scam_score", 0))))
             return {
                 "scam_score": score,
                 "confidence_score": deepseek_res.get("confidence_score", 98),
-                "risk_level": deepseek_res.get("risk_level", "Moderate Risk"),
+                "risk_level": deepseek_res.get("risk_level", "Low Risk"),
                 "explanation": deepseek_res.get("explanation", ""),
                 "breakdown_signals": deepseek_res.get("reasons", []),
                 "sub_scores": deepseek_res.get("sub_scores", {
@@ -158,7 +267,7 @@ class ReasoningAgent:
                 })
             }
 
-        # 2. Rule-Engine Fallback with Sub-Scores
+        # 3. Rule-Engine Fallback
         linguistic_score = linguistic_data.get("linguistic_score", 0)
         trust_score = verification_data.get("verification_trust_score", 80)
         

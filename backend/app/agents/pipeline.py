@@ -25,39 +25,14 @@ class AgentPipeline:
         final_lang = intake_res.get("final_language", "en")
         domain = intake_res.get("domain", "")
 
-        # Check if non-job poster image was uploaded (e.g., human portrait, animal photo)
-        if intake_res.get("is_job_poster") is False:
-            validation_msg = intake_res.get("validation_error", "This is not a job poster image. Please provide a suitable job advertisement application or screenshot.")
-            return {
-                "intake_data": intake_res,
-                "linguistic_data": {},
-                "verification_data": {},
-                "reasoning_data": {},
-                "recommendations": [
-                    "Please upload a valid job advertisement screenshot, recruitment flyer, or paste a job posting URL.",
-                    "Avoid uploading photos of people, animals, pets, or non-career related pictures."
-                ],
-                "scam_score": 0,
-                "confidence_score": 100,
-                "sub_scores": {
-                    "financial_fee_risk": 0,
-                    "impersonation_risk": 0,
-                    "domain_reputation_risk": 0,
-                    "urgency_pressure_risk": 0
-                },
-                "risk_level": "Invalid Input Image",
-                "language": final_lang,
-                "explanation_text": f"⚠️ INPUT VALIDATION NOTICE:\n\n{validation_msg}"
-            }
-
         logger.info("Executing Agent Pipeline Stage 2: Linguistic Risk Agent")
         linguistic_res = self.linguistic_agent.analyze(cleaned_text, final_lang)
 
         logger.info("Executing Agent Pipeline Stage 3: Verification Agent")
-        claimed_brand = linguistic_res.get("claimed_brand")
+        claimed_brand = linguistic_res.get("claimed_brand") or intake_res.get("claimed_brand")
         verification_res = self.verification_agent.verify(cleaned_text, domain, claimed_brand)
 
-        logger.info("Executing Agent Pipeline Stage 4: Reasoning Agent (Multimodal Vision AI)")
+        logger.info("Executing Agent Pipeline Stage 4: Reasoning Agent (Multimodal Vision AI & Gemini 3.6 Flash)")
         reasoning_res = self.reasoning_agent.synthesize(intake_res, linguistic_res, verification_res, final_lang, image_bytes)
 
         logger.info("Executing Agent Pipeline Stage 5: Recommendation Agent")

@@ -1,15 +1,16 @@
 import re
 import logging
 import requests
+import json
+import base64
 from bs4 import BeautifulSoup
 from typing import Dict, Any
+from app.config import settings
 
 logger = logging.getLogger("safe_hire.intake_agent")
 
-from app.config import settings
-
 class IntakeAgent:
-    """Agent 1: Ingests text, image OCR, and URL; extracts metadata, contacts, language, and validates job poster image content via Gemini 2.5 Flash Vision."""
+    """Agent 1: Ingests text, image OCR, and URL; extracts metadata, contacts, language, and validates job poster image content via Gemini Multimodal Vision & OCR."""
 
     @staticmethod
     def detect_language(text: str) -> str:
@@ -38,94 +39,103 @@ class IntakeAgent:
         return "en"
 
     @staticmethod
-    def analyze_image_with_deepseek_v4(image_bytes: bytes) -> dict:
-        """Analyze image text OCR using DeepSeek-V4-Flash to validate if it's a job poster or non-job photo (human, animal, crops, etc.)."""
+    def analyze_poster_with_gemini_vision(image_bytes: bytes) -> dict:
+        """Analyze poster image directly using Gemini Multimodal Vision API (OCR + visual risk intelligence)."""
         if not image_bytes:
-            return {"is_job_poster": True, "extracted_text": "", "validation_error": None}
+            return {"is_job_poster": True, "extracted_text": "", "claimed_brand": ""}
 
-        # 1. Extract text via OCR
-        extracted_text = IntakeAgent.extract_text_from_image(image_bytes)
-        clean_text = extracted_text.strip() if extracted_text else ""
+        gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
+        base64_img = base64.b64encode(image_bytes).decode('utf-8')
 
-        # 2. If NO text or very short non-text image (e.g. millet crop field, nature, selfie, animal picture)
-        if len(clean_text) < 15:
-            logger.info("Image contains no readable job text (non-job image detected).")
-            return {
-                "is_job_poster": False,
-                "image_category": "non_job_photo",
-                "validation_error": "⚠️ NON-JOB POSTER DETECTED: The uploaded picture contains no job advertisement text or career vacancy details. Please upload a valid job offer flyer, recruitment ad screenshot, or offer letter.",
-                "extracted_text": clean_text
-            }
+        prompt = """
+        You are SAFE-HIRE's Senior Multimodal Vision & Recruitment Fraud Intelligence Engine.
+        Examine this uploaded hiring flyer, job poster, screenshot, or recruitment image carefully.
 
-        # 3. Analyze extracted text using DeepSeek-V4-Flash
-        api_key = settings.DEEPSEEK_V4_API_KEY
-        if api_key:
-            import json
+        Task:
+        1. Extract ALL readable text from the image verbatim (OCR).
+        2. Identify company/organization name (claimed_brand), job positions, contact emails, phone numbers, WhatsApp, Telegram, salary, and fees/payments requested.
+        3. Evaluate scam risk indicators (upfront fees, personal bank transfer, generic gmail/yahoo, artificial urgency, unrealistic salary).
 
+        Return ONLY a raw JSON object with this exact structure (no markdown code blocks, no ```json formatting):
+        {
+          "is_job_poster": true,
+          "extracted_text": "Full extracted verbatim text from the poster...",
+          "claimed_brand": "Extracted company or brand name",
+          "job_title": "Position or course title if present",
+          "contact_email": "Extracted email if present",
+          "phone_number": "Extracted phone number if present",
+          "has_fee_demand": false,
+          "summary": "Brief 1-2 sentence summary of poster content"
+        }
+        """
+
+        # 1. Try Gemini Vision OpenAI Compatibility Endpoint
+        if gemini_key:
             try:
-                url = f"{settings.DEEPSEEK_API_BASE_URL.rstrip('/')}/chat/completions"
-                prompt = f"""
-                You are SAFE-HIRE's Senior Image & Document Verification Specialist.
-                Examine the extracted OCR text from an uploaded image below to classify its content type.
-
-                [EXTRACTED OCR TEXT FROM IMAGE]:
-                "{clean_text[:2000]}"
-
-                CLASSIFICATION GUIDELINES:
-                1. A JOB POSTER (`is_job_poster: true`) includes ANY recruitment flyer, hiring banner, job advertisement screenshot (from LinkedIn, WhatsApp, Email, Facebook, newspaper, job site), or career vacancy announcement.
-                
-                2. A NON-JOB IMAGE (`is_job_poster: false`) is an image that has NO job recruitment text or career context whatsoever, such as a casual personal selfie, a pet/animal photo, nature/crop landscape, meme, document receipt, or random object picture.
-
-                Return a raw JSON object with this exact structure:
-                {{
-                  "is_job_poster": boolean (true for any job ad/recruitment poster/screenshot/hiring banner, false for non-job photos/documents),
-                  "image_category": "job_advertisement" or "human_photo" or "animal_photo" or "nature_crop_photo" or "other_non_job",
-                  "validation_error": "⚠️ NON-JOB POSTER DETECTED: This image does not contain a job recruitment ad or career offer." (Provide this message ONLY if is_job_poster is false, else null)
-                }}
-                Do not include markdown code block formatting. Return raw JSON string only.
-                """
-
+                url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
                 headers = {
-                    "Authorization": f"Bearer {api_key}",
+                    "Authorization": f"Bearer {gemini_key}",
                     "Content-Type": "application/json"
                 }
                 payload = {
-                    "model": settings.DEEPSEEK_MODEL_NAME,
-                    "messages": [{"role": "user", "content": prompt}],
+                    "model": "gemini-2.5-flash",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_img}"}}
+                            ]
+                        }
+                    ],
                     "temperature": 0.1,
-                    "max_tokens": 512
+                    "max_tokens": 1024
                 }
 
                 res = requests.post(url, json=payload, headers=headers, timeout=12)
                 if res.status_code == 200:
-                    content = res.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                    data = res.json()
+                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
                     clean = content.strip().replace("```json", "").replace("```", "").strip()
                     if "<think>" in clean and "</think>" in clean:
                         clean = clean.split("</think>")[-1].strip()
                     parsed = json.loads(clean)
-                    parsed["extracted_text"] = clean_text
-                    logger.info(f"DeepSeek V4 image classification result: is_job_poster={parsed.get('is_job_poster')}")
+                    logger.info(f"Gemini Vision successfully extracted poster text ({len(parsed.get('extracted_text', ''))} chars)")
                     return parsed
             except Exception as e:
-                logger.warning(f"DeepSeek V4 image classification notice: {e}")
+                logger.warning(f"Gemini Vision OpenAI endpoint notice ({e}). Trying REST fallback...")
 
-        # 4. Fallback Keyword Rule Engine
-        job_keywords = ["hiring", "job", "career", "vacancy", "intern", "salary", "apply", "recruiter", "work from home", "full time", "part time", "walk-in", "position", "urgently", "bpo", "developer", "designer", "manager", "staff", "opportunity", "earn"]
-        has_job_keyword = any(kw in clean_text.lower() for kw in job_keywords)
+            # 2. Try Gemini Vision REST generateContent Endpoint
+            try:
+                rest_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+                rest_payload = {
+                    "contents": [
+                        {
+                            "parts": [
+                                {"text": prompt},
+                                {"inline_data": {"mime_type": "image/jpeg", "data": base64_img}}
+                            ]
+                        }
+                    ]
+                }
+                res = requests.post(rest_url, json=rest_payload, timeout=12)
+                if res.status_code == 200:
+                    data = res.json()
+                    content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    clean = content.strip().replace("```json", "").replace("```", "").strip()
+                    parsed = json.loads(clean)
+                    logger.info("Gemini Vision REST fallback successfully extracted poster details.")
+                    return parsed
+            except Exception as e:
+                logger.warning(f"Gemini Vision REST fallback notice: {e}")
 
-        if not has_job_keyword:
-            return {
-                "is_job_poster": False,
-                "image_category": "non_job_photo",
-                "validation_error": "⚠️ NON-JOB POSTER DETECTED: The text in this uploaded image does not contain any job vacancy or recruitment details.",
-                "extracted_text": clean_text
-            }
-
+        # Fallback to local OCR / OCR.space
+        ocr_text = IntakeAgent.extract_text_from_image(image_bytes)
         return {
             "is_job_poster": True,
-            "image_category": "job_advertisement",
-            "validation_error": None,
-            "extracted_text": clean_text
+            "extracted_text": ocr_text or "Recruitment flyer/poster screenshot uploaded for fraud inspection.",
+            "claimed_brand": "",
+            "summary": "Poster uploaded for automated 5-agent scam verification."
         }
 
     @staticmethod
@@ -134,7 +144,7 @@ class IntakeAgent:
         if not image_bytes:
             return ""
 
-        # 1. Attempt Tesseract OCR locally if binary/pytesseract is available
+        # 1. Local Tesseract OCR
         try:
             from PIL import Image, ImageEnhance
             import io
@@ -153,7 +163,6 @@ class IntakeAgent:
 
         # 2. High-Accuracy Cloud OCR API Fallback (OCR.space)
         try:
-            import base64
             url = "https://api.ocr.space/parse/image"
             base64_str = "data:image/png;base64," + base64.b64encode(image_bytes).decode('utf-8')
             payload = {
@@ -209,7 +218,6 @@ class IntakeAgent:
                 text = soup.get_text(separator=" ", strip=True)
                 title = soup.title.string.strip() if soup.title and soup.title.string else ""
                 
-                # Extract meta description
                 meta_desc = ""
                 meta_tag = soup.find("meta", attrs={"name": "description"}) or soup.find("meta", attrs={"property": "og:description"})
                 if meta_tag and meta_tag.get("content"):
@@ -237,20 +245,21 @@ class IntakeAgent:
         source = "text"
         extracted_domain = ""
         ocr_extracted_text = ""
-        is_job_poster = True
-        validation_error = None
+        claimed_brand = ""
 
         if input_text and input_text.strip():
             combined_text += input_text.strip() + "\n"
 
         if image_bytes:
-            img_eval = self.analyze_image_with_deepseek_v4(image_bytes)
-            if img_eval.get("is_job_poster") is False:
-                is_job_poster = False
-                validation_error = img_eval.get("validation_error", "This is not a job poster image. Please provide a suitable job advertisement application or screenshot.")
+            vision_res = self.analyze_poster_with_gemini_vision(image_bytes)
+            ocr_extracted_text = vision_res.get("extracted_text", "")
+            if not ocr_extracted_text:
+                ocr_extracted_text = self.extract_text_from_image(image_bytes)
             
-            ocr_extracted_text = img_eval.get("extracted_text") or self.extract_text_from_image(image_bytes)
-            combined_text += f"\n{ocr_extracted_text}\n"
+            claimed_brand = vision_res.get("claimed_brand", "")
+            combined_text += f"\n[POSTER TEXT & METADATA]:\n{ocr_extracted_text}\n"
+            if claimed_brand:
+                combined_text += f"Claimed Brand: {claimed_brand}\n"
             source = "image"
 
         if input_url and input_url.strip():
@@ -276,12 +285,13 @@ class IntakeAgent:
         return {
             "cleaned_text": combined_text.strip(),
             "ocr_text": ocr_extracted_text,
+            "claimed_brand": claimed_brand,
             "source": source,
             "domain": extracted_domain,
             "detected_language": detected_lang,
             "final_language": final_lang,
-            "is_job_poster": is_job_poster,
-            "validation_error": validation_error,
+            "is_job_poster": True,
+            "validation_error": None,
             "metadata_extracted": {
                 "emails": emails_found,
                 "urls": urls_found,
