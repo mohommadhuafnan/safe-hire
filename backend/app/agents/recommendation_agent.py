@@ -32,8 +32,8 @@ class RecommendationAgent:
         dynamic_recs: List[str] = []
 
         # 1. Extracted Recruiter Email & Abstract API Validation Signal
-        email_val = verification_data.get("email_validation", {})
-        extracted_emails = intake_data.get("metadata_extracted", {}).get("emails", [])
+        email_val = verification_data.get("email_validation") or {}
+        extracted_emails = (intake_data.get("metadata_extracted") or {}).get("emails", [])
         contact_email = email_val.get("email") or (extracted_emails[0] if extracted_emails else None)
 
         if contact_email:
@@ -73,8 +73,8 @@ class RecommendationAgent:
 
         # 4. Domain & Google Safe Browsing / WHOIS Intelligence Signal
         domain = verification_data.get("domain")
-        whois_info = verification_data.get("whois_info", {})
-        safe_browsing = verification_data.get("safe_browsing", {})
+        whois_info = verification_data.get("whois_info") or {}
+        safe_browsing = verification_data.get("safe_browsing") or {}
 
         if domain:
             if safe_browsing.get("flagged"):
@@ -90,8 +90,8 @@ class RecommendationAgent:
 
         # 5. Messaging Channel & Contact Medium Signal
         matched_channels = risk_factors.get("matched_suspicious_terms")
-        extracted_telegrams = intake_data.get("metadata_extracted", {}).get("telegram_handles", [])
-        extracted_phones = intake_data.get("metadata_extracted", {}).get("phone_numbers", [])
+        extracted_telegrams = (intake_data.get("metadata_extracted") or {}).get("telegram_handles", [])
+        extracted_phones = (intake_data.get("metadata_extracted") or {}).get("phone_numbers", [])
 
         if risk_factors.get("has_suspicious_channels") or extracted_telegrams or matched_channels:
             contact_handle = extracted_telegrams[0] if extracted_telegrams else (matched_channels if matched_channels else "Telegram/WhatsApp")

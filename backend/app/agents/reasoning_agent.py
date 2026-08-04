@@ -84,14 +84,14 @@ CRITICAL INSTRUCTION: Output ONLY a raw JSON object. No markdown, no code fences
 
 [DOMAIN & EMAIL VERIFICATION SIGNALS]:
 - Target Domain: {verification_data.get('domain')}
-- WHOIS Status: {verification_data.get('whois_info', {}).get('whois_status')}
-- Domain Age (Days): {verification_data.get('whois_info', {}).get('registered_days')}
-- Is New Domain (<90 days): {verification_data.get('whois_info', {}).get('is_new_domain')}
-- Safe Browsing Status: {verification_data.get('safe_browsing', {}).get('status')}
-- Abstract API Email Analysis: {verification_data.get('email_validation', {}).get('analysis_summary')}
-- Recruiter Email Disposable: {verification_data.get('email_validation', {}).get('is_disposable_email')}
-- Recruiter Email SMTP Valid: {verification_data.get('email_validation', {}).get('is_smtp_valid')}
-- Recruiter Email Quality Score: {verification_data.get('email_validation', {}).get('quality_score')}
+- WHOIS Status: {(verification_data.get('whois_info') or {}).get('whois_status')}
+- Domain Age (Days): {(verification_data.get('whois_info') or {}).get('registered_days')}
+- Is New Domain (<90 days): {(verification_data.get('whois_info') or {}).get('is_new_domain')}
+- Safe Browsing Status: {(verification_data.get('safe_browsing') or {}).get('status')}
+- Abstract API Email Analysis: {(verification_data.get('email_validation') or {}).get('analysis_summary')}
+- Recruiter Email Disposable: {(verification_data.get('email_validation') or {}).get('is_disposable_email')}
+- Recruiter Email SMTP Valid: {(verification_data.get('email_validation') or {}).get('is_smtp_valid')}
+- Recruiter Email Quality Score: {(verification_data.get('email_validation') or {}).get('quality_score')}
 - Corporate Trust Score: {verification_data.get('verification_trust_score')}
 
 [SCORING RULES]:
@@ -141,8 +141,8 @@ Analyze the job posting below and return ONLY a raw JSON object (no markdown, no
 - Urgency Tactics: {linguistic_data.get('has_urgency_tactics')} | Keywords: {linguistic_data.get('matched_urgency')}
 - Brand Impersonation: {linguistic_data.get('impersonation_flags')}
 - Suspicious Channels: {linguistic_data.get('matched_suspicious_terms')}
-- Domain: {verification_data.get('domain')} | WHOIS: {verification_data.get('whois_info', {}).get('whois_status')}
-- Safe Browsing: {verification_data.get('safe_browsing', {}).get('status')}
+- Domain: {verification_data.get('domain')} | WHOIS: {(verification_data.get('whois_info') or {}).get('whois_status')}
+- Safe Browsing: {(verification_data.get('safe_browsing') or {}).get('status')}
 - Trust Score: {verification_data.get('verification_trust_score')}
 
 [RULES]:
@@ -454,8 +454,8 @@ class ReasoningAgent:
         free_email = linguistic_data.get("free_email", "")
         domain = verification_data.get("domain", "Not Specified")
         trust_score = verification_data.get("verification_trust_score", 85)
-        whois_status = verification_data.get("whois_info", {}).get("whois_status", "")
-        is_new_domain = verification_data.get("whois_info", {}).get("is_new_domain", False)
+        whois_status = (verification_data.get("whois_info") or {}).get("whois_status", "")
+        is_new_domain = (verification_data.get("whois_info") or {}).get("is_new_domain", False)
 
         snippet = cleaned_text[:500].replace("\n", " ").strip() if cleaned_text else "No content provided."
 
@@ -664,7 +664,7 @@ class ReasoningAgent:
         has_impersonation = linguistic_data.get("has_impersonation_risk", False)
         has_urgency = linguistic_data.get("has_urgency_tactics", False)
         has_suspicious = linguistic_data.get("has_suspicious_channels", False)
-        is_new_domain = verification_data.get("whois_info", {}).get("is_new_domain", False)
+        is_new_domain = (verification_data.get("whois_info") or {}).get("is_new_domain", False)
 
         # Weighted scoring
         raw_score = (linguistic_score * 0.50) + (verification_risk * 0.30)

@@ -1,7 +1,11 @@
+import sys
 import asyncio
 import io
 from PIL import Image, ImageDraw
 from app.agents.pipeline import pipeline_runner
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
 
 async def test_real_poster_upload():
     # Generate a sample job flyer PNG image with text

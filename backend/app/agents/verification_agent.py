@@ -413,10 +413,10 @@ class VerificationAgent:
 
         trust_rating = 85  # Default baseline trust rating
 
-        if whois_res.get("is_new_domain"):
+        if (whois_res or {}).get("is_new_domain"):
             trust_rating -= 40
 
-        if safe_browsing_res.get("flagged"):
+        if (safe_browsing_res or {}).get("flagged"):
             trust_rating -= 45
 
         # Deduct trust rating if Abstract API Email Validation detects high risk email
@@ -442,5 +442,5 @@ class VerificationAgent:
             "safe_browsing": safe_browsing_res,
             "email_validation": email_validation_res,
             "verification_trust_score": trust_rating,
-            "is_verified_corporate_domain": (trust_rating > 70 and not whois_res.get("is_new_domain"))
+            "is_verified_corporate_domain": (trust_rating > 70 and not (whois_res or {}).get("is_new_domain"))
         }
