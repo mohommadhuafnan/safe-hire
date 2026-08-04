@@ -68,6 +68,7 @@ const LandingPage = () => {
   // Instagram-Style 3-Poster Gallery Carousel State
   const [posterFilter, setPosterFilter] = useState('all');
   const [currentPosterIndex, setCurrentPosterIndex] = useState(0);
+  const [isAutoSlide, setIsAutoSlide] = useState(true);
 
   const galleryPosters = [
     {
@@ -115,7 +116,7 @@ const LandingPage = () => {
       badgeClass: 'bg-rose-500/20 border-rose-500/40 text-rose-300',
       borderClass: 'border-rose-500/40 hover:border-rose-400',
       dotClass: 'bg-rose-500',
-      image: '/images/scam_job_poster.png',
+      image: '/images/whatsapp_typing_poster.png',
       extractedText: '"Earn Rs. 15,000 weekly typing at home. Pay Rs. 2,000 refundable security deposit to start task."',
       metrics: [
         { label: 'Deposit Demand', val: 'Rs. 2,000 Upfront', color: 'text-rose-300' },
@@ -133,7 +134,7 @@ const LandingPage = () => {
       badgeClass: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300',
       borderClass: 'border-emerald-500/40 hover:border-emerald-400',
       dotClass: 'bg-emerald-400',
-      image: '/images/genuine_job_poster.png',
+      image: '/images/nsbm_campus_poster.png',
       extractedText: '"Official university student ambassador program. Register via nsbm.ac.lk student portal."',
       metrics: [
         { label: 'University Domain', val: 'nsbm.ac.lk (Verified)', color: 'text-emerald-300' },
@@ -151,7 +152,7 @@ const LandingPage = () => {
       badgeClass: 'bg-rose-500/20 border-rose-500/40 text-rose-300',
       borderClass: 'border-rose-500/40 hover:border-rose-400',
       dotClass: 'bg-rose-500',
-      image: '/images/scam_job_poster.png',
+      image: '/images/crypto_reviewer_poster.png',
       extractedText: '"Product reviewer job. Daily payout in USDT crypto. Purchase $50 initial rating package to start."',
       metrics: [
         { label: 'Payout Method', val: 'Unregulated USDT Crypto', color: 'text-rose-300' },
@@ -163,6 +164,15 @@ const LandingPage = () => {
   ];
 
   const filteredPosters = galleryPosters.filter(p => posterFilter === 'all' || p.type === posterFilter);
+
+  // Auto-play slider every 4 seconds
+  useEffect(() => {
+    if (!isAutoSlide || filteredPosters.length === 0) return;
+    const interval = setInterval(() => {
+      setCurrentPosterIndex((prev) => (prev + 1) % filteredPosters.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isAutoSlide, filteredPosters.length]);
 
   const nextPosterSlide = () => {
     setCurrentPosterIndex((prev) => (prev + 1) % filteredPosters.length);
@@ -602,21 +612,22 @@ const LandingPage = () => {
         <div className="flex items-center justify-between mb-6 px-2">
           <div className="text-xs font-mono text-slate-400 flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping inline-block" />
-            <span>Viewing 3 Posters Simultaneously</span>
+            <span>Viewing 3 Posters Simultaneously {isAutoSlide ? '(Auto-sliding active)' : '(Paused on hover)'}</span>
           </div>
 
           <div className="flex items-center space-x-3">
-            {/* Instagram Dots */}
+            {/* Instagram Story Progress Dots */}
             <div className="flex items-center space-x-1.5 mr-2">
               {filteredPosters.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setCurrentPosterIndex(i)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
+                  className={`h-2 rounded-full transition-all duration-500 ${
                     currentPosterIndex === i 
-                      ? 'w-6 bg-cyan-400 shadow-md shadow-cyan-500/50' 
+                      ? 'w-7 bg-cyan-400 shadow-lg shadow-cyan-500/50' 
                       : 'w-2 bg-slate-700 hover:bg-slate-500'
                   }`}
+                  aria-label={`Go to slide ${i + 1}`}
                 />
               ))}
             </div>
@@ -639,66 +650,85 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* VISIBLE 3-POSTER GALLERY GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch transition-all duration-500">
-          {getVisiblePosters().map((item, idx) => (
-            <div 
-              key={`${item.id}-${idx}`}
-              className={`glass-panel p-5 rounded-3xl border ${item.borderClass} bg-slate-950/90 backdrop-blur-2xl shadow-2xl relative overflow-hidden group flex flex-col justify-between hover:-translate-y-2 transition-all duration-500`}
-            >
-              {/* Top Risk Badge Pill */}
-              <div className={`absolute top-0 right-0 px-3.5 py-1.5 rounded-bl-2xl border-b border-l ${item.badgeClass} text-[11px] font-extrabold flex items-center space-x-1.5 shadow-lg backdrop-blur-md z-20`}>
-                <span className={`w-2 h-2 rounded-full ${item.dotClass} animate-pulse`} />
-                <span>{item.riskLevel} ({item.score})</span>
-              </div>
-
-              <div className="space-y-4">
-                
-                {/* Header Title */}
-                <div className="pt-1">
-                  <h3 className="text-base font-extrabold text-slate-100 group-hover:text-cyan-300 transition-colors tracking-tight line-clamp-1">
-                    {item.title}
-                  </h3>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    Poster #{item.id} of {galleryPosters.length}
-                  </span>
-                </div>
-
-                {/* Poster Image Frame */}
-                <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-xl group-hover:shadow-cyan-500/10 transition-all duration-500">
-                  <img 
-                    src={item.image} 
-                    alt={item.title} 
-                    className="w-full h-56 object-cover object-top group-hover:scale-105 transition duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-70" />
-
-                  {/* AI Banner Overlay */}
-                  <div className="absolute bottom-2 left-2 right-2 p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl shadow-lg">
-                    <div className="text-[10px] font-bold text-sky-400 mb-0.5 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-cyan-400" />
-                      <span>AI Extracted Signal:</span>
-                    </div>
-                    <p className="text-[10px] text-slate-200 font-mono leading-tight line-clamp-2">
-                      {item.extractedText}
-                    </p>
+        {/* VISIBLE 3-POSTER GALLERY GRID WITH 3D CENTER FOCUS */}
+        <div 
+          onMouseEnter={() => setIsAutoSlide(false)}
+          onMouseLeave={() => setIsAutoSlide(true)}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch transition-all duration-700 ease-in-out py-2"
+        >
+          {getVisiblePosters().map((item, idx) => {
+            const isCenter = idx === 1;
+            return (
+              <div 
+                key={`${item.id}-${idx}`}
+                className={`glass-panel p-5 rounded-3xl border ${
+                  isCenter 
+                    ? 'border-cyan-400/80 shadow-2xl shadow-cyan-500/20 scale-105 z-20 bg-slate-950' 
+                    : `${item.borderClass} bg-slate-950/80 scale-95 opacity-90 hover:opacity-100 hover:scale-100`
+                } backdrop-blur-2xl relative overflow-hidden group flex flex-col justify-between transition-all duration-500 ease-out`}
+              >
+                {/* Center Focus Badge Indicator */}
+                {isCenter && (
+                  <div className="absolute top-2 left-4 z-20 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 text-[9px] font-mono uppercase tracking-widest flex items-center gap-1 shadow-md">
+                    <Sparkles className="w-3 h-3 text-cyan-400 animate-spin" style={{ animationDuration: '6s' }} />
+                    <span>CENTER FOCUS</span>
                   </div>
+                )}
+
+                {/* Top Risk Badge Pill */}
+                <div className={`absolute top-0 right-0 px-3.5 py-1.5 rounded-bl-2xl border-b border-l ${item.badgeClass} text-[11px] font-extrabold flex items-center space-x-1.5 shadow-lg backdrop-blur-md z-20`}>
+                  <span className={`w-2 h-2 rounded-full ${item.dotClass} animate-pulse`} />
+                  <span>{item.riskLevel} ({item.score})</span>
                 </div>
 
-                {/* 4-Metric Grid */}
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  {item.metrics.map((m, mIdx) => (
-                    <div key={mIdx} className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-                      <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider line-clamp-1">{m.label}</span>
-                      <span className={`font-extrabold text-[10px] mt-0.5 ${m.color || 'text-slate-200'} line-clamp-1`}>{m.val}</span>
+                <div className="space-y-4">
+                  
+                  {/* Header Title */}
+                  <div className="pt-2">
+                    <h3 className={`text-base font-extrabold transition-colors tracking-tight line-clamp-1 ${isCenter ? 'text-cyan-300' : 'text-slate-100 group-hover:text-cyan-300'}`}>
+                      {item.title}
+                    </h3>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      Poster #{item.id} of {galleryPosters.length}
+                    </span>
+                  </div>
+
+                  {/* Poster Image Frame */}
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-xl group-hover:shadow-cyan-500/10 transition-all duration-500">
+                    <img 
+                      src={item.image} 
+                      alt={item.title} 
+                      className="w-full h-56 object-cover object-top group-hover:scale-105 transition duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-70" />
+
+                    {/* AI Banner Overlay */}
+                    <div className="absolute bottom-2 left-2 right-2 p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl shadow-lg">
+                      <div className="text-[10px] font-bold text-sky-400 mb-0.5 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-cyan-400" />
+                        <span>AI Extracted Signal:</span>
+                      </div>
+                      <p className="text-[10px] text-slate-200 font-mono leading-tight line-clamp-2">
+                        {item.extractedText}
+                      </p>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* 4-Metric Grid */}
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    {item.metrics.map((m, mIdx) => (
+                      <div key={mIdx} className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+                        <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider line-clamp-1">{m.label}</span>
+                        <span className={`font-extrabold text-[10px] mt-0.5 ${m.color || 'text-slate-200'} line-clamp-1`}>{m.val}</span>
+                      </div>
+                    ))}
+                  </div>
+
                 </div>
 
               </div>
-
-            </div>
-          ))}
+            );
+          })}
         </div>
 
       </section>
