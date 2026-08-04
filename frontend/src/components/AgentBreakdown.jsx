@@ -14,6 +14,7 @@ import {
   Layers,
   Sparkles
 } from 'lucide-react';
+import { parseExplanationSections } from '../services/reportExporter';
 
 const AgentBreakdown = ({ result }) => {
   const { t } = useTranslation();
@@ -226,31 +227,60 @@ const AgentBreakdown = ({ result }) => {
       icon: BrainCircuit,
       summary: t('agents.reasoning_summary', 'AI Explainable Rationale Synthesized'),
       badge: t('agents.agent_4_badge', 'Deep AI'),
-      content: (
-        <div className="space-y-3">
-          {/* Full structured AI explanation */}
-          <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 text-xs leading-relaxed whitespace-pre-line">
-            {result.explanation_text}
-          </div>
+      content: (() => {
+        const parsedSections = parseExplanationSections(result.explanation_text || '');
+        return (
+          <div className="space-y-3">
+            {parsedSections.map((sec, idx) => {
+              let borderClass = 'border-slate-800 bg-slate-900/90 text-slate-300';
+              let titleColor = 'text-sky-400';
 
-          {/* Breakdown signals from Gemini/DeepSeek AI */}
-          {breakdownSignals.length > 0 && (
-            <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-              <span className="font-bold text-indigo-300 text-xs block mb-2 flex items-center">
-                <Sparkles className="w-3.5 h-3.5 mr-1.5" /> AI-Detected Risk Signals
-              </span>
-              <ul className="space-y-1.5">
-                {breakdownSignals.map((signal, i) => (
-                  <li key={i} className="flex items-start space-x-2 text-xs text-slate-300">
-                    <span className="text-indigo-400 font-bold mt-0.5 flex-shrink-0">{i + 1}.</span>
-                    <span className="leading-relaxed">{signal}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )
+              if (sec.emoji === '🎯') {
+                borderClass = 'border-rose-500/30 bg-rose-950/20 text-slate-200';
+                titleColor = 'text-rose-400';
+              } else if (sec.emoji === '🔍') {
+                borderClass = 'border-amber-500/30 bg-amber-950/20 text-slate-200';
+                titleColor = 'text-amber-400';
+              } else if (sec.emoji === '✅') {
+                borderClass = 'border-emerald-500/30 bg-emerald-950/20 text-slate-200';
+                titleColor = 'text-emerald-400';
+              } else if (sec.emoji === '📋') {
+                borderClass = 'border-indigo-500/30 bg-indigo-950/20 text-slate-200';
+                titleColor = 'text-indigo-400';
+              }
+
+              return (
+                <div key={idx} className={`p-3.5 rounded-xl border ${borderClass} space-y-1.5`}>
+                  <div className="flex items-center space-x-2 font-bold text-xs uppercase tracking-wide">
+                    <span className="text-sm">{sec.emoji}</span>
+                    <span className={titleColor}>{sec.title}</span>
+                  </div>
+                  <div className="text-xs leading-relaxed whitespace-pre-line text-slate-300">
+                    {sec.body}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Breakdown signals from Gemini/DeepSeek AI */}
+            {breakdownSignals.length > 0 && (
+              <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                <span className="font-bold text-indigo-300 text-xs block mb-2 flex items-center">
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5" /> AI-Detected Risk Signals
+                </span>
+                <ul className="space-y-1.5">
+                  {breakdownSignals.map((signal, i) => (
+                    <li key={i} className="flex items-start space-x-2 text-xs text-slate-300">
+                      <span className="text-indigo-400 font-bold mt-0.5 flex-shrink-0">{i + 1}.</span>
+                      <span className="leading-relaxed">{signal}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      })()
     },
     {
       id: 'agent-5',

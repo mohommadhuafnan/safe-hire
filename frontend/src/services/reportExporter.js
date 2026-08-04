@@ -1,3 +1,77 @@
+export const parseExplanationSections = (text) => {
+  if (!text || typeof text !== 'string') return [];
+
+  const cleanText = text.trim();
+  if (!cleanText) return [];
+
+  // Match emoji section markers: 📋, 🎯, 🔍, ✅
+  const emojiMatches = Array.from(cleanText.matchAll(/(📋|🎯|🔍|✅)\s*([^📋🎯🔍✅]+)/g));
+
+  if (emojiMatches.length > 0) {
+    return emojiMatches.map(m => {
+      const emoji = m[1];
+      const rawContent = m[2].trim();
+
+      let title = 'Analysis Section';
+      let body = rawContent;
+
+      const colonIdx = rawContent.indexOf(':');
+      if (colonIdx !== -1 && colonIdx < 50) {
+        title = rawContent.slice(0, colonIdx).trim();
+        body = rawContent.slice(colonIdx + 1).trim();
+      } else {
+        if (emoji === '📋') title = 'POSTER SUMMARY';
+        else if (emoji === '🎯') title = 'SCAM RISK VERDICT';
+        else if (emoji === '🔍') title = 'DETAILED EVIDENCE & RED FLAGS';
+        else if (emoji === '✅') title = 'SAFETY CONCLUSION';
+      }
+
+      return { emoji, title, body: body || rawContent };
+    });
+  }
+
+  // Fallback: If no emojis are present, split by double newlines or single paragraphs
+  const sectionSplit = cleanText.split(/\n\n+/).filter(Boolean);
+  if (sectionSplit.length > 1) {
+    return sectionSplit.map((para, i) => ({
+      emoji: i === 0 ? '📋' : i === 1 ? '🎯' : i === 2 ? '🔍' : '✅',
+      title: i === 0 ? 'POSTER SUMMARY' : i === 1 ? 'SCAM RISK VERDICT' : i === 2 ? 'DETAILED EVIDENCE & RED FLAGS' : 'SAFETY CONCLUSION',
+      body: para.trim()
+    }));
+  }
+
+  return [{ emoji: '🔍', title: 'EXPLAINABLE AI RATIONALE', body: cleanText }];
+};
+
+export const formatBodyToHtml = (body) => {
+  if (!body) return '';
+
+  const bulletItems = body
+    .split(/(?:\s*-\s+|\s*•\s+|\n-\s*|\n•\s*)/)
+    .map(b => b.trim())
+    .filter(Boolean);
+
+  if (bulletItems.length > 1 && (body.includes('- ') || body.includes('• ') || body.includes(' - '))) {
+    let introHtml = '';
+    let items = bulletItems;
+
+    if (!body.trim().startsWith('-') && !body.trim().startsWith('•')) {
+      introHtml = `<p class="section-p">${bulletItems[0]}</p>`;
+      items = bulletItems.slice(1);
+    }
+
+    return `
+      ${introHtml}
+      <ul class="section-bullets">
+        ${items.map(item => `<li>${item}</li>`).join('')}
+      </ul>
+    `;
+  }
+
+  const paragraphs = body.split(/\n+/).map(p => p.trim()).filter(Boolean);
+  return paragraphs.map(p => `<p class="section-p">${p}</p>`).join('');
+};
+
 export const exportAnalysisReport = (result, user, currentLanguage = null) => {
   if (!result) return;
 
@@ -16,7 +90,7 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
       tagline: "5-Agent AI Job Scam Verification Certificate",
       scamRating: "Scam Probability Rating",
       confidence: "⚡ 98% AI Multi-Agent Audit Precision Confidence",
-      rationale: "Explainable AI Rationale",
+      rationale: "Explainable AI Audit Rationale",
       subScores: "Categorized Multi-Signal Risk Sub-Scores",
       financialRisk: "Financial & Fee Demand Risk",
       impersonationRisk: "Corporate Email & Brand Impersonation",
@@ -26,8 +100,7 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
       footerText: "SAFE-HIRE AI Student & Graduate Protection Engine",
       account: "Verified User Account",
       generatedOn: "Audit Date",
-      report: "AUDIT REPORT",
-      seal: "OFFICIAL VERIFIED AUDIT"
+      report: "AUDIT REPORT"
     },
     si: {
       tagline: "5-Agent AI රැකියා වංචා පරීක්ෂණ සහතිකය",
@@ -43,8 +116,7 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
       footerText: "SAFE-HIRE AI ශිෂ්‍ය ආරක්ෂක පද්ධතිය",
       account: "පරිශීලක ගිණුම",
       generatedOn: "නිකුත් කළ දිනය",
-      report: "වාර්තාව",
-      seal: "නිල පරීක්ෂණ සහතිකය"
+      report: "වාර්තාව"
     },
     ta: {
       tagline: "5-Agent AI வேலை மோசடி சரிபார்ப்பு சான்றிதழ்",
@@ -60,8 +132,7 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
       footerText: "SAFE-HIRE AI மாணவர் பாதுகாப்பு அமைப்பு",
       account: "பயனர் கணக்கு",
       generatedOn: "உருவாக்கப்பட்ட தேதி",
-      report: "அறிக்கை",
-      seal: "அதிகாரப்பூர்வ சரிபார்ப்பு சான்றிதழ்"
+      report: "அறிக்கை"
     },
     hi: {
       tagline: "5-Agent AI जॉब स्कैम सत्यापन प्रमाणपत्र",
@@ -77,8 +148,7 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
       footerText: "SAFE-HIRE AI छात्र सुरक्षा प्लेटफॉर्म",
       account: "उपयोगकर्ता खाता",
       generatedOn: "जारी करने की तिथि",
-      report: "रिपोर्ट",
-      seal: "आधिकारिक सत्यापन प्रमाणपत्र"
+      report: "रिपोर्ट"
     },
     bn: {
       tagline: "৫-Agent AI চাকরির প্রতারণা যাচাইকরণ সার্টিফিকেট",
@@ -94,8 +164,7 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
       footerText: "SAFE-HIRE AI ছাত্র সুরক্ষা প্লাটফর্ম",
       account: "ব্যবহারকারী একাউন্ট",
       generatedOn: "তৈরির তারিখ",
-      report: "রিপোর্ট",
-      seal: "অফিসিয়াল যাচাইকরণ সার্টিফিকেট"
+      report: "রিপোর্ট"
     }
   };
 
@@ -117,7 +186,6 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
   const riskFactors = result.risk_factors || {};
   const verificationData = result.verification_data || {};
 
-  // Dynamically align sub-scores with overall score if missing
   const subScores = {
     financial_fee_risk: result.sub_scores?.financial_fee_risk ?? (
       riskFactors.has_payment_demand ? 95 : (overallScore > 60 ? Math.min(95, overallScore) : 10)
@@ -146,6 +214,9 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
   const scoreBgColor = overallScore >= 60 ? '#fef2f2' : overallScore >= 30 ? '#fffbeb' : '#f0fdf4';
   const scoreBorderColor = overallScore >= 60 ? '#fecaca' : overallScore >= 30 ? '#fde68a' : '#bbf7d0';
 
+  // Parse rationale into separate structured section blocks
+  const sections = parseExplanationSections(result.explanation_text || '');
+
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="${langKey}">
@@ -171,7 +242,7 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
           margin: 0;
           padding: 12px;
           line-height: 1.4;
-          font-size: 12px;
+          font-size: 11.5px;
         }
 
         .container {
@@ -184,13 +255,13 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          border-bottom: 2px solid #4f46e5;
-          padding-bottom: 12px;
-          margin-bottom: 16px;
+          border-bottom: 2.5px solid #4f46e5;
+          padding-bottom: 10px;
+          margin-bottom: 14px;
         }
 
         .brand-title {
-          font-size: 24px;
+          font-size: 22px;
           font-weight: 900;
           color: #4f46e5;
           letter-spacing: -0.5px;
@@ -200,7 +271,7 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
         }
 
         .brand-subtitle {
-          font-size: 10px;
+          font-size: 9.5px;
           color: #64748b;
           text-transform: uppercase;
           letter-spacing: 0.8px;
@@ -212,33 +283,33 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
           border: 1px solid #6366f1;
           color: #3730a3;
           padding: 4px 10px;
-          border-radius: 12px;
+          border-radius: 10px;
           font-weight: 800;
-          font-size: 11px;
+          font-size: 10.5px;
           text-align: right;
         }
 
         .report-date {
-          font-size: 10px;
+          font-size: 9.5px;
           color: #64748b;
           margin-top: 3px;
           text-align: right;
         }
 
-        /* SCAM SCORE CARD */
+        /* OVERALL SCAM SCORE CARD */
         .score-card {
           background: ${scoreBgColor};
           border: 1.5px solid ${scoreBorderColor};
-          border-radius: 16px;
-          padding: 16px;
+          border-radius: 14px;
+          padding: 14px;
           text-align: center;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
           page-break-inside: avoid;
           break-inside: avoid;
         }
 
         .score-header {
-          font-size: 10px;
+          font-size: 9.5px;
           color: #64748b;
           text-transform: uppercase;
           letter-spacing: 1px;
@@ -246,22 +317,22 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
         }
 
         .score-value {
-          font-size: 46px;
+          font-size: 42px;
           font-weight: 900;
           line-height: 1;
           color: ${scoreColor};
-          margin: 6px 0 2px 0;
+          margin: 4px 0 2px 0;
         }
 
         .score-denom {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 600;
           color: #94a3b8;
         }
 
         .risk-badge {
           display: inline-block;
-          font-size: 13px;
+          font-size: 12.5px;
           font-weight: 900;
           text-transform: uppercase;
           color: ${scoreColor};
@@ -269,51 +340,118 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
         }
 
         .confidence-note {
-          font-size: 10.5px;
+          font-size: 10px;
           color: #0284c7;
-          margin-top: 4px;
+          margin-top: 3px;
           font-weight: 700;
         }
 
-        /* SECTION BOXES */
+        /* SECTION HEADERS & CONTAINER */
+        .main-section-title {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: #4f46e5;
+          font-weight: 800;
+          margin-bottom: 8px;
+          margin-top: 10px;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+
+        /* SEPARATE STRUCTURED RATIONALE CARDS */
+        .rationale-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-left: 4px solid #6366f1;
+          border-radius: 10px;
+          padding: 10px 12px;
+          margin-bottom: 9px;
+          page-break-inside: avoid;
+          break-inside: avoid;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        }
+
+        .rationale-card.verdict-card {
+          background: ${scoreBgColor};
+          border-color: ${scoreBorderColor};
+          border-left: 4px solid ${scoreColor};
+        }
+
+        .rationale-card.evidence-card {
+          background: #fffbeb;
+          border-color: #fde68a;
+          border-left: 4px solid #d97706;
+        }
+
+        .rationale-card.conclusion-card {
+          background: #f0fdf4;
+          border-color: #bbf7d0;
+          border-left: 4px solid #16a34a;
+        }
+
+        .card-header {
+          font-size: 11px;
+          font-weight: 800;
+          color: #1e293b;
+          margin-bottom: 5px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
+        }
+
+        .card-emoji {
+          font-size: 13px;
+        }
+
+        .card-body {
+          font-size: 11px;
+          color: #334155;
+          line-height: 1.5;
+        }
+
+        .section-p {
+          margin: 0 0 4px 0;
+        }
+
+        .section-p:last-child {
+          margin-bottom: 0;
+        }
+
+        .section-bullets {
+          margin: 4px 0 0 0;
+          padding-left: 18px;
+          list-style-type: disc;
+        }
+
+        .section-bullets li {
+          margin-bottom: 3px;
+          color: #334155;
+          line-height: 1.4;
+        }
+
+        /* CATEGORIZED SUB-SCORES SECTION */
         .section {
           background: #f8fafc;
-          border-radius: 14px;
-          padding: 14px 16px;
-          margin-bottom: 12px;
+          border-radius: 12px;
+          padding: 12px 14px;
+          margin-bottom: 10px;
           border: 1px solid #e2e8f0;
           page-break-inside: avoid;
           break-inside: avoid;
         }
 
-        .section-title {
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          color: #0284c7;
-          font-weight: 800;
-          margin-bottom: 8px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .rationale-text {
-          font-size: 11.5px;
-          color: #334155;
-          margin: 0;
-          line-height: 1.5;
-        }
-
-        /* SUB-SCORES BARS */
         .sub-score-row {
-          margin-bottom: 8px;
+          margin-bottom: 7px;
         }
 
         .sub-score-header {
           display: flex;
           justify-content: space-between;
-          font-size: 11px;
+          font-size: 10.5px;
           font-weight: 700;
           color: #334155;
           margin-bottom: 3px;
@@ -321,7 +459,7 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
 
         .progress-bg {
           background: #e2e8f0;
-          height: 8px;
+          height: 7px;
           border-radius: 4px;
           overflow: hidden;
         }
@@ -346,8 +484,8 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
         .recs-list li {
           position: relative;
           padding-left: 18px;
-          margin-bottom: 6px;
-          font-size: 11px;
+          margin-bottom: 5px;
+          font-size: 10.5px;
           color: #334155;
           line-height: 1.4;
         }
@@ -357,23 +495,22 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
           position: absolute;
           left: 0;
           top: 0;
-          font-size: 10px;
+          font-size: 9.5px;
         }
 
         /* FOOTER */
         .footer {
           text-align: center;
-          margin-top: 16px;
-          padding-top: 10px;
+          margin-top: 14px;
+          padding-top: 8px;
           border-top: 1px solid #cbd5e1;
           color: #64748b;
-          font-size: 9.5px;
+          font-size: 9px;
           font-weight: 600;
           page-break-inside: avoid;
           break-inside: avoid;
         }
 
-        /* PRINT OVERRIDES */
         @media print {
           body {
             padding: 0;
@@ -413,16 +550,30 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
           <div class="confidence-note">${labels.confidence}</div>
         </div>
 
-        <!-- EXPLAINABLE RATIONALE -->
-        <div class="section">
-          <div class="section-title">🔍 ${labels.rationale}</div>
-          <p class="rationale-text">${result.explanation_text || "The 5-Agent AI pipeline synthesized all linguistic patterns, WHOIS domain signals, and contact channels to evaluate risk."}</p>
-        </div>
+        <!-- EXPLAINABLE AI RATIONALE (SEPARATE SECTIONS) -->
+        <div class="main-section-title">🔍 ${labels.rationale}</div>
+        ${sections.map(sec => {
+          let cardClass = '';
+          if (sec.emoji === '🎯') cardClass = 'verdict-card';
+          else if (sec.emoji === '🔍') cardClass = 'evidence-card';
+          else if (sec.emoji === '✅') cardClass = 'conclusion-card';
+
+          return `
+            <div class="rationale-card ${cardClass}">
+              <div class="card-header">
+                <span class="card-emoji">${sec.emoji}</span>
+                <span>${sec.title}</span>
+              </div>
+              <div class="card-body">
+                ${formatBodyToHtml(sec.body)}
+              </div>
+            </div>
+          `;
+        }).join('')}
 
         <!-- CATEGORIZED SUB-SCORES -->
+        <div class="main-section-title">📊 ${labels.subScores}</div>
         <div class="section">
-          <div class="section-title">📊 ${labels.subScores}</div>
-          
           <div class="sub-score-row">
             <div class="sub-score-header">
               <span>${labels.financialRisk}</span>
@@ -455,8 +606,8 @@ export const exportAnalysisReport = (result, user, currentLanguage = null) => {
         </div>
 
         <!-- SAFETY RECOMMENDATIONS -->
+        <div class="main-section-title">💡 ${labels.recommendations}</div>
         <div class="section">
-          <div class="section-title">💡 ${labels.recommendations}</div>
           <ul class="recs-list">
             ${recs.map(r => `<li>${r}</li>`).join('')}
           </ul>
