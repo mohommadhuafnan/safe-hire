@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +31,26 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { openAIModal } = useAIModal();
+
+  const videoRef = useRef(null);
+
+  // Pause video when browser tab is inactive to optimize performance & battery
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (videoRef.current) {
+        if (document.hidden) {
+          videoRef.current.pause();
+        } else {
+          videoRef.current.play().catch(() => {});
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Pricing State: 'monthly' (1 Month) vs 'annual' (1 Year)
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -173,60 +193,92 @@ const LandingPage = () => {
   return (
     <div className="space-y-24 pb-16">
       
-      {/* HERO SECTION */}
-      <section className="relative pt-12 pb-8 px-6 text-center max-w-5xl mx-auto">
-        <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold mb-6 animate-pulse">
-          <ShieldCheck className="w-4 h-4 text-indigo-400" />
-          <span>{t('landing.tagline')}</span>
+      {/* FULL-SCREEN HERO SECTION WITH LOOPING VIDEO BACKGROUND */}
+      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden rounded-3xl mb-12 border border-slate-800/80 shadow-2xl bg-[#000000]">
+        
+        {/* VIDEO BACKGROUND & MULTI-LAYER OVERLAYS */}
+        <div className="absolute inset-0 z-0 overflow-hidden bg-[#000000]">
+          <video
+            ref={videoRef}
+            autoPlay
+            loop
+            muted
+            playsInline
+            poster="/images/scam_job_poster.png"
+            className="w-full h-full object-cover opacity-60 filter brightness-90 contrast-110 transition-opacity duration-1000 scale-105"
+          >
+            <source src="/vedio/vedio.mp4" type="video/mp4" />
+            Your browser does not support HTML5 video playback.
+          </video>
+
+          {/* Semi-transparent Overlay: rgba(0, 0, 0, 0.55) & dark navy gradient */}
+          <div className="absolute inset-0 bg-black/55 backdrop-blur-[1px] z-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-[#0A0F1C] z-10" />
+          <div className="absolute inset-0 bg-radial-at-c from-sky-900/20 via-transparent to-black/80 z-10" />
+
+          {/* Cybernetic Digital Grid Effect */}
+          <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] opacity-20 z-10" />
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-100 leading-tight mb-6">
-          {t('landing.headline', 'AI-Powered Protection Against')} <br className="hidden sm:inline" />
-          <span className="gradient-text">{t('landing.headline_accent', 'Recruitment & Job Scams')}</span>
-        </h1>
-
-        <p className="text-base sm:text-lg text-slate-400 max-w-3xl mx-auto leading-relaxed mb-8">
-          {t('landing.subhead')}
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            to="/signup"
-            className="w-full sm:w-auto px-8 py-4 rounded-xl btn-primary font-bold text-sm flex items-center justify-center space-x-2 shadow-lg hover:scale-105 transition"
-          >
-            <span>{t('landing.cta_start')}</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
-            to="/login"
-            className="w-full sm:w-auto px-8 py-4 rounded-xl btn-secondary font-semibold text-sm flex items-center justify-center space-x-2 hover:scale-105 transition"
-          >
-            <Lock className="w-4 h-4 text-indigo-400" />
-            <span>{t('landing.cta_login')}</span>
-          </Link>
-        </div>
-
-        {/* Trust Badges */}
-        <div className="mt-12 pt-8 border-t border-slate-900 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-400 font-medium">
-          <div className="flex items-center space-x-2">
-            <GraduationCap className="w-4 h-4 text-indigo-400" />
-            <span>{t('landing.badge_students', 'Built for University Students')}</span>
+        {/* HERO CONTENT */}
+        <div className="relative z-20 pt-16 pb-14 px-6 text-center max-w-5xl mx-auto space-y-8 animate-fade-in-up">
+          
+          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/20 border border-sky-400/30 text-sky-300 text-xs font-semibold shadow-lg shadow-sky-500/10 backdrop-blur-md animate-pulse">
+            <ShieldCheck className="w-4 h-4 text-sky-400" />
+            <span>{t('landing.tagline')}</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <Globe2 className="w-4 h-4 text-sky-400" />
-            <span>{t('landing.badge_languages', '5 South Asian Languages Supported')}</span>
+
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
+            {t('landing.headline', 'AI-Powered Protection Against')} <br className="hidden sm:inline" />
+            <span className="gradient-text">{t('landing.headline_accent', 'Recruitment & Job Scams')}</span>
+          </h1>
+
+          <p className="text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed drop-shadow">
+            {t('landing.subhead')}
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+            <Link
+              to="/dashboard"
+              className="w-full sm:w-auto px-9 py-4 rounded-xl btn-glow-blue font-extrabold text-sm text-white flex items-center justify-center space-x-2.5 shadow-xl transition duration-300"
+            >
+              <Sparkles className="w-4 h-4 text-cyan-300 animate-spin" style={{ animationDuration: '4s' }} />
+              <span>{t('landing.cta_analyze', 'Analyze Job Poster')}</span>
+              <ArrowRight className="w-4 h-4 text-white" />
+            </Link>
+            
+            <a
+              href="#demo-showcase"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl glass-card font-semibold text-sm text-slate-200 hover:text-white flex items-center justify-center space-x-2 border border-slate-700 hover:border-sky-400/50 hover:bg-slate-900/80 transition duration-300"
+            >
+              <HelpCircle className="w-4 h-4 text-sky-400" />
+              <span>{t('landing.cta_learn', 'Learn More')}</span>
+            </a>
           </div>
-          <div className="flex items-center space-x-2">
-            <BrainCircuit className="w-4 h-4 text-emerald-400" />
-            <span>{t('landing.badge_pipeline', '5-Agent AI Pipeline')}</span>
+
+          {/* Trust Badges */}
+          <div className="mt-12 pt-8 border-t border-slate-800/80 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-300 font-medium">
+            <div className="flex items-center space-x-2 bg-slate-950/70 px-3.5 py-1.5 rounded-full border border-slate-800">
+              <GraduationCap className="w-4 h-4 text-indigo-400" />
+              <span>{t('landing.badge_students', 'Built for University Students')}</span>
+            </div>
+            <div className="flex items-center space-x-2 bg-slate-950/70 px-3.5 py-1.5 rounded-full border border-slate-800">
+              <Globe2 className="w-4 h-4 text-sky-400" />
+              <span>{t('landing.badge_languages', '5 South Asian Languages Supported')}</span>
+            </div>
+            <div className="flex items-center space-x-2 bg-slate-950/70 px-3.5 py-1.5 rounded-full border border-slate-800">
+              <BrainCircuit className="w-4 h-4 text-emerald-400" />
+              <span>{t('landing.badge_pipeline', '5-Agent AI Pipeline')}</span>
+            </div>
           </div>
+
         </div>
       </section>
 
       {/* ========================================================================= */}
       {/* FAKE VS REAL JOB POSTER DEMONSTRATION SHOWCASE */}
       {/* ========================================================================= */}
-      <section className="max-w-6xl mx-auto px-6">
+      <section id="demo-showcase" className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-12 space-y-3">
           <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
             <AlertTriangle className="w-4 h-4" />
