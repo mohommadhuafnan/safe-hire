@@ -106,7 +106,7 @@ class IntakeAgent:
                             }
                         ]
                     }
-                    res = requests.post(rest_url, json=rest_payload, timeout=12)
+                    res = requests.post(rest_url, json=rest_payload, timeout=3.5)
                     if res.status_code == 200:
                         data = res.json()
                         content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
@@ -144,7 +144,7 @@ class IntakeAgent:
                         "max_tokens": 4096
                     }
 
-                    res = requests.post(url, json=payload, headers=headers, timeout=12)
+                    res = requests.post(url, json=payload, headers=headers, timeout=3.5)
                     if res.status_code == 200:
                         data = res.json()
                         content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -195,7 +195,7 @@ class IntakeAgent:
                     "temperature": 0.1,
                     "max_tokens": 2048
                 }
-                res = requests.post(deepseek_url, json=payload, headers=headers, timeout=10)
+                res = requests.post(deepseek_url, json=payload, headers=headers, timeout=3.5)
                 if res.status_code == 200:
                     data = res.json()
                     content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -254,7 +254,7 @@ class IntakeAgent:
                 "isOverlayRequired": False,
                 "OCREngine": 2
             }
-            res = requests.post(url, data=payload, timeout=12)
+            res = requests.post(url, data=payload, timeout=3.5)
             if res.status_code == 200:
                 data = res.json()
                 parsed_results = data.get("ParsedResults", [])

@@ -36,7 +36,7 @@ class VerificationAgent:
             
             # 1. Query endpoint for full domain WHOIS payload
             query_url = f"https://api.apilayer.com/whois/query?domain={domain}"
-            res = requests.get(query_url, headers=headers, timeout=5)
+            res = requests.get(query_url, headers=headers, timeout=3.5)
             
             whois_data = None
             if res.status_code == 200:
@@ -207,7 +207,7 @@ class VerificationAgent:
                     "threatEntries": [{"url": target_url}]
                 }
             }
-            res = requests.post(endpoint, json=payload, timeout=5)
+            res = requests.post(endpoint, json=payload, timeout=3.5)
             if res.status_code == 200:
                 data = res.json()
                 matches = data.get("matches", [])
@@ -279,7 +279,7 @@ class VerificationAgent:
                 "api_key": api_key,
                 "email": email.strip()
             }
-            res = requests.get(url, params=params, timeout=10)
+            res = requests.get(url, params=params, timeout=3.5)
             if res.status_code == 200:
                 data = res.json()
                 

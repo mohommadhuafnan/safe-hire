@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # Gemini AI Settings
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL_PRIMARY: str = os.getenv("GEMINI_MODEL_PRIMARY", "gemini-2.5-flash")
-    GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "45"))
+    GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "5"))
 
     # DeepSeek V4 AI Settings (Hugging Face Router)
     DEEPSEEK_V4_API_KEY: str = os.getenv("DEEPSEEK_V4_API_KEY", "")
