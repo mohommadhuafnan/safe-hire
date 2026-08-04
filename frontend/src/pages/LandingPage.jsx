@@ -734,7 +734,59 @@ const LandingPage = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* PREMIUM SUBSCRIPTION & PRICING PLANS SECTION (LKR) */}
+      {/* KEY FEATURES GRID (WHY CHOOSE SAFE-HIRE) */}
+      <section className="max-w-6xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-100">
+            {t('landing.features_title', 'Why Choose SAFE-HIRE')}
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4 border border-indigo-500/20 hover:border-indigo-400/50 transition">
+            <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400">
+              <BrainCircuit className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-100 mb-1">{t('landing.feature_1_title', '5-Agent AI Pipeline')}</h3>
+              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_1_desc', 'Multimodal OCR vision, linguistic signal analysis, WHOIS domain security, and Gemini AI reasoning working together.')}</p>
+            </div>
+          </div>
+
+          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4 border border-sky-500/20 hover:border-sky-400/50 transition">
+            <div className="p-3 rounded-xl bg-sky-500/10 text-sky-400">
+              <Globe2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-100 mb-1">{t('landing.feature_2_title', '5 South Asian Languages')}</h3>
+              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_2_desc', 'Supports English, Sinhala, Tamil, Hindi, and Bengali for localized fraud detection across South Asia.')}</p>
+            </div>
+          </div>
+
+          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4 border border-teal-500/20 hover:border-teal-400/50 transition">
+            <div className="p-3 rounded-xl bg-teal-500/10 text-teal-400">
+              <Search className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-100 mb-1">{t('landing.feature_3_title', 'Live Technical API Audit')}</h3>
+              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_3_desc', 'Integrated with Abstract API Email Validation, Google Safe Browsing v4 threat matches, and WHOIS domain age lookups.')}</p>
+            </div>
+          </div>
+
+          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4 border border-emerald-500/20 hover:border-emerald-400/50 transition">
+            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-100 mb-1">{t('landing.feature_4_title', 'Dynamic Action Recommendations')}</h3>
+              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_4_desc', 'Generates 100% poster-tailored safety guidance referencing exact recruiter emails, fee terms, and university reporting portals.')}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* PREMIUM SUBSCRIPTION & PRICING PLANS SECTION */}
       {/* ========================================================================= */}
       <section id="pricing" className="max-w-6xl mx-auto px-6 scroll-mt-24">
         <div className="text-center mb-10 space-y-3">
@@ -1049,58 +1101,6 @@ const LandingPage = () => {
             </div>
           </div>
 
-        </div>
-      </section>
-
-      {/* KEY FEATURES GRID */}
-
-      <section className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-100">
-            {t('landing.features_title')}
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4">
-            <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400">
-              <BrainCircuit className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-slate-100 mb-1">{t('landing.feature_1_title')}</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_1_desc')}</p>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4">
-            <div className="p-3 rounded-xl bg-sky-500/10 text-sky-400">
-              <Globe2 className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-slate-100 mb-1">{t('landing.feature_2_title')}</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_2_desc')}</p>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4">
-            <div className="p-3 rounded-xl bg-teal-500/10 text-teal-400">
-              <Search className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-slate-100 mb-1">{t('landing.feature_3_title')}</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_3_desc')}</p>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4">
-            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-slate-100 mb-1">{t('landing.feature_4_title')}</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_4_desc')}</p>
-            </div>
-          </div>
         </div>
       </section>
 
