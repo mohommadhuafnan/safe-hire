@@ -1,23 +1,44 @@
-import sys
-import requests
-from app.config import settings
+"""Test Gemini API key validity after rate limit cooldown."""
+import sys, os, requests, time
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8')
+# Key is loaded from environment — never hardcode secrets in source files
+KEY = os.environ.get("GEMINI_API_KEY", "")
+if not KEY:
+    print("ERROR: GEMINI_API_KEY environment variable not set. Run: set GEMINI_API_KEY=your_key")
+    sys.exit(1)
+MODELS = ["gemini-2.0-flash-lite", "gemini-2.0-flash", "gemini-2.5-flash"]
 
-print("Testing Gemini API Key:", settings.GEMINI_API_KEY[:8] + "...")
+print("Waiting 15s for rate limit cooldown...")
+time.sleep(15)
 
-# Test endpoint model list / generation
-url = f"https://generativelanguage.googleapis.com/v1beta/models?key={settings.GEMINI_API_KEY}"
+for model in MODELS:
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={KEY}"
+    payload = {
+        "contents": [{"parts": [{"text": "Reply with the single word: OK"}]}],
+        "generationConfig": {"maxOutputTokens": 10, "temperature": 0.0}
+    }
+    try:
+        r = requests.post(url, json=payload, timeout=20)
+        if r.status_code == 200:
+            text = (
+                r.json()
+                .get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+            )
+            print(f"[{model}] SUCCESS - Response: {text.strip()[:60]}")
+            break
+        elif r.status_code == 429:
+            quota_msg = r.json().get("error", {}).get("message", "quota exceeded")
+            print(f"[{model}] 429 QUOTA LIMIT - Key is VALID but rate-limited: {quota_msg[:100]}")
+        elif r.status_code == 401:
+            print(f"[{model}] 401 UNAUTHORIZED - Key is INVALID")
+            break
+        else:
+            print(f"[{model}] HTTP {r.status_code}: {r.text[:150]}")
+    except Exception as e:
+        print(f"[{model}] ERROR: {e}")
 
-try:
-    res = requests.get(url, timeout=5)
-    print("API Response Status Code:", res.status_code)
-    if res.status_code == 200:
-        data = res.json()
-        models = [m.get("name") for m in data.get("models", [])]
-        print("Available Models:", models[:5])
-    else:
-        print("Response Error Body:", res.text[:300])
-except Exception as e:
-    print("Request exception:", e)
+print("\nDone.")

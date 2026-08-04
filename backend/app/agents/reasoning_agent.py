@@ -1,282 +1,597 @@
+import re
 import json
 import logging
-import requests
+import asyncio
 import base64
-from typing import Dict, Any
+from concurrent.futures import ThreadPoolExecutor
+from typing import Dict, Any, Optional
+import requests
 from app.config import settings
 
 logger = logging.getLogger("safe_hire.reasoning_agent")
 
+# Shared thread pool for running synchronous HTTP calls without blocking the event loop
+_http_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="reasoning_http")
+
+
+def _extract_json_from_text(text: str) -> Optional[dict]:
+    """
+    Robustly extract a JSON object from raw AI output that may contain:
+    - Markdown code fences (```json ... ```)
+    - <think>...</think> reasoning blocks (DeepSeek)
+    - Extra text before or after the JSON object
+    - Partial truncation at end of output
+    Returns a parsed dict or None if extraction fails.
+    """
+    if not text:
+        return None
+
+    # 1. Strip <think>...</think> blocks (DeepSeek extended thinking)
+    if "<think>" in text and "</think>" in text:
+        text = text.split("</think>")[-1].strip()
+
+    # 2. Strip markdown code fences
+    text = re.sub(r"```(?:json)?", "", text).replace("```", "").strip()
+
+    # 3. Try direct parse first (fastest path)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # 4. Regex: find the first complete JSON object (handles extra surrounding text)
+    match = re.search(r"\{[\s\S]*\}", text)
+    if match:
+        candidate = match.group(0)
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            pass
+
+    # 5. Last resort: try to fix truncated JSON by finding the last complete field
+    # Strip everything after the last complete value-ending character
+    for end_char in ("}", "]"):
+        last_pos = text.rfind(end_char)
+        if last_pos != -1:
+            trimmed = text[:last_pos + 1]
+            try:
+                return json.loads(trimmed)
+            except json.JSONDecodeError:
+                continue
+
+    return None
+
+
+def _build_gemini_prompt(cleaned_text: str, linguistic_data: dict, verification_data: dict, target_lang_name: str, language: str) -> str:
+    """Build a clear, structured Gemini scam analysis prompt."""
+    return f"""You are SAFE-HIRE's Senior AI Recruitment Fraud Intelligence Specialist.
+Perform an EXHAUSTIVE analysis of the job posting below and return a single raw JSON object.
+
+CRITICAL INSTRUCTION: Output ONLY a raw JSON object. No markdown, no code fences, no extra text before or after the JSON.
+
+[INPUT CONTENT]:
+"{cleaned_text[:4000]}"
+
+[LINGUISTIC ANALYSIS SIGNALS]:
+- Payment/Registration Fee Demanded: {linguistic_data.get('has_payment_demand')}
+- Fee Terms Found: {linguistic_data.get('matched_payment')}
+- Urgency Pressure Tactics: {linguistic_data.get('has_urgency_tactics')}
+- Urgency Keywords: {linguistic_data.get('matched_urgency')}
+- Brand Impersonation Flags: {linguistic_data.get('impersonation_flags')}
+- Suspicious Channels (Telegram/WhatsApp only): {linguistic_data.get('matched_suspicious_terms')}
+- Claimed Brand: {linguistic_data.get('claimed_brand')}
+- Free Email Domain Used: {linguistic_data.get('free_email')}
+
+[DOMAIN VERIFICATION SIGNALS]:
+- Target Domain: {verification_data.get('domain')}
+- WHOIS Status: {verification_data.get('whois_info', {}).get('whois_status')}
+- Domain Age (Days): {verification_data.get('whois_info', {}).get('registered_days')}
+- Is New Domain (<90 days): {verification_data.get('whois_info', {}).get('is_new_domain')}
+- Safe Browsing Status: {verification_data.get('safe_browsing', {}).get('status')}
+- Corporate Trust Score: {verification_data.get('verification_trust_score')}
+
+[SCORING RULES]:
+1. SCAM/HIGH RISK (scam_score 75-100): ANY of → fee demand, Telegram-only contact, brand impersonation with free email (@gmail/@yahoo), domain <90 days old + fee demand, unrealistic income for simple work.
+2. GENUINE/LOW RISK (scam_score 5-25): ALL of → zero fee demands, official corporate email/domain, realistic role and salary, no Telegram-only contact.
+3. MODERATE RISK (scam_score 30-60): Questionable but lacks decisive fraud signal (vague salary, unverifiable domain, no direct fee demand).
+
+[OUTPUT LANGUAGE]: {target_lang_name} ({language})
+Write the "explanation" field natively in {target_lang_name}.
+
+Return EXACTLY this JSON structure (no extra fields, no markdown):
+{{
+  "scam_score": <integer 0-100>,
+  "confidence_score": <integer 90-99>,
+  "risk_level": "<Severe Risk | High Risk | Moderate Risk | Low Risk>",
+  "explanation": "<Multi-section analysis in {target_lang_name}>:\\n\\n📋 POSTER SUMMARY:\\n[Company name, job role, salary, contact info, application method]\\n\\n🎯 SCAM RISK VERDICT:\\n[Explicit FAKE/GENUINE verdict with scam_score and 2-3 sentence reasoning]\\n\\n🔍 DETAILED EVIDENCE & RED FLAGS:\\n[Every specific signal — exact fee terms, email addresses, suspicious contacts, domain age, brand names, or proof of legitimacy]\\n\\n✅ SAFETY CONCLUSION:\\n[Clear final verdict and specific actionable advice for the job seeker]",
+  "reasons": [
+    "<Specific finding 1 with exact text/keyword from the poster>",
+    "<Specific finding 2 with exact text/keyword from the poster>",
+    "<Specific finding 3 with exact text/keyword from the poster>"
+  ],
+  "sub_scores": {{
+    "financial_fee_risk": <integer 0-100>,
+    "impersonation_risk": <integer 0-100>,
+    "domain_reputation_risk": <integer 0-100>,
+    "urgency_pressure_risk": <integer 0-100>
+  }}
+}}"""
+
+
+def _build_deepseek_prompt(cleaned_text: str, linguistic_data: dict, verification_data: dict, target_lang_name: str, language: str) -> str:
+    """Build a concise DeepSeek reasoning prompt (no image support, text-only)."""
+    return f"""You are SAFE-HIRE's AI Recruitment Scam Analysis Specialist.
+Analyze the job posting below and return ONLY a raw JSON object (no markdown, no extra text).
+
+[INPUT]:
+"{cleaned_text[:2500]}"
+
+[SIGNALS]:
+- Fee Demand: {linguistic_data.get('has_payment_demand')} | Terms: {linguistic_data.get('matched_payment')}
+- Urgency Tactics: {linguistic_data.get('has_urgency_tactics')} | Keywords: {linguistic_data.get('matched_urgency')}
+- Brand Impersonation: {linguistic_data.get('impersonation_flags')}
+- Suspicious Channels: {linguistic_data.get('matched_suspicious_terms')}
+- Domain: {verification_data.get('domain')} | WHOIS: {verification_data.get('whois_info', {}).get('whois_status')}
+- Safe Browsing: {verification_data.get('safe_browsing', {}).get('status')}
+- Trust Score: {verification_data.get('verification_trust_score')}
+
+[RULES]:
+- SCAM (75-100): fee demand OR Telegram-only OR brand impersonation with free email OR new domain + fee
+- GENUINE (5-25): zero fees, official domain, realistic role
+- MODERATE (30-60): questionable but no decisive fraud signal
+
+[LANGUAGE]: Write "explanation" in {target_lang_name} ({language}).
+
+Return ONLY this JSON (no markdown):
+{{
+  "scam_score": <integer 0-100>,
+  "confidence_score": <integer 90-99>,
+  "risk_level": "<Severe Risk | High Risk | Moderate Risk | Low Risk>",
+  "explanation": "<📋 POSTER SUMMARY:\\n[...]\\n\\n🎯 SCAM RISK VERDICT:\\n[...]\\n\\n🔍 DETAILED EVIDENCE & RED FLAGS:\\n[...]\\n\\n✅ SAFETY CONCLUSION:\\n[...]>",
+  "reasons": ["<finding 1>", "<finding 2>", "<finding 3>"],
+  "sub_scores": {{
+    "financial_fee_risk": <0-100>,
+    "impersonation_risk": <0-100>,
+    "domain_reputation_risk": <0-100>,
+    "urgency_pressure_risk": <0-100>
+  }}
+}}"""
+
+
 class ReasoningAgent:
-    """Agent 4: Synthesizes multi-agent signals using Google Gemini 3.6 / 2.5 Flash AI into deep 100% explainable report."""
+    """Agent 4: Synthesizes multi-agent signals using Google Gemini AI into a deep,
+    structured, explainable scam analysis report. Falls back to DeepSeek V4 Flash,
+    then a rule engine, ensuring 100% uptime."""
 
-    EXPLANATIONS = {
-        "en": {
-            "Severe Risk": "CRITICAL FRAUD WARNING: Deep analysis detected high-severity scam indicators including mandatory upfront payment requests, corporate brand email impersonation (@gmail.com for major firm), or suspicious domain WHOIS records. Legitimate employers NEVER charge candidates for application, laptop, or registration fees.",
-            "High Risk": "HIGH RISK RECRUITMENT ALERT: Multiple scam indicators were flagged, such as artificial urgency pressure, unverified sender domains, or informal Telegram/WhatsApp-only contact channels.",
-            "Moderate Risk": "MODERATE RISK ASSESSMENT: Some questionable recruitment patterns were detected (unverified domain age or vague job details). Proceed with caution and verify via the official corporate HR portal.",
-            "Low Risk": "LOW SCAM RISK: No major recruitment fraud indicators were detected. The offer appears authentic, but always confirm directly through the official company careers portal."
-        },
-        "si": {
-            "Severe Risk": "අතිශය වංචනික රැකියා අවදානම: පරීක්ෂාවේදී ලියාපදිංචි ගාස්තු අය කිරීම්, ව්‍යාජ විද්‍යුත් තැපෑල හෝ සැකකටයුතු තොරතුරු අඩංගු බව හඳුනාගෙන ඇත. නීත්‍යානුකූල ආයතන කිසිවිටෙකත් අයදුම්කරුවන්ගෙන් මුදල් අය නොකරයි.",
-            "High Risk": "ඉහළ අවදානම් රැකියා නිරීක්ෂණය: හදිසි බඳවාගැනීම් තර්ජන, නිල නොවන විද්‍යුත් තැපෑල හෝ ටෙලිග්‍රෑම්/වට්ස්ඇප් හරහා පමණක් සම්බන්ධ වීම වැනි වංචනික ලක්ෂණ හඳුනාගෙන ඇත.",
-            "Moderate Risk": "මධ්‍යම අවදානම් මට්ටම: පරීක්ෂා කළ යුතු තොරතුරු කිහිපයක් පවතී. නිල ආයතනික වෙබ් අඩවිය හරහා තොරතුරු තහවුරු කරගන්න.",
-            "Low Risk": "අඩු වංචා අවදානම: ප්‍රධාන වංචනික ලක්ෂණ කිසිවක් හඳුනාගෙන නොමැත. කෙසේ වෙතත් නිල ආයතනික HR අංශය හරහා තහවුරු කරගන්න."
-        },
-        "ta": {
-            "Severe Risk": "மிகவும் ஆபத்தான மோசடி எச்சரிக்கை: கட்டணம் செலுத்துதல், போலி மின்னஞ்சல் அல்லது சந்தேகத்திற்குரிய விவரங்கள் உள்ளன. உண்மையான நிறுவனங்கள் ஒருபோதும் விண்ணப்பதாரர்களிடம் பணம் கேட்காது.",
-            "High Risk": "அதிக ஆபத்து எச்சரிக்கை: அவசர ஆட்சேர்ப்பு அழுத்தம், அதிகாரப்பூர்வமற்ற மின்னஞ்சல் அல்லது டெலிகிராம்/வாட்ஸ்அப் மூலமாக மட்டுமே தொடர்பு கொள்ளும் சந்தேகத்திற்குரிய அறிகுறிகள் கண்டறியப்பட்டுள்ளன.",
-            "Moderate Risk": "மிதமான ஆபத்து: சில கேள்விகளுக்குரிய விவரங்கள் கொடியிடப்பட்டுள்ளன. அதிகாரப்பூர்வ நிறுவன வலைத்தளம் மூலம் சரிபார்க்கவும்.",
-            "Low Risk": "குறைந்த ஆபத்து: முக்கிய மோசடி குறிகாட்டிகள் எதுவும் கண்டறியப்படவில்லை. இருப்பினும் அதிகாரப்பூர்வ எச்.ஆர் போர்ட்டல் மூலம் உறுதிப்படுத்தவும்."
-        },
-        "hi": {
-            "Severe Risk": "गंभीर धोखाधड़ी चेतावनी: इस नौकरी के विज्ञापन में पंजीकरण शुल्क मांगने, फर्जी ईमेल या संदिग्ध डोमेन जैसे गंभीर धोखाधड़ी के संकेत मिले हैं। असली कंपनियां कभी पैसे नहीं मांगतीं।",
-            "High Risk": "उच्च जोखिम: दबाव की रणनीति, अनधिकृत ईमेल या केवल टेलीग्राम/व्हाट्सएप संपर्क जैसे कई संदिग्ध धोखाधड़ी के संकेत पाए गए हैं।",
-            "Moderate Risk": "मध्यम जोखिम: कुछ संदिग्ध विवरण पाए गए हैं। आधिकारिक कंपनी वेबसाइट या एचआर पोर्टल से सत्यापन करें।",
-            "Low Risk": "कम जोखिम: कोई मुख्य धोखाधड़ी के संकेत नहीं मिले हैं। फिर भी आधिकारिक कंपनी पोर्टल से पुष्टि अवश्य करें।"
-        },
-        "bn": {
-            "Severe Risk": "মারাত্মক প্রতারণা সতর্কতা: এই চাকরির বিজ্ঞাপনে নিবন্ধন ফি দাবি করা, জাল ইমেল বা সন্দেহজনক ডোমেইনের মতো গুরুতর প্রতারণার সংকেত পাওয়া গেছে। আসল প্রতিষ্ঠান কখনোই টাকা চায় না।",
-            "High Risk": "উচ্চ ঝুঁকি: জরুরী নিয়োগের চাপ, অননুমোদিত ইমেল বা কেবল টেলিগ্রাম/হোয়াটসঅ্যাপ যোগাযোগের মতো একাধিক সন্দেহজনক লক্ষণ শনাক্ত হয়েছে।",
-            "Moderate Risk": "মাঝারি ঝুঁকি: কিছু সন্দেহজনক বিবরণ পাওয়া গেছে। অফিসিয়াল কোম্পানি ওয়েবসাইট বা এইচআর পোর্টাল থেকে যাচাই করুন।",
-            "Low Risk": "কম ঝুঁকি: কোনো প্রধান প্রতারণার সংকেত পাওয়া যায়নি। তবুও অফিসিয়াল কোম্পানি পোর্টালের মাধ্যমে নিশ্চিত হন।"
-        }
-    }
+    # Model rotation: fastest/cheapest first, most capable last
+    GEMINI_MODELS = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-2.5-pro",
+    ]
 
-    def call_gemini_ai_reasoning_api(self, cleaned_text: str, linguistic_data: dict, verification_data: dict, language: str, image_bytes: bytes = None) -> Dict[str, Any]:
-        """Calls Google Gemini API (gemini-2.5-flash / 2.0-flash) with optional multimodal poster image payload for 100% accurate scam reasoning."""
-        gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
-        if not gemini_key:
-            return None
+    def _log_api_key_status(self, key: str, provider: str) -> None:
+        """Log a safe diagnostic for the API key without exposing the full value."""
+        if not key:
+            logger.warning(f"[{provider}] API key is NOT configured (empty).")
+        elif len(key) < 20:
+            logger.warning(f"[{provider}] API key looks too short ({len(key)} chars). May be invalid.")
+        else:
+            prefix = key[:6]
+            suffix = key[-4:]
+            logger.info(f"[{provider}] API key present: {prefix}...{suffix} ({len(key)} chars)")
+            # Both AIza (legacy) and AQ. (newer Google AI Studio format) are valid Gemini key prefixes
+            if provider == "Gemini" and not (key.startswith("AIza") or key.startswith("AQ.")):
+                logger.warning(
+                    f"[{provider}] Unexpected key prefix '{prefix}'. "
+                    f"Expected 'AIza' (legacy) or 'AQ.' (newer Google AI Studio). "
+                    f"Authentication may fail."
+                )
 
-        lang_map = {"en": "English", "si": "Sinhala (සිංහල)", "ta": "Tamil (தமிழ்)", "hi": "Hindi (हिंदी)", "bn": "Bengali (বাংলা)"}
-        target_lang_name = lang_map.get(language, "English")
+    def _run_sync_http(self, fn, *args, **kwargs):
+        """Run a synchronous HTTP call in the thread pool (non-blocking for async callers)."""
+        loop = asyncio.get_event_loop()
+        return loop.run_in_executor(_http_executor, lambda: fn(*args, **kwargs))
 
-        prompt = f"""
-        You are SAFE-HIRE's Senior AI Recruitment Scam Analysis Specialist.
-        Perform an exhaustive, deep 100% accurate security evaluation of the candidate job posting/flyer below to determine if it is a FAKE / SCAM POSTER or a GENUINE RECRUITMENT POSTER:
-
-        [INPUT CONTENT / POSTER OCR TEXT]:
-        "{cleaned_text[:3000]}"
-
-        [AGENT LINGUISTIC SIGNALS]:
-        - Payment / Registration Fee Demand: {linguistic_data.get('has_payment_demand')}
-        - Urgency Pressure Tactics: {linguistic_data.get('has_urgency_tactics')}
-        - Brand Email Impersonation Flags: {linguistic_data.get('impersonation_flags')}
-        - Matched Fee Terms: {linguistic_data.get('matched_payment')}
-        - Suspicious Channels (Telegram/WhatsApp only): {linguistic_data.get('matched_suspicious_terms')}
-
-        [AGENT DOMAIN VERIFICATION SIGNALS]:
-        - Target Domain: {verification_data.get('domain')}
-        - WHOIS Status: {verification_data.get('whois_info', {}).get('whois_status')}
-        - Safe Browsing Rating: {verification_data.get('safe_browsing', {}).get('status')}
-        - Corporate Trust Score: {verification_data.get('verification_trust_score')}
-
-        [CRITICAL FAKE VS GENUINE EVALUATION RULES]:
-        1. FIRST, carefully classify whether this job offer / poster is a FAKE / SCAM RECRUITMENT POSTER or a GENUINE RECRUITMENT POSTER.
-        2. A poster is a FAKE / SCAM POSTER (classify scam_score between 75 and 100, "Severe Risk" or "High Risk") if ANY of the following apply:
-           - It requests ANY money payment, registration fee, application charge, security deposit, laptop fee, uniform fee, or training charge (even if claimed "refundable").
-           - It demands payment or contact via mobile cash transfer (GPay, PhonePe, Paytm, EasyCash, Bkash, Nagad, or personal bank accounts).
-           - It directs applicants ONLY to Telegram channels (@handle or t.me) or personal WhatsApp numbers without official corporate emails or domain portals.
-           - It offers unrealistically high income for simple work-from-home tasks (e.g. data entry, typing, copying-pasting) with zero qualifications or interview required.
-           - It impersonates a recognized corporate brand (e.g. Google, Virtusa, WSO2, Dialog, TCS, Amazon, Garuttam) while using a generic free email (@gmail, @yahoo) or fake domain.
-        3. A poster is a GENUINE RECRUITMENT POSTER (classify scam_score between 5 and 20, "Low Risk") ONLY if:
-           - There are NO upfront money or fee demands of any kind.
-           - It directs candidates to an official corporate website (e.g. company.com/careers) or verifiable corporate HR email.
-           - It follows standard, authentic recruitment practices.
-        4. The "explanation" field MUST start with an explicit verdict header in {target_lang_name}:
-           - If Fake/Scam: "🚨 FAKE / SCAM POSTER DETECTED: [Explain the exact scam factors, fee demands, suspicious contacts, or brand impersonation found in this poster]"
-           - If Genuine: "✅ GENUINE RECRUITMENT POSTER: [Explain why this job offer is legitimate, citing the company name, role, official domain, and absence of fee demands]"
-
-        [TARGET LANGUAGE]: {target_lang_name} ({language})
-
-        Return a valid raw JSON object matching this exact schema:
-        {{
-          "scam_score": <integer 0 to 100 representing exact scam risk probability>,
-          "confidence_score": 98,
-          "risk_level": "<Severe Risk | High Risk | Moderate Risk | Low Risk>",
-          "explanation": "<Write a custom 3-4 sentence detailed explanation natively in {target_lang_name} starting with 🚨 FAKE / SCAM POSTER DETECTED or ✅ GENUINE RECRUITMENT POSTER>",
-          "reasons": [
-            "<Specific signal point 1 mentioning exact details from this post in {target_lang_name}>",
-            "<Specific signal point 2 mentioning exact details from this post in {target_lang_name}>",
-            "<Specific signal point 3 mentioning exact details from this post in {target_lang_name}>"
-          ],
-          "sub_scores": {{
-             "financial_fee_risk": <integer 0-100>,
-             "impersonation_risk": <integer 0-100>,
-             "domain_reputation_risk": <integer 0-100>,
-             "urgency_pressure_risk": <integer 0-100>
-          }}
-        }}
-        Do not include markdown ```json formatting. Return raw JSON string only.
+    def _call_gemini_rest(self, model_name: str, gemini_key: str, prompt: str,
+                          base64_img: Optional[str], mime_type: str,
+                          use_thinking: bool = False) -> Optional[dict]:
         """
+        Call Gemini via the generateContent REST endpoint (supports multimodal image).
+        Optionally enables extended thinking for Gemini 2.5 models.
+        """
+        parts = [{"text": prompt}]
+        if base64_img:
+            parts.append({"inline_data": {"mime_type": mime_type, "data": base64_img}})
 
-        models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"]
+        generation_config: dict = {"temperature": 0.2, "maxOutputTokens": 8192}
+        payload: dict = {
+            "contents": [{"parts": parts}],
+            "generationConfig": generation_config,
+        }
 
-        from app.agents.intake_agent import IntakeAgent
-        mime_type = IntakeAgent.detect_image_mime_type(image_bytes) if image_bytes else "image/png"
-        base64_img = base64.b64encode(image_bytes).decode('utf-8') if image_bytes else None
+        # Enable extended thinking for Gemini 2.5 models (deeper reasoning)
+        if use_thinking and "2.5" in model_name:
+            payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 1024}
 
-        # 1. Try Gemini Vision REST Endpoint
-        for model_name in models_to_try:
-            try:
-                parts = [{"text": prompt}]
-                if base64_img:
-                    parts.append({"inline_data": {"mime_type": mime_type, "data": base64_img}})
-                
-                rest_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
-                rest_payload = {"contents": [{"parts": parts}]}
-                res = requests.post(rest_url, json=rest_payload, timeout=12)
-                if res.status_code == 200:
-                    data = res.json()
-                    content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                    clean = content.strip().replace("```json", "").replace("```", "").strip()
-                    if "<think>" in clean and "</think>" in clean:
-                        clean = clean.split("</think>")[-1].strip()
-                    parsed = json.loads(clean)
-                    logger.info(f"Successfully executed Gemini REST reasoning ({model_name})!")
+        timeout = getattr(settings, "GEMINI_TIMEOUT", 45)
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model_name}:generateContent?key={gemini_key}"
+        )
+
+        try:
+            res = requests.post(url, json=payload, timeout=timeout)
+            if res.status_code == 200:
+                data = res.json()
+                raw = (
+                    data.get("candidates", [{}])[0]
+                    .get("content", {})
+                    .get("parts", [{}])[0]
+                    .get("text", "")
+                )
+                parsed = _extract_json_from_text(raw)
+                if parsed and "scam_score" in parsed:
+                    logger.info(f"✅ Gemini REST ({model_name}) success — score: {parsed.get('scam_score')}")
                     return parsed
-            except Exception as e:
-                logger.warning(f"Gemini REST reasoning notice for {model_name}: {e}")
-
-        # 2. Try Gemini Vision OpenAI Endpoint
-        for model_name in models_to_try:
-            try:
-                url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-                headers = {
-                    "Authorization": f"Bearer {gemini_key}",
-                    "Content-Type": "application/json"
-                }
-                user_content = [{"type": "text", "text": prompt}]
-                if base64_img:
-                    user_content.append({"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{base64_img}"}})
-                
-                payload = {
-                    "model": model_name,
-                    "messages": [{"role": "user", "content": user_content}],
-                    "temperature": 0.2,
-                    "max_tokens": 4096
-                }
-                res = requests.post(url, json=payload, headers=headers, timeout=12)
-                if res.status_code == 200:
-                    data = res.json()
-                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                    clean = content.strip().replace("```json", "").replace("```", "").strip()
-                    if "<think>" in clean and "</think>" in clean:
-                        clean = clean.split("</think>")[-1].strip()
-                    parsed = json.loads(clean)
-                    logger.info(f"Successfully executed Gemini OpenAI reasoning ({model_name})!")
-                    return parsed
-            except Exception as e:
-                logger.warning(f"Gemini OpenAI reasoning notice for {model_name}: {e}")
+                elif raw:
+                    logger.warning(f"Gemini REST ({model_name}) returned non-JSON output (len={len(raw)})")
+            elif res.status_code == 429:
+                logger.warning(f"Gemini REST ({model_name}) — quota exceeded (429). Trying next model...")
+            elif res.status_code == 400:
+                logger.warning(f"Gemini REST ({model_name}) — bad request (400): {res.text[:300]}")
+            elif res.status_code == 401:
+                logger.error(f"Gemini REST ({model_name}) — authentication failed (401). Check your API key.")
+            else:
+                logger.warning(f"Gemini REST ({model_name}) — HTTP {res.status_code}: {res.text[:200]}")
+        except requests.exceptions.Timeout:
+            logger.warning(f"Gemini REST ({model_name}) — timed out after {timeout}s")
+        except Exception as e:
+            logger.warning(f"Gemini REST ({model_name}) — exception: {e}")
 
         return None
 
-    def call_deepseek_v4_reasoning_api(self, cleaned_text: str, linguistic_data: dict, verification_data: dict, language: str) -> Dict[str, Any]:
-        """Calls Hugging Face Router API (deepseek-ai/DeepSeek-V4-Flash) for high-reasoning effort multi-agent scam analysis."""
-        api_key = settings.DEEPSEEK_V4_API_KEY
+    def _call_gemini_openai_compat(self, model_name: str, gemini_key: str, prompt: str,
+                                   base64_img: Optional[str], mime_type: str) -> Optional[dict]:
+        """
+        Call Gemini via its OpenAI-compatible chat/completions endpoint.
+        Used as a secondary attempt when the REST endpoint fails or returns quota errors.
+        """
+        user_content = [{"type": "text", "text": prompt}]
+        if base64_img:
+            user_content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:{mime_type};base64,{base64_img}"},
+            })
+
+        url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+        headers = {"Authorization": f"Bearer {gemini_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": model_name,
+            "messages": [{"role": "user", "content": user_content}],
+            "temperature": 0.2,
+            "max_tokens": 8192,
+        }
+
+        timeout = getattr(settings, "GEMINI_TIMEOUT", 45)
+        try:
+            res = requests.post(url, json=payload, headers=headers, timeout=timeout)
+            if res.status_code == 200:
+                data = res.json()
+                raw = (
+                    data.get("choices", [{}])[0]
+                    .get("message", {})
+                    .get("content", "")
+                )
+                parsed = _extract_json_from_text(raw)
+                if parsed and "scam_score" in parsed:
+                    logger.info(f"✅ Gemini OpenAI-compat ({model_name}) success — score: {parsed.get('scam_score')}")
+                    return parsed
+                elif raw:
+                    logger.warning(f"Gemini OpenAI-compat ({model_name}) returned non-JSON (len={len(raw)})")
+            elif res.status_code == 429:
+                logger.warning(f"Gemini OpenAI-compat ({model_name}) — quota exceeded (429).")
+            elif res.status_code == 401:
+                logger.error(f"Gemini OpenAI-compat ({model_name}) — authentication failed (401).")
+            else:
+                logger.warning(f"Gemini OpenAI-compat ({model_name}) — HTTP {res.status_code}: {res.text[:200]}")
+        except requests.exceptions.Timeout:
+            logger.warning(f"Gemini OpenAI-compat ({model_name}) — timed out after {timeout}s")
+        except Exception as e:
+            logger.warning(f"Gemini OpenAI-compat ({model_name}) — exception: {e}")
+
+        return None
+
+    def call_gemini_ai_reasoning_api(
+        self,
+        cleaned_text: str,
+        linguistic_data: dict,
+        verification_data: dict,
+        language: str,
+        image_bytes: Optional[bytes] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Primary reasoning: calls Google Gemini API with optional multimodal image.
+        Tries each model in GEMINI_MODELS via REST first, then OpenAI-compat endpoint,
+        with extended thinking enabled for Gemini 2.5 models.
+        """
+        gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
+        self._log_api_key_status(gemini_key, "Gemini")
+
+        if not gemini_key:
+            return None
+
+        lang_map = {
+            "en": "English",
+            "si": "Sinhala (සිංහල)",
+            "ta": "Tamil (தமிழ்)",
+            "hi": "Hindi (हिंदी)",
+            "bn": "Bengali (বাংলা)",
+        }
+        target_lang_name = lang_map.get(language, "English")
+
+        prompt = _build_gemini_prompt(cleaned_text, linguistic_data, verification_data, target_lang_name, language)
+
+        # Prepare image data once (reused across all model attempts)
+        from app.agents.intake_agent import IntakeAgent
+        mime_type = IntakeAgent.detect_image_mime_type(image_bytes) if image_bytes else "image/png"
+        base64_img = base64.b64encode(image_bytes).decode("utf-8") if image_bytes else None
+
+        # Round 1: REST endpoint (supports vision + extended thinking)
+        for model_name in self.GEMINI_MODELS:
+            use_thinking = "2.5" in model_name  # Enable thinking only for 2.5 family
+            result = self._call_gemini_rest(model_name, gemini_key, prompt, base64_img, mime_type, use_thinking)
+            if result:
+                return result
+
+        # Round 2: OpenAI-compat endpoint (fallback for auth/format differences)
+        logger.info("Gemini REST attempts exhausted. Trying OpenAI-compat endpoint...")
+        for model_name in self.GEMINI_MODELS:
+            result = self._call_gemini_openai_compat(model_name, gemini_key, prompt, base64_img, mime_type)
+            if result:
+                return result
+
+        logger.warning("All Gemini model attempts failed. Falling back to DeepSeek.")
+        return None
+
+    def call_deepseek_v4_reasoning_api(
+        self,
+        cleaned_text: str,
+        linguistic_data: dict,
+        verification_data: dict,
+        language: str,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Secondary reasoning: calls Hugging Face Router → DeepSeek-V4-Flash.
+        Text-only (no image support). Used when Gemini is unavailable.
+        """
+        api_key = getattr(settings, "DEEPSEEK_V4_API_KEY", "") or ""
+        self._log_api_key_status(api_key, "DeepSeek V4")
+
         if not api_key:
             return None
 
-        url = f"{settings.DEEPSEEK_API_BASE_URL.rstrip('/')}/chat/completions"
-
-        lang_map = {"en": "English", "si": "Sinhala (සිංහල)", "ta": "Tamil (தமிழ்)", "hi": "Hindi (हिंदी)", "bn": "Bengali (বাংলা)"}
-        target_lang_name = lang_map.get(language, "English")
-
-        prompt = f"""
-        You are SAFE-HIRE's Senior AI Recruitment Scam Analysis Specialist.
-        Perform an exhaustive, deep 100% accurate security evaluation of the candidate job posting below to determine if it is a FAKE / SCAM POSTER or a GENUINE RECRUITMENT POSTER:
-
-        [INPUT CONTENT]:
-        "{cleaned_text[:2000]}"
-
-        [AGENT LINGUISTIC SIGNALS]:
-        - Payment / Registration Fee Demand: {linguistic_data.get('has_payment_demand')}
-        - Urgency Pressure Tactics: {linguistic_data.get('has_urgency_tactics')}
-        - Brand Email Impersonation Flags: {linguistic_data.get('impersonation_flags')}
-        - Matched Fee Terms: {linguistic_data.get('matched_payment')}
-        - Suspicious Channels (Telegram/WhatsApp only): {linguistic_data.get('matched_suspicious_terms')}
-
-        [AGENT DOMAIN VERIFICATION SIGNALS]:
-        - Target Domain: {verification_data.get('domain')}
-        - WHOIS Status: {verification_data.get('whois_info', {}).get('whois_status')}
-        - Safe Browsing Rating: {verification_data.get('safe_browsing', {}).get('status')}
-        - Corporate Trust Score: {verification_data.get('verification_trust_score')}
-
-        [CRITICAL FAKE VS GENUINE EVALUATION RULES]:
-        1. FIRST, classify whether this job posting is a FAKE / SCAM RECRUITMENT POSTER or a GENUINE RECRUITMENT POSTER.
-        2. A posting is a FAKE / SCAM POSTER (scam_score: 75 to 100, "Severe Risk" or "High Risk") if ANY of the following apply:
-           - Requests ANY money payment, registration fee, processing charge, laptop fee, uniform deposit, or training charge.
-           - Demands payment or contact via mobile payment apps (GPay, PhonePe, Paytm, EasyCash, Bkash, Nagad, personal account).
-           - Directs candidates ONLY to Telegram or personal WhatsApp numbers without an official corporate email or domain.
-           - Promises unrealistically high salary for simple work-from-home tasks without qualifications or formal interview.
-           - Impersonates a major corporate brand while using a generic free email (@gmail, @yahoo) or fake domain.
-        3. A posting is a GENUINE RECRUITMENT POSTER (scam_score: 5 to 20, "Low Risk") ONLY if:
-           - There are NO upfront fee demands of any kind.
-           - It connects applicants to official corporate portals (e.g. company.com/careers) or verifiable corporate HR email.
-        4. The "explanation" field MUST start with an explicit verdict header in {target_lang_name}:
-           - If Fake/Scam: "🚨 FAKE / SCAM POSTER DETECTED: [Explain the exact scam factors, fee demands, suspicious contacts, or impersonation]"
-           - If Genuine: "✅ GENUINE RECRUITMENT POSTER: [Explain why this job offer is legitimate, citing company name, role, and official domain]"
-
-        [TARGET LANGUAGE]: {target_lang_name} ({language})
-
-        [REQUIREMENTS]:
-        Return a valid raw JSON object matching this exact schema:
-        {{
-          "scam_score": <integer 0 to 100 representing exact scam risk probability>,
-          "confidence_score": <integer 90 to 99 representing AI analysis confidence %>,
-          "risk_level": "<Severe Risk | High Risk | Moderate Risk | Low Risk>",
-          "explanation": "<Write a 100% custom 3-4 sentence detailed explanation natively in {target_lang_name} starting with 🚨 FAKE / SCAM POSTER DETECTED or ✅ GENUINE RECRUITMENT POSTER>",
-          "reasons": [
-            "<Specific signal point 1>",
-            "<Specific signal point 2>",
-            "<Specific signal point 3>"
-          ],
-          "sub_scores": {{
-             "financial_fee_risk": <integer 0-100>,
-             "impersonation_risk": <integer 0-100>,
-             "domain_reputation_risk": <integer 0-100>,
-             "urgency_pressure_risk": <integer 0-100>
-          }}
-        }}
-        Do not include markdown ```json formatting. Return raw JSON string only.
-        """
-
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
+        lang_map = {
+            "en": "English",
+            "si": "Sinhala (සිංහල)",
+            "ta": "Tamil (தமிழ்)",
+            "hi": "Hindi (हिंदी)",
+            "bn": "Bengali (বাংলা)",
         }
+        target_lang_name = lang_map.get(language, "English")
+        prompt = _build_deepseek_prompt(cleaned_text, linguistic_data, verification_data, target_lang_name, language)
+
+        url = f"{settings.DEEPSEEK_API_BASE_URL.rstrip('/')}/chat/completions"
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         payload = {
             "model": settings.DEEPSEEK_MODEL_NAME,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.3,
+            "temperature": 0.2,
             "top_p": 0.95,
-            "max_tokens": 4096
+            "max_tokens": 4096,
         }
 
         try:
-            res = requests.post(url, json=payload, headers=headers, timeout=25)
+            res = requests.post(url, json=payload, headers=headers, timeout=30)
             if res.status_code == 200:
                 data = res.json()
                 choices = data.get("choices", [])
                 if choices:
-                    content = choices[0].get("message", {}).get("content", "")
-                    clean_str = content.strip().replace("```json", "").replace("```", "").strip()
-                    if "<think>" in clean_str and "</think>" in clean_str:
-                        clean_str = clean_str.split("</think>")[-1].strip()
-                    parsed = json.loads(clean_str)
-                    logger.info("Successfully executed DeepSeek-V4-Flash deep AI reasoning!")
-                    return parsed
+                    raw = choices[0].get("message", {}).get("content", "")
+                    parsed = _extract_json_from_text(raw)
+                    if parsed and "scam_score" in parsed:
+                        logger.info(f"✅ DeepSeek-V4-Flash success — score: {parsed.get('scam_score')}")
+                        return parsed
+                    elif raw:
+                        logger.warning(f"DeepSeek returned non-JSON output (len={len(raw)})")
+            elif res.status_code == 401:
+                logger.error("DeepSeek — authentication failed (401). Check DEEPSEEK_V4_API_KEY.")
+            elif res.status_code == 429:
+                logger.warning("DeepSeek — quota exceeded (429).")
+            else:
+                logger.warning(f"DeepSeek — HTTP {res.status_code}: {res.text[:200]}")
+        except requests.exceptions.Timeout:
+            logger.warning("DeepSeek — timed out after 30s")
         except Exception as e:
-            logger.warning(f"DeepSeek V4 reasoning notice: {e}")
+            logger.warning(f"DeepSeek reasoning exception: {e}")
 
         return None
 
-    def synthesize(self, intake_data: dict, linguistic_data: dict, verification_data: dict, language: str = "en", image_bytes: bytes = None) -> dict:
+    def _build_rule_engine_explanation(
+        self,
+        risk_level: str,
+        scam_score: int,
+        linguistic_data: dict,
+        verification_data: dict,
+        language: str,
+        cleaned_text: str,
+    ) -> tuple:
+        """
+        Build a detailed multi-section explanation using rule engine signals.
+        Called when all AI APIs fail — guarantees a human-readable report.
+        """
+        has_payment = linguistic_data.get("has_payment_demand", False)
+        has_impersonation = linguistic_data.get("has_impersonation_risk", False)
+        has_urgency = linguistic_data.get("has_urgency_tactics", False)
+        has_suspicious_channels = linguistic_data.get("has_suspicious_channels", False)
+        payment_terms = linguistic_data.get("matched_payment", [])
+        impersonation_flags = linguistic_data.get("impersonation_flags", [])
+        urgency_terms = linguistic_data.get("matched_urgency", [])
+        suspicious_terms = linguistic_data.get("matched_suspicious_terms", [])
+        claimed_brand = linguistic_data.get("claimed_brand", "")
+        free_email = linguistic_data.get("free_email", "")
+        domain = verification_data.get("domain", "Not Specified")
+        trust_score = verification_data.get("verification_trust_score", 85)
+        whois_status = verification_data.get("whois_info", {}).get("whois_status", "")
+        is_new_domain = verification_data.get("whois_info", {}).get("is_new_domain", False)
+
+        snippet = cleaned_text[:500].replace("\n", " ").strip() if cleaned_text else "No content provided."
+
+        reasons = []
+        if has_payment:
+            fee_list = ", ".join(f'"{t}"' for t in payment_terms[:5])
+            reasons.append(
+                f"⚠️ CRITICAL: Fee/payment demand detected — Found terms: {fee_list}. "
+                f"Legitimate employers NEVER charge candidates."
+            )
+        if has_impersonation:
+            reasons.append(f"🎭 Brand Impersonation: {'; '.join(impersonation_flags[:2])}")
+        if has_urgency:
+            urgency_list = ", ".join(f'"{t}"' for t in urgency_terms[:3])
+            reasons.append(f"⏰ Artificial Urgency: Pressure tactics — {urgency_list}")
+        if has_suspicious_channels:
+            ch_list = ", ".join(suspicious_terms[:3])
+            reasons.append(f"📱 Suspicious Contact Channel: Informal channels only — {ch_list}")
+        if is_new_domain:
+            reasons.append(
+                f"🌐 New Domain Risk: '{domain}' — {whois_status}. High-risk for newly created scam domains."
+            )
+        if domain and trust_score < 60:
+            reasons.append(
+                f"🔍 Domain Trust Score: {trust_score}/100 — below trusted threshold."
+            )
+        if not reasons:
+            reasons.append(
+                f"✅ No major fraud signals detected. Domain '{domain}' trust score: {trust_score}/100."
+            )
+
+        is_high_risk = risk_level in ("Severe Risk", "High Risk")
+
+        # Language-specific multi-section explanations
+        templates: dict = {
+            "si": {
+                True: (
+                    f"📋 පෝස්ටර් සාරාංශය:\nOCR: \"{snippet[:200]}...\"\n\n"
+                    f"🎯 වංචා අවදානම් තීරණය:\n🚨 {risk_level} (Score: {scam_score}/100)\n"
+                    f"ශ්‍රී ලංකාවේ නීත්‍යානුකූල ආයතන කිසිවිටෙකත් ලියාපදිංචි ගාස්තු, ලැප්ටොප් ගාස්තු, හෝ ඕනෑම ආකාරයක ප්‍රත්‍යාවර්ත ගාස්තු අය නොකරයි.\n\n"
+                    f"🔍 සාක්ෂි හා අනතුරු ඇඟවීම්:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ ආරක්ෂිත නිගමනය:\nමෙම ඉල්ලීම ප්‍රතික්ෂේප කරන්න. නිල ආයතනික කැරියර් බ්‍රවුසර් හරහා රැකියා සොයන්න."
+                ),
+                False: (
+                    f"📋 පෝස්ටර් සාරාංශය:\nOCR: \"{snippet[:200]}...\"\n\n"
+                    f"🎯 තීරණය:\n✅ ජෙනු රැකියා ඉල්ලීම (Score: {scam_score}/100)\n\n"
+                    f"🔍 විශ්ලේෂණ:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ නිගමනය:\nනිල ආයතනය හරහා සත්‍යාපනය කරන්න."
+                ),
+            },
+            "ta": {
+                True: (
+                    f"📋 போஸ்டர் சுருக்கம்:\nOCR: \"{snippet[:200]}...\"\n\n"
+                    f"🎯 மோசடி ஆபத்து தீர்ப்பு:\n🚨 {risk_level} (Score: {scam_score}/100)\n"
+                    f"சட்டபூர்வமான நிறுவனங்கள் ஒருபோதும் கட்டணம் கேட்கமாட்டார்கள்.\n\n"
+                    f"🔍 ஆதாரங்கள்:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ பாதுகாப்பு முடிவு:\nஇந்த வாய்ப்பை நிராகரிக்கவும். அதிகாரப்பூர்வ போர்ட்டல் மூலம் சரிபார்க்கவும்."
+                ),
+                False: (
+                    f"📋 போஸ்டர் சுருக்கம்:\nOCR: \"{snippet[:200]}...\"\n\n"
+                    f"🎯 தீர்ப்பு:\n✅ நம்பகமான வேலை (Score: {scam_score}/100)\n\n"
+                    f"🔍 ஆய்வு:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ முடிவு:\nஅதிகாரப்பூர்வ நிறுவன வலைத்தளம் மூலம் சரிபார்க்கவும்."
+                ),
+            },
+            "hi": {
+                True: (
+                    f"📋 पोस्टर सारांश:\nOCR: \"{snippet[:200]}...\"\n\n"
+                    f"🎯 धोखाधड़ी जोखिम निर्णय:\n🚨 {risk_level} (Score: {scam_score}/100)\n"
+                    f"वैध कंपनियां कभी भी आवेदन शुल्क या प्रशिक्षण शुल्क नहीं मांगतीं।\n\n"
+                    f"🔍 विस्तृत साक्ष्य:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ सुरक्षा निष्कर्ष:\nइस प्रस्ताव को अस्वीकार करें। आधिकारिक कंपनी करियर पोर्टल पर जाकर सत्यापित करें।"
+                ),
+                False: (
+                    f"📋 पोस्टर सारांश:\nOCR: \"{snippet[:200]}...\"\n\n"
+                    f"🎯 निर्णय:\n✅ वैध नौकरी — कोई धोखाधड़ी संकेत नहीं (Score: {scam_score}/100)\n\n"
+                    f"🔍 विश्लेषण:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ निष्कर्ष:\nआधिकारिक कंपनी वेबसाइट से सत्यापन करें।"
+                ),
+            },
+            "bn": {
+                True: (
+                    f"📋 পোস্টার সারসংক্ষেপ:\nOCR: \"{snippet[:200]}...\"\n\n"
+                    f"🎯 প্রতারণার ঝুঁকির রায়:\n🚨 {risk_level} (Score: {scam_score}/100)\n"
+                    f"বৈধ কোম্পানিগুলো কখনোই নিবন্ধন ফি দাবি করে না।\n\n"
+                    f"🔍 বিস্তারিত প্রমাণ:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ নিরাপত্তা উপসংহার:\nএই প্রস্তাব প্রত্যাখ্যান করুন। অফিসিয়াল পোর্টাল থেকে যাচাই করুন।"
+                ),
+                False: (
+                    f"📋 পোস্টার সারসংক্ষেপ:\nOCR: \"{snippet[:200]}...\"\n\n"
+                    f"🎯 রায়:\n✅ বৈধ চাকরির সুযোগ (Score: {scam_score}/100)\n\n"
+                    f"🔍 বিশ্লেষণ:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ উপসংহার:\nঅফিসিয়াল ওয়েবসাইট থেকে তথ্য যাচাই করুন।"
+                ),
+            },
+        }
+
+        if language in templates:
+            full_explanation = templates[language][is_high_risk]
+        else:
+            # English (default)
+            if is_high_risk:
+                full_explanation = (
+                    f"📋 POSTER SUMMARY:\nExtracted content: \"{snippet[:300]}...\"\n\n"
+                    f"🎯 SCAM RISK VERDICT:\n🚨 FAKE / SCAM DETECTED — {risk_level} (Score: {scam_score}/100)\n"
+                    f"This job posting contains one or more critical fraud indicators. "
+                    f"Legitimate employers NEVER charge candidates for registration fees, laptop deposits, "
+                    f"uniform fees, training charges, or any form of advance payment.\n\n"
+                    f"🔍 DETAILED EVIDENCE & RED FLAGS:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ SAFETY CONCLUSION:\nDO NOT apply or send any money. "
+                    f"Report this fraudulent poster to your University Career Guidance Unit or the national "
+                    f"cybercrime reporting portal. Always verify job offers directly on the official company "
+                    f"website (e.g., company.com/careers)."
+                )
+            else:
+                full_explanation = (
+                    f"📋 POSTER SUMMARY:\nExtracted content: \"{snippet[:300]}...\"\n\n"
+                    f"🎯 SCAM RISK VERDICT:\n✅ GENUINE RECRUITMENT POSTER — {risk_level} (Score: {scam_score}/100)\n"
+                    f"No major recruitment fraud indicators were detected in this job posting.\n\n"
+                    f"🔍 ANALYSIS FINDINGS:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ SAFETY CONCLUSION:\nThis offer appears authentic, but always confirm directly "
+                    f"through the official company careers portal before providing personal documents "
+                    f"or attending interviews."
+                )
+
+        return full_explanation, reasons
+
+    def synthesize(
+        self,
+        intake_data: dict,
+        linguistic_data: dict,
+        verification_data: dict,
+        language: str = "en",
+        image_bytes: Optional[bytes] = None,
+    ) -> dict:
+        """
+        Orchestrates the full reasoning pipeline:
+        1. Gemini AI (primary — multimodal, with thinking)
+        2. DeepSeek V4 Flash (secondary — text-only)
+        3. Rule engine (guaranteed fallback)
+        """
         cleaned_text = intake_data.get("cleaned_text", "")
 
-        # 1. Execute Gemini 3.6 / 2.5 Flash AI Reasoning with Multimodal Image Bytes support
-        gemini_res = self.call_gemini_ai_reasoning_api(cleaned_text, linguistic_data, verification_data, language, image_bytes)
+        # --- Stage 1: Gemini AI (primary) ---
+        gemini_res = self.call_gemini_ai_reasoning_api(
+            cleaned_text, linguistic_data, verification_data, language, image_bytes
+        )
         if gemini_res and isinstance(gemini_res, dict) and "scam_score" in gemini_res:
             score = max(0, min(100, int(gemini_res.get("scam_score", 0))))
             return {
@@ -285,78 +600,92 @@ class ReasoningAgent:
                 "risk_level": gemini_res.get("risk_level", "Low Risk"),
                 "explanation": gemini_res.get("explanation", ""),
                 "breakdown_signals": gemini_res.get("reasons", []),
-                "sub_scores": gemini_res.get("sub_scores", {
-                    "financial_fee_risk": 90 if linguistic_data.get("has_payment_demand") else 10,
-                    "impersonation_risk": 85 if linguistic_data.get("has_impersonation_risk") else 15,
-                    "domain_reputation_risk": 100 - verification_data.get("verification_trust_score", 80),
-                    "urgency_pressure_risk": 75 if linguistic_data.get("has_urgency_tactics") else 10
-                })
+                "sub_scores": gemini_res.get(
+                    "sub_scores",
+                    self._default_sub_scores(linguistic_data, verification_data),
+                ),
             }
 
-        # 2. Execute DeepSeek-V4-Flash AI Reasoning Fallback
-        deepseek_res = self.call_deepseek_v4_reasoning_api(cleaned_text, linguistic_data, verification_data, language)
+        # --- Stage 2: DeepSeek V4 Flash (secondary) ---
+        deepseek_res = self.call_deepseek_v4_reasoning_api(
+            cleaned_text, linguistic_data, verification_data, language
+        )
         if deepseek_res and isinstance(deepseek_res, dict) and "scam_score" in deepseek_res:
             score = max(0, min(100, int(deepseek_res.get("scam_score", 0))))
             return {
                 "scam_score": score,
-                "confidence_score": deepseek_res.get("confidence_score", 98),
+                "confidence_score": deepseek_res.get("confidence_score", 95),
                 "risk_level": deepseek_res.get("risk_level", "Low Risk"),
                 "explanation": deepseek_res.get("explanation", ""),
                 "breakdown_signals": deepseek_res.get("reasons", []),
-                "sub_scores": deepseek_res.get("sub_scores", {
-                    "financial_fee_risk": 90 if linguistic_data.get("has_payment_demand") else 10,
-                    "impersonation_risk": 85 if linguistic_data.get("has_impersonation_risk") else 15,
-                    "domain_reputation_risk": 100 - verification_data.get("verification_trust_score", 80),
-                    "urgency_pressure_risk": 75 if linguistic_data.get("has_urgency_tactics") else 10
-                })
+                "sub_scores": deepseek_res.get(
+                    "sub_scores",
+                    self._default_sub_scores(linguistic_data, verification_data),
+                ),
             }
 
-        # 3. Rule-Engine Fallback
+        # --- Stage 3: Rule-engine fallback ---
+        logger.warning("All AI APIs unavailable. Using rule-engine fallback scoring.")
+        return self._rule_engine_score(cleaned_text, linguistic_data, verification_data, language)
+
+    def _default_sub_scores(self, linguistic_data: dict, verification_data: dict) -> dict:
+        """Compute default sub-scores from rule signals when the AI doesn't return them."""
+        trust_score = verification_data.get("verification_trust_score", 80)
+        return {
+            "financial_fee_risk": 90 if linguistic_data.get("has_payment_demand") else 10,
+            "impersonation_risk": 85 if linguistic_data.get("has_impersonation_risk") else 15,
+            "domain_reputation_risk": max(0, 100 - trust_score),
+            "urgency_pressure_risk": 75 if linguistic_data.get("has_urgency_tactics") else 10,
+        }
+
+    def _rule_engine_score(
+        self,
+        cleaned_text: str,
+        linguistic_data: dict,
+        verification_data: dict,
+        language: str,
+    ) -> dict:
+        """Deterministic rule-based scoring — guaranteed to return a valid result."""
         linguistic_score = linguistic_data.get("linguistic_score", 0)
         trust_score = verification_data.get("verification_trust_score", 80)
-        
         verification_risk = 100 - trust_score
         has_payment = linguistic_data.get("has_payment_demand", False)
         has_impersonation = linguistic_data.get("has_impersonation_risk", False)
+        has_urgency = linguistic_data.get("has_urgency_tactics", False)
+        has_suspicious = linguistic_data.get("has_suspicious_channels", False)
+        is_new_domain = verification_data.get("whois_info", {}).get("is_new_domain", False)
 
-        raw_score = (linguistic_score * 0.55) + (verification_risk * 0.35)
-
+        # Weighted scoring
+        raw_score = (linguistic_score * 0.50) + (verification_risk * 0.30)
         if has_payment:
-            raw_score += 35
+            raw_score += 50  # Fee demand ≈ near-certain scam
         if has_impersonation:
-            raw_score += 25
+            raw_score += 30
+        if has_urgency:
+            raw_score += 15
+        if has_suspicious:
+            raw_score += 20
+        if is_new_domain:
+            raw_score += 20
 
         scam_score = min(100, max(0, int(raw_score)))
 
-        if scam_score >= 85:
+        if scam_score >= 75:
             risk_level = "Severe Risk"
-        elif scam_score >= 60:
+        elif scam_score >= 55:
             risk_level = "High Risk"
         elif scam_score >= 30:
             risk_level = "Moderate Risk"
         else:
             risk_level = "Low Risk"
 
-        lang_key = language if language in self.EXPLANATIONS else "en"
-        base_explanation = self.EXPLANATIONS[lang_key].get(risk_level, self.EXPLANATIONS["en"][risk_level])
-
-        reasons = []
-        if has_payment:
-            reasons.append("Primary Scam Factor: Demands advance payment / registration fee.")
-        if has_impersonation:
-            reasons.append(f"Sender Anomaly: Free email (@{linguistic_data.get('free_email')}) for claimed brand '{linguistic_data.get('claimed_brand', '').upper()}'.")
-        if linguistic_data.get("has_urgency_tactics"):
-            reasons.append(f"Pressure Tactics: Artificial urgency keywords ({', '.join(linguistic_data.get('matched_urgency', [])[:3])}).")
-        if linguistic_data.get("has_suspicious_channels"):
-            reasons.append("Unverified Contact: Telegram or WhatsApp only channel.")
-        if verification_data.get("whois_info", {}).get("is_new_domain"):
-            reasons.append("Domain Risk: Web domain registered less than 90 days ago.")
-
-        full_explanation = f"{base_explanation}\n\nKey Analysis Signals:\n" + "\n".join(f"• {r}" for r in reasons) if reasons else base_explanation
+        full_explanation, reasons = self._build_rule_engine_explanation(
+            risk_level, scam_score, linguistic_data, verification_data, language, cleaned_text
+        )
 
         return {
             "scam_score": scam_score,
-            "confidence_score": 96,
+            "confidence_score": 94,
             "risk_level": risk_level,
             "explanation": full_explanation,
             "breakdown_signals": reasons,
@@ -364,6 +693,6 @@ class ReasoningAgent:
                 "financial_fee_risk": 95 if has_payment else 10,
                 "impersonation_risk": 85 if has_impersonation else 15,
                 "domain_reputation_risk": verification_risk,
-                "urgency_pressure_risk": 75 if linguistic_data.get("has_urgency_tactics") else 10
-            }
+                "urgency_pressure_risk": 70 if has_urgency else 10,
+            },
         }
