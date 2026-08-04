@@ -25,7 +25,9 @@ import {
   Quote,
   Users,
   Award,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -62,6 +64,122 @@ const LandingPage = () => {
 
   // Pricing State: 'monthly' (1 Month) vs 'annual' (1 Year)
   const [billingCycle, setBillingCycle] = useState('monthly');
+
+  // Instagram-Style 3-Poster Gallery Carousel State
+  const [posterFilter, setPosterFilter] = useState('all');
+  const [currentPosterIndex, setCurrentPosterIndex] = useState(0);
+
+  const galleryPosters = [
+    {
+      id: 1,
+      type: 'scam',
+      title: 'Data Entry Assistant Scam',
+      score: '95/100',
+      riskLevel: 'HIGH RISK SCAM',
+      badgeClass: 'bg-rose-500/20 border-rose-500/40 text-rose-300',
+      borderClass: 'border-rose-500/40 hover:border-rose-400',
+      dotClass: 'bg-rose-500',
+      image: '/images/scam_job_poster.png',
+      extractedText: '"Registration fee of $30 required for laptop shipment kit. Contact recruiter on Telegram @job_recruiter_fast"',
+      metrics: [
+        { label: 'Payment Demand', val: '$30 Upfront Fee', color: 'text-rose-300' },
+        { label: 'Contact Channel', val: 'Telegram @job_fast', color: 'text-rose-300' },
+        { label: 'Domain WHOIS', val: '3 Days Old / Disposable', color: 'text-rose-300' },
+        { label: 'Safe Browsing', val: 'Google Threat Flagged', color: 'text-rose-300' }
+      ]
+    },
+    {
+      id: 2,
+      type: 'legit',
+      title: 'TechCorp Software Intern',
+      score: '5/100',
+      riskLevel: 'VERIFIED LEGITIMATE',
+      badgeClass: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300',
+      borderClass: 'border-emerald-500/40 hover:border-emerald-400',
+      dotClass: 'bg-emerald-400',
+      image: '/images/genuine_job_poster.png',
+      extractedText: '"Apply via official career portal: www.techcorp.com/careers. No application or equipment fees."',
+      metrics: [
+        { label: 'Application Fee', val: '100% Free ($0)', color: 'text-emerald-300' },
+        { label: 'Domain WHOIS', val: 'techcorp.com (12+ Yrs)', color: 'text-emerald-300' },
+        { label: 'Email Status', val: 'Corporate MX Valid', color: 'text-emerald-300' },
+        { label: 'Safe Browsing', val: 'Clean (0 Threats)', color: 'text-emerald-300' }
+      ]
+    },
+    {
+      id: 3,
+      type: 'scam',
+      title: 'WhatsApp Typing Task Fraud',
+      score: '92/100',
+      riskLevel: 'HIGH RISK SCAM',
+      badgeClass: 'bg-rose-500/20 border-rose-500/40 text-rose-300',
+      borderClass: 'border-rose-500/40 hover:border-rose-400',
+      dotClass: 'bg-rose-500',
+      image: '/images/scam_job_poster.png',
+      extractedText: '"Earn Rs. 15,000 weekly typing at home. Pay Rs. 2,000 refundable security deposit to start task."',
+      metrics: [
+        { label: 'Deposit Demand', val: 'Rs. 2,000 Upfront', color: 'text-rose-300' },
+        { label: 'Recruiter Contact', val: 'WhatsApp Only (+94)', color: 'text-rose-300' },
+        { label: 'Company Domain', val: 'No Website / Gmail', color: 'text-rose-300' },
+        { label: 'Language Risk', val: 'EMSCAD Urgency Trigger', color: 'text-rose-300' }
+      ]
+    },
+    {
+      id: 4,
+      type: 'legit',
+      title: 'NSBM Campus Ambassador',
+      score: '8/100',
+      riskLevel: 'VERIFIED LEGITIMATE',
+      badgeClass: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300',
+      borderClass: 'border-emerald-500/40 hover:border-emerald-400',
+      dotClass: 'bg-emerald-400',
+      image: '/images/genuine_job_poster.png',
+      extractedText: '"Official university student ambassador program. Register via nsbm.ac.lk student portal."',
+      metrics: [
+        { label: 'University Domain', val: 'nsbm.ac.lk (Verified)', color: 'text-emerald-300' },
+        { label: 'Registration Fee', val: 'FREE ($0)', color: 'text-emerald-300' },
+        { label: 'Contact Mail', val: 'careers@nsbm.ac.lk', color: 'text-emerald-300' },
+        { label: 'Safe Browsing', val: 'Clean (0 Threats)', color: 'text-emerald-300' }
+      ]
+    },
+    {
+      id: 5,
+      type: 'scam',
+      title: 'Crypto Reviewer Impersonation',
+      score: '88/100',
+      riskLevel: 'HIGH RISK SCAM',
+      badgeClass: 'bg-rose-500/20 border-rose-500/40 text-rose-300',
+      borderClass: 'border-rose-500/40 hover:border-rose-400',
+      dotClass: 'bg-rose-500',
+      image: '/images/scam_job_poster.png',
+      extractedText: '"Product reviewer job. Daily payout in USDT crypto. Purchase $50 initial rating package to start."',
+      metrics: [
+        { label: 'Payout Method', val: 'Unregulated USDT Crypto', color: 'text-rose-300' },
+        { label: 'Package Demand', val: '$50 Rating Package', color: 'text-rose-300' },
+        { label: 'Domain Age', val: 'Created 5 Days Ago', color: 'text-rose-300' },
+        { label: 'Safe Browsing', val: 'Phishing Flagged', color: 'text-rose-300' }
+      ]
+    }
+  ];
+
+  const filteredPosters = galleryPosters.filter(p => posterFilter === 'all' || p.type === posterFilter);
+
+  const nextPosterSlide = () => {
+    setCurrentPosterIndex((prev) => (prev + 1) % filteredPosters.length);
+  };
+
+  const prevPosterSlide = () => {
+    setCurrentPosterIndex((prev) => (prev - 1 + filteredPosters.length) % filteredPosters.length);
+  };
+
+  const getVisiblePosters = () => {
+    if (filteredPosters.length === 0) return [];
+    if (filteredPosters.length <= 3) return filteredPosters;
+    return [0, 1, 2].map(offset => {
+      const idx = (currentPosterIndex + offset) % filteredPosters.length;
+      return filteredPosters[idx];
+    });
+  };
 
   const reviewsRow1 = [
     {
@@ -436,172 +554,153 @@ const LandingPage = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* FAKE VS REAL JOB POSTER DEMONSTRATION SHOWCASE */}
+      {/* INSTAGRAM-STYLE 3-POSTER GALLERY CAROUSEL SHOWCASE */}
       {/* ========================================================================= */}
-      <section id="demo-showcase" className="max-w-6xl mx-auto px-6 py-8 scroll-mt-24">
+      <section id="demo-showcase" className="max-w-7xl mx-auto px-6 py-8 scroll-mt-24">
         
-        {/* Section Header */}
-        <div className="text-center mb-12 space-y-3">
+        {/* Section Header & Filter Tabs */}
+        <div className="text-center mb-10 space-y-4">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold shadow-lg shadow-rose-500/10 backdrop-blur-md animate-pulse">
             <AlertTriangle className="w-4 h-4 text-rose-400" />
-            <span>{t('landing.demo_tag', 'REAL-WORLD SCAM DEMONSTRATION')}</span>
+            <span>INSTAGRAM-STYLE INTERACTIVE GALLERY</span>
           </div>
           
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
-            {t('landing.demo_title', 'Spot Fake Job Posters vs Genuine Ads')}
+            Spot Fake Job Posters vs Genuine Ads
           </h2>
           
           <p className="text-slate-400 text-sm max-w-3xl mx-auto leading-relaxed">
-            {t('landing.demo_desc', 'Fraudulent recruiters target students on WhatsApp, Facebook, and Telegram. Here is how SAFE-HIRE\'s 5-Agent AI automatically identifies high-risk scams.')}
+            Browse real-world scam flyers vs verified corporate offers. Click or swipe through the gallery to see how 5-Agent AI extracts red flags.
           </p>
+
+          {/* Interactive Filter Pills */}
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            {[
+              { id: 'all', label: `All Posters (${galleryPosters.length})` },
+              { id: 'scam', label: `High-Risk Scams (${galleryPosters.filter(p=>p.type==='scam').length})` },
+              { id: 'legit', label: `Verified Genuine (${galleryPosters.filter(p=>p.type==='legit').length})` }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setPosterFilter(tab.id);
+                  setCurrentPosterIndex(0);
+                }}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 ${
+                  posterFilter === tab.id
+                    ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30 border border-sky-400 scale-105'
+                    : 'bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Side-by-Side Dual Poster Showcase Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-          
-          {/* FAKE SCAM POSTER DEMO CARD */}
-          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-rose-500/40 bg-slate-950/90 backdrop-blur-2xl shadow-2xl shadow-rose-950/30 relative overflow-hidden group flex flex-col justify-between hover:border-rose-400/80 transition-all duration-300">
-            
-            {/* Top Risk Badge Pill */}
-            <div className="absolute top-0 right-0 px-4 py-2 rounded-bl-2xl bg-rose-500/25 border-b border-l border-rose-500/40 text-rose-300 text-xs font-extrabold flex items-center space-x-1.5 shadow-lg backdrop-blur-md">
-              <AlertTriangle className="w-4 h-4 text-rose-400 animate-pulse" />
-              <span>HIGH RISK SCAM (95/100)</span>
-            </div>
-
-            <div className="space-y-6">
-              
-              {/* Poster Header Title */}
-              <div className="pt-2">
-                <div className="flex items-center space-x-2">
-                  <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping inline-block shadow-lg shadow-rose-500" />
-                  <h3 className="text-xl font-extrabold text-rose-400 tracking-tight">
-                    Suspicious Scam Job Poster
-                  </h3>
-                </div>
-                <p className="text-xs text-slate-400 mt-1 font-medium">
-                  Detected Red Flags: Upfront Registration Fee, Anonymous Telegram Channel, Disposable Email
-                </p>
-              </div>
-
-              {/* DEMO POSTER IMAGE FRAME */}
-              <div className="relative rounded-2xl overflow-hidden border border-rose-500/30 bg-slate-900 shadow-xl group-hover:shadow-rose-500/20 transition-all duration-500">
-                <img 
-                  src="/images/scam_job_poster.png" 
-                  alt="Scam Job Poster Demonstration" 
-                  className="w-full h-64 sm:h-72 object-cover object-top group-hover:scale-[1.02] transition duration-500"
-                />
-                
-                {/* Subtle Gradient Vignette */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
-
-                {/* AI Extracted Banner Pill */}
-                <div className="absolute bottom-3 left-3 right-3 p-3 rounded-xl bg-slate-950/90 border border-rose-500/40 backdrop-blur-xl shadow-lg">
-                  <div className="flex items-center space-x-1.5 text-rose-400 font-bold text-xs mb-0.5">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>AI Extracted Scam Triggers:</span>
-                  </div>
-                  <p className="text-[11px] text-slate-200 font-mono leading-tight">
-                    "Registration fee of $30 required for laptop shipment. Contact recruiter on Telegram @job_recruiter_fast"
-                  </p>
-                </div>
-              </div>
-
-              {/* 4-METRIC AI SIGNAL BREAKDOWN GRID */}
-              <div className="grid grid-cols-2 gap-2.5 text-xs">
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-200 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase font-bold text-rose-400 tracking-wider">Payment Demand</span>
-                  <span className="font-extrabold text-rose-300 mt-0.5">$30 Upfront Fee</span>
-                </div>
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-200 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase font-bold text-rose-400 tracking-wider">Contact Channel</span>
-                  <span className="font-extrabold text-rose-300 mt-0.5">Telegram @job_fast</span>
-                </div>
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-200 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase font-bold text-rose-400 tracking-wider">Domain WHOIS</span>
-                  <span className="font-extrabold text-rose-300 mt-0.5">3 Days Old / Disposable</span>
-                </div>
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-200 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase font-bold text-rose-400 tracking-wider">Safe Browsing</span>
-                  <span className="font-extrabold text-rose-300 mt-0.5">Google Threat Flagged</span>
-                </div>
-              </div>
-
-            </div>
-
+        {/* Carousel Controls Bar & Instagram Story Dots */}
+        <div className="flex items-center justify-between mb-6 px-2">
+          <div className="text-xs font-mono text-slate-400 flex items-center space-x-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping inline-block" />
+            <span>Viewing 3 Posters Simultaneously</span>
           </div>
 
-          {/* GENUINE CORPORATE POSTER DEMO CARD */}
-          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-emerald-500/40 bg-slate-950/90 backdrop-blur-2xl shadow-2xl shadow-emerald-950/30 relative overflow-hidden group flex flex-col justify-between hover:border-emerald-400/80 transition-all duration-300">
-            
-            {/* Top Legit Badge Pill */}
-            <div className="absolute top-0 right-0 px-4 py-2 rounded-bl-2xl bg-emerald-500/25 border-b border-l border-emerald-500/40 text-emerald-300 text-xs font-extrabold flex items-center space-x-1.5 shadow-lg backdrop-blur-md">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>VERIFIED LEGITIMATE (5/100)</span>
-            </div>
-
-            <div className="space-y-6">
-              
-              {/* Poster Header Title */}
-              <div className="pt-2">
-                <div className="flex items-center space-x-2">
-                  <span className="w-3 h-3 rounded-full bg-emerald-400 inline-block shadow-lg shadow-emerald-500" />
-                  <h3 className="text-xl font-extrabold text-emerald-400 tracking-tight">
-                    Verified Corporate Internship Poster
-                  </h3>
-                </div>
-                <p className="text-xs text-slate-400 mt-1 font-medium">
-                  Verified Signals: Verified Career Domain, Zero Application Fee, Valid Corporate MX
-                </p>
-              </div>
-
-              {/* DEMO POSTER IMAGE FRAME */}
-              <div className="relative rounded-2xl overflow-hidden border border-emerald-500/30 bg-slate-900 shadow-xl group-hover:shadow-emerald-500/20 transition-all duration-500">
-                <img 
-                  src="/images/genuine_job_poster.png" 
-                  alt="Genuine Corporate Internship Poster" 
-                  className="w-full h-64 sm:h-72 object-cover object-top group-hover:scale-[1.02] transition duration-500"
+          <div className="flex items-center space-x-3">
+            {/* Instagram Dots */}
+            <div className="flex items-center space-x-1.5 mr-2">
+              {filteredPosters.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPosterIndex(i)}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    currentPosterIndex === i 
+                      ? 'w-6 bg-cyan-400 shadow-md shadow-cyan-500/50' 
+                      : 'w-2 bg-slate-700 hover:bg-slate-500'
+                  }`}
                 />
-                
-                {/* Subtle Gradient Vignette */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
-
-                {/* AI Extracted Banner Pill */}
-                <div className="absolute bottom-3 left-3 right-3 p-3 rounded-xl bg-slate-950/90 border border-emerald-500/40 backdrop-blur-xl shadow-lg">
-                  <div className="flex items-center space-x-1.5 text-emerald-400 font-bold text-xs mb-0.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>AI Extracted Legit Signals:</span>
-                  </div>
-                  <p className="text-[11px] text-slate-200 font-mono leading-tight">
-                    "Apply via official career portal: www.techcorp.com/careers. No application or equipment fees."
-                  </p>
-                </div>
-              </div>
-
-              {/* 4-METRIC AI SIGNAL BREAKDOWN GRID */}
-              <div className="grid grid-cols-2 gap-2.5 text-xs">
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-200 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Application Fee</span>
-                  <span className="font-extrabold text-emerald-300 mt-0.5">100% Free ($0)</span>
-                </div>
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-200 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Domain WHOIS</span>
-                  <span className="font-extrabold text-emerald-300 mt-0.5">techcorp.com (12+ Yrs)</span>
-                </div>
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-200 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Email Deliverability</span>
-                  <span className="font-extrabold text-emerald-300 mt-0.5">Corporate MX Valid</span>
-                </div>
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-200 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Safe Browsing</span>
-                  <span className="font-extrabold text-emerald-300 mt-0.5">Clean (0 Threat Matches)</span>
-                </div>
-              </div>
-
+              ))}
             </div>
 
+            {/* Navigation Arrows */}
+            <button
+              onClick={prevPosterSlide}
+              className="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 hover:border-cyan-400 flex items-center justify-center text-slate-200 hover:text-cyan-300 transition duration-300 shadow-lg hover:scale-105 active:scale-95"
+              aria-label="Previous Poster"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={nextPosterSlide}
+              className="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 hover:border-cyan-400 flex items-center justify-center text-slate-200 hover:text-cyan-300 transition duration-300 shadow-lg hover:scale-105 active:scale-95"
+              aria-label="Next Poster"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
-
         </div>
+
+        {/* VISIBLE 3-POSTER GALLERY GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch transition-all duration-500">
+          {getVisiblePosters().map((item, idx) => (
+            <div 
+              key={`${item.id}-${idx}`}
+              className={`glass-panel p-5 rounded-3xl border ${item.borderClass} bg-slate-950/90 backdrop-blur-2xl shadow-2xl relative overflow-hidden group flex flex-col justify-between hover:-translate-y-2 transition-all duration-500`}
+            >
+              {/* Top Risk Badge Pill */}
+              <div className={`absolute top-0 right-0 px-3.5 py-1.5 rounded-bl-2xl border-b border-l ${item.badgeClass} text-[11px] font-extrabold flex items-center space-x-1.5 shadow-lg backdrop-blur-md z-20`}>
+                <span className={`w-2 h-2 rounded-full ${item.dotClass} animate-pulse`} />
+                <span>{item.riskLevel} ({item.score})</span>
+              </div>
+
+              <div className="space-y-4">
+                
+                {/* Header Title */}
+                <div className="pt-1">
+                  <h3 className="text-base font-extrabold text-slate-100 group-hover:text-cyan-300 transition-colors tracking-tight line-clamp-1">
+                    {item.title}
+                  </h3>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    Poster #{item.id} of {galleryPosters.length}
+                  </span>
+                </div>
+
+                {/* Poster Image Frame */}
+                <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-xl group-hover:shadow-cyan-500/10 transition-all duration-500">
+                  <img 
+                    src={item.image} 
+                    alt={item.title} 
+                    className="w-full h-56 object-cover object-top group-hover:scale-105 transition duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-70" />
+
+                  {/* AI Banner Overlay */}
+                  <div className="absolute bottom-2 left-2 right-2 p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl shadow-lg">
+                    <div className="text-[10px] font-bold text-sky-400 mb-0.5 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-cyan-400" />
+                      <span>AI Extracted Signal:</span>
+                    </div>
+                    <p className="text-[10px] text-slate-200 font-mono leading-tight line-clamp-2">
+                      {item.extractedText}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 4-Metric Grid */}
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  {item.metrics.map((m, mIdx) => (
+                    <div key={mIdx} className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider line-clamp-1">{m.label}</span>
+                      <span className={`font-extrabold text-[10px] mt-0.5 ${m.color || 'text-slate-200'} line-clamp-1`}>{m.val}</span>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+
+            </div>
+          ))}
+        </div>
+
       </section>
 
       {/* ========================================================================= */}
