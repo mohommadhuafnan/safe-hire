@@ -24,7 +24,8 @@ import {
   Star,
   Quote,
   Users,
-  Award
+  Award,
+  ChevronDown
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -280,6 +281,23 @@ const LandingPage = () => {
             </div>
           </div>
 
+        </div>
+
+        {/* ANIMATED SCROLL DOWN INDICATOR */}
+        <div 
+          onClick={() => {
+            const el = document.getElementById('demo-showcase');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center space-y-1.5 cursor-pointer group select-none"
+        >
+          <span className="text-[10px] font-bold tracking-widest text-sky-300/80 group-hover:text-cyan-300 transition-colors uppercase flex items-center gap-1.5 backdrop-blur-md px-3 py-1 rounded-full bg-black/40 border border-sky-400/20 group-hover:border-cyan-400/50 shadow-lg shadow-sky-500/10">
+            <span>{t('landing.scroll_down', 'Scroll to Explore')}</span>
+          </span>
+          <div className="w-5 h-8 sm:w-6 sm:h-9 rounded-full border-2 border-sky-400/40 group-hover:border-cyan-400 flex items-start justify-center p-1 backdrop-blur-md transition-colors shadow-lg shadow-cyan-500/20">
+            <div className="w-1.5 h-2.5 rounded-full bg-cyan-400 animate-bounce" />
+          </div>
+          <ChevronDown className="w-4 h-4 text-cyan-400 animate-bounce transition-transform duration-300 group-hover:scale-125" style={{ animationDelay: '0.15s' }} />
         </div>
       </section>
 
