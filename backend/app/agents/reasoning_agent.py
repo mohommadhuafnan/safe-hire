@@ -113,6 +113,12 @@ Return EXACTLY this JSON structure (no extra fields, no markdown):
     "<Specific finding 2 with exact text/keyword from the poster>",
     "<Specific finding 3 with exact text/keyword from the poster>"
   ],
+  "recommendations": [
+    "🚨 <Poster-specific action 1: Mention exact fee amount, email, brand, or contact channel extracted from THIS poster>",
+    "⚠️ <Poster-specific action 2: Mention specific company verification or official career portal for THIS poster>",
+    "📧 <Poster-specific action 3: Email validation or domain security check for THIS poster>",
+    "💡 <Poster-specific action 4: Specific advice on how to report or handle THIS poster>"
+  ],
   "sub_scores": {{
     "financial_fee_risk": <integer 0-100>,
     "impersonation_risk": <integer 0-100>,
@@ -153,6 +159,7 @@ Return ONLY this JSON (no markdown):
   "risk_level": "<Severe Risk | High Risk | Moderate Risk | Low Risk>",
   "explanation": "<📋 POSTER SUMMARY:\\n[...]\\n\\n🎯 SCAM RISK VERDICT:\\n[...]\\n\\n🔍 DETAILED EVIDENCE & RED FLAGS:\\n[...]\\n\\n✅ SAFETY CONCLUSION:\\n[...]>",
   "reasons": ["<finding 1>", "<finding 2>", "<finding 3>"],
+  "recommendations": ["<Poster-specific safety advice 1>", "<Poster-specific safety advice 2>", "<Poster-specific safety advice 3>", "<Poster-specific safety advice 4>"],
   "sub_scores": {{
     "financial_fee_risk": <0-100>,
     "impersonation_risk": <0-100>,

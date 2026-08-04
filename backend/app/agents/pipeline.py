@@ -63,7 +63,14 @@ class AgentPipeline:
 
         logger.info("Executing Agent Pipeline Stage 5: Recommendation Agent")
         scam_score = reasoning_res.get("scam_score", 0)
-        recommendations = self.recommendation_agent.generate_recommendations(scam_score, linguistic_res, verification_res, final_lang)
+        recommendations = self.recommendation_agent.generate_recommendations(
+            scam_score=scam_score,
+            risk_factors=linguistic_res,
+            verification_data=verification_res,
+            language=final_lang,
+            reasoning_data=reasoning_res,
+            intake_data=intake_res
+        )
 
         return {
             "intake_data": intake_res,
