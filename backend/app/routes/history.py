@@ -59,9 +59,9 @@ async def clear_all_history(current_user: dict = Depends(get_current_user)):
 
 @router.delete("/{history_id}", response_model=Dict[str, Any])
 async def delete_history_item(history_id: str, current_user: dict = Depends(get_current_user)):
-    """Deletes a specific scan history record."""
+    """Deletes a specific scan history record if owned by current user."""
     db = get_db()
-    user_id = current_user["id"]
+    user_id = str(current_user["id"])
 
     try:
         q_user_id = ObjectId(user_id)
@@ -78,6 +78,13 @@ async def delete_history_item(history_id: str, current_user: dict = Depends(get_
     })
 
     if res_doc:
+        res_user_id = str(res_doc.get("user_id", ""))
+        if res_user_id != user_id and res_user_id != str(q_user_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied. You do not have permission to delete this record."
+            )
+
         sub_id = res_doc.get("submission_id")
         await db["results"].delete_one({"_id": res_doc["_id"]})
         if sub_id:
@@ -93,7 +100,13 @@ async def delete_history_item(history_id: str, current_user: dict = Depends(get_
 @router.get("/{submission_id}", response_model=Dict[str, Any])
 async def get_history_detail(submission_id: str, current_user: dict = Depends(get_current_user)):
     db = get_db()
-    
+    user_id = str(current_user["id"])
+
+    try:
+        q_user_id = ObjectId(user_id)
+    except Exception:
+        q_user_id = user_id
+
     try:
         q_sub_id = ObjectId(submission_id)
     except Exception:
@@ -107,6 +120,13 @@ async def get_history_detail(submission_id: str, current_user: dict = Depends(ge
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Submission history result not found."
+        )
+
+    res_user_id = str(result_doc.get("user_id", ""))
+    if res_user_id != user_id and res_user_id != str(q_user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. You do not have permission to view this history detail."
         )
 
     sub_doc = await db["submissions"].find_one({"_id": result_doc.get("submission_id")}) or {}

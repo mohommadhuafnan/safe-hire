@@ -217,6 +217,61 @@ const AgentBreakdown = ({ result }) => {
               {verificationData.safe_browsing?.status || 'SAFE'}
             </span>
           </div>
+
+          {/* Abstract API Email Validation Card */}
+          {verificationData.email_validation && (
+            <div className={`p-3 rounded-lg border space-y-2 ${
+              verificationData.email_validation.is_high_risk 
+                ? 'bg-rose-500/10 border-rose-500/30' 
+                : 'bg-slate-900/90 border-slate-800'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-200 flex items-center">
+                  📧 Abstract API Email Validation
+                </span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                  verificationData.email_validation.is_high_risk
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                }`}>
+                  {verificationData.email_validation.deliverability || 'DELIVERABLE'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1">
+                <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Contact Email:</span>
+                  <span className="text-sky-300 font-semibold truncate block">{verificationData.email_validation.email}</span>
+                </div>
+                <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Quality Score:</span>
+                  <span className="text-emerald-400 font-semibold">{Math.round((verificationData.email_validation.quality_score || 0.5) * 100)} / 100</span>
+                </div>
+                <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Disposable Email:</span>
+                  <span className={`font-bold ${verificationData.email_validation.is_disposable_email ? 'text-rose-400' : 'text-emerald-400'}`}>
+                    {verificationData.email_validation.is_disposable_email ? '⚠️ YES (Disposable)' : '✅ NO'}
+                  </span>
+                </div>
+                <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">SMTP Validation:</span>
+                  <span className={`font-bold ${verificationData.email_validation.is_smtp_valid === false ? 'text-rose-400' : 'text-emerald-400'}`}>
+                    {verificationData.email_validation.is_smtp_valid === false ? '❌ Failed' : '✅ Valid'}
+                  </span>
+                </div>
+              </div>
+
+              {verificationData.email_validation.analysis_summary && (
+                <p className={`text-[11px] p-2 rounded leading-relaxed border font-mono ${
+                  verificationData.email_validation.is_high_risk 
+                    ? 'bg-rose-950/50 text-rose-300 border-rose-500/20' 
+                    : 'bg-slate-950 text-slate-300 border-slate-800'
+                }`}>
+                  {verificationData.email_validation.analysis_summary}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )
     },

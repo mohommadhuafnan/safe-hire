@@ -55,7 +55,8 @@ class AgentPipeline:
 
         logger.info("Executing Agent Pipeline Stage 3: Verification Agent")
         claimed_brand = linguistic_res.get("claimed_brand") or intake_res.get("claimed_brand")
-        verification_res = self.verification_agent.verify(cleaned_text, domain, claimed_brand)
+        extracted_emails = intake_res.get("metadata_extracted", {}).get("emails", [])
+        verification_res = self.verification_agent.verify(cleaned_text, domain, claimed_brand, emails=extracted_emails)
 
         logger.info("Executing Agent Pipeline Stage 4: Reasoning Agent (Multimodal Vision AI & Gemini 3.6 Flash)")
         reasoning_res = self.reasoning_agent.synthesize(intake_res, linguistic_res, verification_res, final_lang, image_bytes)

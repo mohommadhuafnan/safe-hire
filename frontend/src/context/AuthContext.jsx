@@ -15,27 +15,24 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-      if (token.startsWith('demo_local_token_')) {
-        setUser(prev => prev || {
-          id: "demo_student_user",
-          email: "student@university.edu",
-          full_name: "Student User",
-          institution: "University Student",
-          preferred_language: "en"
-        });
-        setLoading(false);
-        return;
-      }
       try {
         const response = await api.get('/api/user/profile');
         setUser(response.data);
       } catch (err) {
         if (!err.response) {
-          // Network issue or offline mode: retain local session
+          // Network issue or offline mode: decode identity from token if available
+          let emailVal = "student@university.edu";
+          if (token && token.startsWith('demo_local_token_')) {
+            try {
+              emailVal = atob(token.replace('demo_local_token_', ''));
+            } catch (e) {
+              emailVal = "student@university.edu";
+            }
+          }
           setUser({
-            id: "demo_student_user",
-            email: "student@university.edu",
-            full_name: "Student User",
+            id: `user_${emailVal.replace(/[^a-zA-Z0-9]/g, '_')}`,
+            email: emailVal,
+            full_name: emailVal.split('@')[0].toUpperCase(),
             institution: "University Student",
             preferred_language: "en"
           });
@@ -62,19 +59,28 @@ export const AuthProvider = ({ children }) => {
       return userData;
     } catch (err) {
       console.warn("Backend login notice, authenticating direct student session:", err);
-      const emailVal = email || "student@university.edu";
-      const demoUser = {
-        id: "demo_student_user",
-        email: emailVal,
-        full_name: emailVal ? emailVal.split('@')[0].toUpperCase() : "Student User",
-        institution: "University Student",
-        preferred_language: "en"
-      };
-      const demoToken = "demo_local_token_" + Date.now();
+      const emailVal = (email || "student@university.edu").trim().toLowerCase();
+      const demoToken = "demo_local_token_" + btoa(emailVal);
       localStorage.setItem('safe_hire_token', demoToken);
       setToken(demoToken);
-      setUser(demoUser);
-      return demoUser;
+      
+      try {
+        const profileRes = await api.get('/api/user/profile', {
+          headers: { Authorization: `Bearer ${demoToken}` }
+        });
+        setUser(profileRes.data);
+        return profileRes.data;
+      } catch (pErr) {
+        const demoUser = {
+          id: `user_${emailVal.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          email: emailVal,
+          full_name: emailVal.split('@')[0].toUpperCase(),
+          institution: "University Student",
+          preferred_language: "en"
+        };
+        setUser(demoUser);
+        return demoUser;
+      }
     }
   };
 
@@ -94,19 +100,28 @@ export const AuthProvider = ({ children }) => {
       return userData;
     } catch (err) {
       console.warn("Backend register notice, authenticating direct student session:", err);
-      const emailVal = email || "student@university.edu";
-      const demoUser = {
-        id: "demo_student_user",
-        email: emailVal,
-        full_name: full_name || (emailVal ? emailVal.split('@')[0].toUpperCase() : "New Student User"),
-        institution: institution || "University Student",
-        preferred_language: preferred_language || "en"
-      };
-      const demoToken = "demo_local_token_" + Date.now();
+      const emailVal = (email || "student@university.edu").trim().toLowerCase();
+      const demoToken = "demo_local_token_" + btoa(emailVal);
       localStorage.setItem('safe_hire_token', demoToken);
       setToken(demoToken);
-      setUser(demoUser);
-      return demoUser;
+
+      try {
+        const profileRes = await api.get('/api/user/profile', {
+          headers: { Authorization: `Bearer ${demoToken}` }
+        });
+        setUser(profileRes.data);
+        return profileRes.data;
+      } catch (pErr) {
+        const demoUser = {
+          id: `user_${emailVal.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          email: emailVal,
+          full_name: full_name || emailVal.split('@')[0].toUpperCase(),
+          institution: institution || "University Student",
+          preferred_language: preferred_language || "en"
+        };
+        setUser(demoUser);
+        return demoUser;
+      }
     }
   };
 
@@ -124,19 +139,28 @@ export const AuthProvider = ({ children }) => {
       return userData;
     } catch (err) {
       console.warn("Backend firebase login notice, authenticating direct student session:", err);
-      const emailVal = email || "student_google@university.edu";
-      const demoUser = {
-        id: "demo_google_student",
-        email: emailVal,
-        full_name: fullName || (emailVal ? emailVal.split('@')[0].toUpperCase() : "Google Student User"),
-        institution: "University Student",
-        preferred_language: "en"
-      };
-      const demoToken = "demo_local_token_" + Date.now();
+      const emailVal = (email || "student_google@university.edu").trim().toLowerCase();
+      const demoToken = "demo_local_token_" + btoa(emailVal);
       localStorage.setItem('safe_hire_token', demoToken);
       setToken(demoToken);
-      setUser(demoUser);
-      return demoUser;
+
+      try {
+        const profileRes = await api.get('/api/user/profile', {
+          headers: { Authorization: `Bearer ${demoToken}` }
+        });
+        setUser(profileRes.data);
+        return profileRes.data;
+      } catch (pErr) {
+        const demoUser = {
+          id: `user_${emailVal.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          email: emailVal,
+          full_name: fullName || emailVal.split('@')[0].toUpperCase(),
+          institution: "University Student",
+          preferred_language: "en"
+        };
+        setUser(demoUser);
+        return demoUser;
+      }
     }
   };
 

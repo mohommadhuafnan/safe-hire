@@ -82,12 +82,16 @@ CRITICAL INSTRUCTION: Output ONLY a raw JSON object. No markdown, no code fences
 - Claimed Brand: {linguistic_data.get('claimed_brand')}
 - Free Email Domain Used: {linguistic_data.get('free_email')}
 
-[DOMAIN VERIFICATION SIGNALS]:
+[DOMAIN & EMAIL VERIFICATION SIGNALS]:
 - Target Domain: {verification_data.get('domain')}
 - WHOIS Status: {verification_data.get('whois_info', {}).get('whois_status')}
 - Domain Age (Days): {verification_data.get('whois_info', {}).get('registered_days')}
 - Is New Domain (<90 days): {verification_data.get('whois_info', {}).get('is_new_domain')}
 - Safe Browsing Status: {verification_data.get('safe_browsing', {}).get('status')}
+- Abstract API Email Analysis: {verification_data.get('email_validation', {}).get('analysis_summary')}
+- Recruiter Email Disposable: {verification_data.get('email_validation', {}).get('is_disposable_email')}
+- Recruiter Email SMTP Valid: {verification_data.get('email_validation', {}).get('is_smtp_valid')}
+- Recruiter Email Quality Score: {verification_data.get('email_validation', {}).get('quality_score')}
 - Corporate Trust Score: {verification_data.get('verification_trust_score')}
 
 [SCORING RULES]:

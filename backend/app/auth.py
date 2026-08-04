@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import hmac
 import jwt
@@ -34,42 +35,72 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     """
-    Decodes JWT access token and fetches user from DB.
-    If token is missing, expired, demo token, or invalid, returns a safe default student session
-    so students are NEVER blocked from performing scam verifications.
+    Decodes JWT access token or demo identity token and fetches/auto-provisions user from DB.
+    Guarantees that every distinct user has an independent MongoDB user record and unique user_id.
     """
-    fallback_id = "650000000000000000000001"
-    fallback_user = {
-        "id": fallback_id,
-        "_id": ObjectId(fallback_id),
-        "email": "student@university.edu",
-        "full_name": "Student User",
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    target_id_or_email = None
+
+    if token and isinstance(token, str) and not token.startswith("demo_local_token_"):
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            target_id_or_email = payload.get("sub")
+        except Exception as e:
+            logger.warning(f"JWT decode notice: {e}")
+
+    if not target_id_or_email and token and isinstance(token, str) and token.startswith("demo_local_token_"):
+        raw_identity = token.replace("demo_local_token_", "")
+        if raw_identity:
+            try:
+                # Try decoding base64 encoded identity if present
+                decoded = base64.b64decode(raw_identity).decode('utf-8')
+                if "@" in decoded or len(decoded) > 2:
+                    target_id_or_email = decoded
+            except Exception:
+                target_id_or_email = raw_identity
+
+    if not target_id_or_email:
+        target_id_or_email = "student@university.edu"
+
+    # Normalize target_id_or_email
+    target_str = str(target_id_or_email).strip().lower()
+
+    # 1. Try finding by ObjectId or string _id
+    user = None
+    if ObjectId.is_valid(target_id_or_email):
+        user = await db["users"].find_one({"_id": ObjectId(target_id_or_email)})
+    if not user:
+        user = await db["users"].find_one({"_id": target_id_or_email})
+    if not user and "@" in target_str:
+        user = await db["users"].find_one({"email": target_str})
+
+    # 2. If user found in MongoDB, return with string id
+    if user:
+        user["id"] = str(user["_id"])
+        return user
+
+    # 3. If user does not exist in MongoDB, auto-provision isolated user record
+    email_val = target_str if "@" in target_str else f"user_{target_str[:12]}@university.edu"
+    full_name_val = email_val.split("@")[0].replace("_", " ").title()
+
+    new_user_doc = {
+        "email": email_val,
+        "full_name": full_name_val,
         "institution": "University Student",
         "preferred_language": "en",
-        "created_at": datetime.now(timezone.utc)
+        "created_at": now
     }
-
-    if not token or not isinstance(token, str) or token.startswith("demo_local_token_"):
-        return fallback_user
-
+    
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-        user_id: str = payload.get("sub")
-        if not user_id:
-            return fallback_user
+        res = await db["users"].insert_one(new_user_doc)
+        new_user_doc["_id"] = res.inserted_id
+        new_user_doc["id"] = str(res.inserted_id)
+        return new_user_doc
     except Exception as e:
-        logger.warning(f"JWT verification notice (using student session fallback): {e}")
-        return fallback_user
+        logger.error(f"Error auto-provisioning user in MongoDB: {e}")
+        fallback_oid = ObjectId()
+        new_user_doc["_id"] = fallback_oid
+        new_user_doc["id"] = str(fallback_oid)
+        return new_user_doc
 
-    db = get_db()
-    try:
-        query_id = ObjectId(user_id) if ObjectId.is_valid(user_id) else user_id
-        user = await db["users"].find_one({"_id": query_id})
-        if user:
-            user["id"] = str(user["_id"])
-            return user
-    except Exception as e:
-        logger.warning(f"User lookup exception (using student session fallback): {e}")
-
-    fallback_user["id"] = str(user_id) if user_id else fallback_id
-    return fallback_user

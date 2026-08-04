@@ -23,11 +23,14 @@ class Settings(BaseSettings):
     DEEPSEEK_V4_API_KEY: str = os.getenv("DEEPSEEK_V4_API_KEY", "")
     DEEPSEEK_API_BASE_URL: str = os.getenv("DEEPSEEK_API_BASE_URL", "https://router.huggingface.co/v1")
     DEEPSEEK_MODEL_NAME: str = os.getenv("DEEPSEEK_MODEL_NAME", "deepseek-ai/DeepSeek-V4-Flash")
-    GOOGLE_SAFE_BROWSING_API_KEY: str = os.getenv("GOOGLE_SAFE_BROWSING_API_KEY", "")
+    GOOGLE_SAFE_BROWSING_API_KEY: str = os.getenv("GOOGLE_SAFE_BROWSING_API_KEY", "AIzaSyC6BIN5Bl3vIsLZVb7_5EiJqwQc6oik2x4")
 
     # APILayer & WHOIS API Settings
     APILAYER_KEY: str = os.getenv("APILAYER_KEY", "nIvPeI99eWBDMSArYAf2YcrshDCOVvJ3")
     WHOIS_IS_API_KEY: str = os.getenv("WHOIS_IS_API_KEY", "wis_live_KyVkL7gYMiXFivIQG46K9Xe4sh5THeAPT7rqgbAb")
+
+    # Abstract API Email Validation Settings
+    ABSTRACT_EMAIL_API_KEY: str = os.getenv("ABSTRACT_EMAIL_API_KEY", "65b5f7a51dcf4cf4b00176ac9e690531")
 
     # Firebase Settings
     FIREBASE_SERVICE_ACCOUNT_PATH: str = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "serviceAccountKey.json")

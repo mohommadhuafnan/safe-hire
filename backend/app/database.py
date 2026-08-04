@@ -22,38 +22,42 @@ class InMemoryCollection:
                 self.inserted_id = inserted_id
         return InsertResult(doc["_id"])
 
-    async def find_one(self, query):
+    def _matches_cond(self, doc, k, v):
         from bson import ObjectId
-        for doc in self._data.values():
-            match = True
-            for k, v in query.items():
-                if k == "_id" and isinstance(v, ObjectId):
-                    if str(doc.get("_id")) != str(v):
-                        match = False
+        doc_val = doc.get(k)
+        if isinstance(v, ObjectId) or isinstance(doc_val, ObjectId):
+            return str(doc_val) == str(v)
+        return doc_val == v
+
+    def _matches_query(self, doc, query):
+        if not query:
+            return True
+        for k, v in query.items():
+            if k == "$or" and isinstance(v, list):
+                or_match = False
+                for cond in v:
+                    if self._matches_query(doc, cond):
+                        or_match = True
                         break
-                elif doc.get(k) != v:
-                    match = False
-                    break
-            if match:
+                if not or_match:
+                    return False
+            else:
+                if not self._matches_cond(doc, k, v):
+                    return False
+        return True
+
+    async def find_one(self, query):
+        for doc in self._data.values():
+            if self._matches_query(doc, query):
                 return doc
         return None
 
     def find(self, query):
         class Cursor:
-            def __init__(self, data, query):
+            def __init__(self, data, query, matches_fn):
                 self.results = []
-                from bson import ObjectId
                 for doc in data.values():
-                    match = True
-                    for k, v in query.items():
-                        if k == "_id" and isinstance(v, ObjectId):
-                            if str(doc.get("_id")) != str(v):
-                                match = False
-                                break
-                        elif doc.get(k) != v:
-                            match = False
-                            break
-                    if match:
+                    if matches_fn(doc, query):
                         self.results.append(doc)
 
             def sort(self, field, direction=-1):
@@ -64,7 +68,31 @@ class InMemoryCollection:
             async def to_list(self, length=100):
                 return self.results[:length]
 
-        return Cursor(self._data, query)
+        return Cursor(self._data, query, self._matches_query)
+
+    async def delete_one(self, query):
+        to_delete = None
+        for doc_id, doc in self._data.items():
+            if self._matches_query(doc, query):
+                to_delete = doc_id
+                break
+        if to_delete:
+            del self._data[to_delete]
+            class DeleteResult:
+                deleted_count = 1
+            return DeleteResult()
+        class DeleteResult:
+            deleted_count = 0
+        return DeleteResult()
+
+    async def delete_many(self, query):
+        to_delete = [doc_id for doc_id, doc in self._data.items() if self._matches_query(doc, query)]
+        for doc_id in to_delete:
+            del self._data[doc_id]
+        class DeleteResult:
+            def __init__(self, count):
+                self.deleted_count = count
+        return DeleteResult(len(to_delete))
 
 class FallbackDatabase:
     def __init__(self):
