@@ -200,11 +200,11 @@ const LandingPage = () => {
   return (
     <div className="space-y-24 pb-16">
       
-      {/* FULL-SCREEN HERO SECTION WITH LOOPING VIDEO BACKGROUND */}
-      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden rounded-3xl mb-12 border border-slate-800/80 shadow-2xl bg-[#000000]">
+      {/* TRUE FULL-SCREEN HERO SECTION WITH LOOPING VIDEO BACKGROUND */}
+      <section className="relative w-full min-h-screen flex items-center justify-center overflow-hidden -mt-20 sm:-mt-24 pt-32 sm:pt-40 pb-24 bg-black">
         
-        {/* VIDEO BACKGROUND & MULTI-LAYER OVERLAYS */}
-        <div className="absolute inset-0 z-0 overflow-hidden bg-[#000000]">
+        {/* FULL-VIEWPORT VIDEO BACKGROUND & MULTI-LAYER OVERLAYS */}
+        <div className="absolute inset-0 z-0 overflow-hidden bg-black">
           <video
             ref={videoRef}
             autoPlay
@@ -212,24 +212,24 @@ const LandingPage = () => {
             muted
             playsInline
             preload="auto"
-            className="w-full h-full object-cover opacity-75 filter brightness-95 contrast-105 transition-opacity duration-1000 scale-105"
+            className="w-full h-full object-cover opacity-80 filter brightness-95 contrast-105 transition-opacity duration-1000 scale-105"
           >
             <source src={heroVideo} type="video/mp4" />
             <source src="/vedio/vedio.mp4" type="video/mp4" />
             Your browser does not support HTML5 video playback.
           </video>
 
-          {/* Semi-transparent Overlay: rgba(0, 0, 0, 0.55) & dark navy gradient */}
-          <div className="absolute inset-0 bg-black/55 backdrop-blur-[1px] z-10" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-[#0A0F1C] z-10" />
-          <div className="absolute inset-0 bg-radial-at-c from-sky-900/20 via-transparent to-black/80 z-10" />
+          {/* Semi-transparent Overlay: rgba(0, 0, 0, 0.50) & dark gradient */}
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] z-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/35 to-[#090d16] z-10" />
+          <div className="absolute inset-0 bg-radial-at-c from-sky-900/25 via-transparent to-black/85 z-10" />
 
           {/* Cybernetic Digital Grid Effect */}
           <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] opacity-20 z-10" />
         </div>
 
         {/* HERO CONTENT */}
-        <div className="relative z-20 pt-16 pb-14 px-6 text-center max-w-5xl mx-auto space-y-8 animate-fade-in-up">
+        <div className="relative z-20 px-6 text-center max-w-5xl mx-auto space-y-8 animate-fade-in-up">
           
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/20 border border-sky-400/30 text-sky-300 text-xs font-semibold shadow-lg shadow-sky-500/10 backdrop-blur-md animate-pulse">
             <ShieldCheck className="w-4 h-4 text-sky-400" />
@@ -266,15 +266,15 @@ const LandingPage = () => {
 
           {/* Trust Badges */}
           <div className="mt-12 pt-8 border-t border-slate-800/80 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-300 font-medium">
-            <div className="flex items-center space-x-2 bg-slate-950/70 px-3.5 py-1.5 rounded-full border border-slate-800">
+            <div className="flex items-center space-x-2 bg-slate-950/70 px-3.5 py-1.5 rounded-full border border-slate-800 backdrop-blur-md">
               <GraduationCap className="w-4 h-4 text-indigo-400" />
               <span>{t('landing.badge_students', 'Built for University Students')}</span>
             </div>
-            <div className="flex items-center space-x-2 bg-slate-950/70 px-3.5 py-1.5 rounded-full border border-slate-800">
+            <div className="flex items-center space-x-2 bg-slate-950/70 px-3.5 py-1.5 rounded-full border border-slate-800 backdrop-blur-md">
               <Globe2 className="w-4 h-4 text-sky-400" />
               <span>{t('landing.badge_languages', '5 South Asian Languages Supported')}</span>
             </div>
-            <div className="flex items-center space-x-2 bg-slate-950/70 px-3.5 py-1.5 rounded-full border border-slate-800">
+            <div className="flex items-center space-x-2 bg-slate-950/70 px-3.5 py-1.5 rounded-full border border-slate-800 backdrop-blur-md">
               <BrainCircuit className="w-4 h-4 text-emerald-400" />
               <span>{t('landing.badge_pipeline', '5-Agent AI Pipeline')}</span>
             </div>
