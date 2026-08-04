@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useAIModal } from '../context/AIModalContext';
+import heroVideo from '../../vedio/vedio.mp4';
 import { 
   ShieldCheck, 
   Search, 
@@ -34,8 +35,14 @@ const LandingPage = () => {
 
   const videoRef = useRef(null);
 
-  // Pause video when browser tab is inactive to optimize performance & battery
+  // Force play video on mount and handle tab visibility
   useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(err => {
+        logger.warning?.("Video autoplay prevented:", err);
+      });
+    }
+
     const handleVisibilityChange = () => {
       if (videoRef.current) {
         if (document.hidden) {
@@ -204,9 +211,10 @@ const LandingPage = () => {
             loop
             muted
             playsInline
-            poster="/images/scam_job_poster.png"
-            className="w-full h-full object-cover opacity-60 filter brightness-90 contrast-110 transition-opacity duration-1000 scale-105"
+            preload="auto"
+            className="w-full h-full object-cover opacity-75 filter brightness-95 contrast-105 transition-opacity duration-1000 scale-105"
           >
+            <source src={heroVideo} type="video/mp4" />
             <source src="/vedio/vedio.mp4" type="video/mp4" />
             Your browser does not support HTML5 video playback.
           </video>
