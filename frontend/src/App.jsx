@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FloatingAIChatbot from './components/FloatingAIChatbot';
+import CyberParticlesBackground from './components/CyberParticlesBackground';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -47,7 +48,8 @@ const PublicAuthRoute = ({ children }) => {
 
 function AppRoutes() {
   return (
-    <div className="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen relative overflow-hidden flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+      <CyberParticlesBackground />
       <Navbar />
       <main className="flex-grow">
         <Routes>
