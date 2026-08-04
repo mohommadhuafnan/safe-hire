@@ -17,7 +17,9 @@ async def get_history(current_user: dict = Depends(get_current_user)):
         q_user_id = user_id
 
     # Fetch results for user
-    results_cursor = db["results"].find({"user_id": q_user_id}).sort("created_at", -1)
+    results_cursor = db["results"].find({
+        "$or": [{"user_id": q_user_id}, {"user_id": str(user_id)}]
+    }).sort("created_at", -1)
     results_list = await results_cursor.to_list(length=100)
 
     history_items = []
@@ -38,6 +40,55 @@ async def get_history(current_user: dict = Depends(get_current_user)):
         })
 
     return history_items
+
+@router.delete("", response_model=Dict[str, Any])
+async def clear_all_history(current_user: dict = Depends(get_current_user)):
+    """Deletes all scan history records for the current user."""
+    db = get_db()
+    user_id = current_user["id"]
+
+    try:
+        q_user_id = ObjectId(user_id)
+    except Exception:
+        q_user_id = user_id
+
+    await db["results"].delete_many({"$or": [{"user_id": q_user_id}, {"user_id": str(user_id)}]})
+    await db["submissions"].delete_many({"$or": [{"user_id": q_user_id}, {"user_id": str(user_id)}]})
+
+    return {"status": "success", "message": "All history records cleared successfully."}
+
+@router.delete("/{history_id}", response_model=Dict[str, Any])
+async def delete_history_item(history_id: str, current_user: dict = Depends(get_current_user)):
+    """Deletes a specific scan history record."""
+    db = get_db()
+    user_id = current_user["id"]
+
+    try:
+        q_user_id = ObjectId(user_id)
+    except Exception:
+        q_user_id = user_id
+
+    try:
+        q_id = ObjectId(history_id)
+    except Exception:
+        q_id = history_id
+
+    res_doc = await db["results"].find_one({
+        "$or": [{"_id": q_id}, {"submission_id": q_id}]
+    })
+
+    if res_doc:
+        sub_id = res_doc.get("submission_id")
+        await db["results"].delete_one({"_id": res_doc["_id"]})
+        if sub_id:
+            try:
+                sub_q = ObjectId(sub_id) if ObjectId.is_valid(sub_id) else sub_id
+                await db["submissions"].delete_one({"_id": sub_q})
+            except Exception:
+                pass
+        return {"status": "success", "message": "History record deleted successfully."}
+
+    return {"status": "success", "message": "Record removed."}
 
 @router.get("/{submission_id}", response_model=Dict[str, Any])
 async def get_history_detail(submission_id: str, current_user: dict = Depends(get_current_user)):
