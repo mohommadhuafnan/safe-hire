@@ -35,8 +35,10 @@ def _extract_json_from_text(text: str) -> Optional[dict]:
 
     # 3. Try direct parse first (fastest path)
     try:
-        return json.loads(text)
-    except json.JSONDecodeError:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
         pass
 
     # 4. Regex: find the first complete JSON object (handles extra surrounding text)
@@ -44,8 +46,10 @@ def _extract_json_from_text(text: str) -> Optional[dict]:
     if match:
         candidate = match.group(0)
         try:
-            return json.loads(candidate)
-        except json.JSONDecodeError:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
             pass
 
     # 5. Last resort: try to fix truncated JSON by finding the last complete field
@@ -55,8 +59,10 @@ def _extract_json_from_text(text: str) -> Optional[dict]:
         if last_pos != -1:
             trimmed = text[:last_pos + 1]
             try:
-                return json.loads(trimmed)
-            except json.JSONDecodeError:
+                parsed = json.loads(trimmed)
+                if isinstance(parsed, dict):
+                    return parsed
+            except Exception:
                 continue
 
     return None

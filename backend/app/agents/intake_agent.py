@@ -109,13 +109,21 @@ class IntakeAgent:
                     res = requests.post(rest_url, json=rest_payload, timeout=3.5)
                     if res.status_code == 200:
                         data = res.json()
-                        content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                        candidates = data.get("candidates") if isinstance(data, dict) else None
+                        content = ""
+                        if candidates and isinstance(candidates, list) and len(candidates) > 0 and isinstance(candidates[0], dict):
+                            content_obj = candidates[0].get("content") or {}
+                            parts = content_obj.get("parts") or []
+                            if parts and isinstance(parts, list) and len(parts) > 0 and isinstance(parts[0], dict):
+                                content = parts[0].get("text", "")
                         clean = content.strip().replace("```json", "").replace("```", "").strip()
                         if "<think>" in clean and "</think>" in clean:
                             clean = clean.split("</think>")[-1].strip()
-                        parsed = json.loads(clean)
-                        logger.info(f"Gemini Vision ({model_name}) REST poster analysis success: is_job_poster={parsed.get('is_job_poster')}")
-                        return parsed
+                        if clean:
+                            parsed = json.loads(clean)
+                            if isinstance(parsed, dict):
+                                logger.info(f"Gemini Vision ({model_name}) REST poster analysis success: is_job_poster={parsed.get('is_job_poster')}")
+                                return parsed
                     elif res.status_code == 429:
                         logger.warning(f"Gemini Vision ({model_name}) HTTP 429 quota notice. Trying next model...")
                 except Exception as e:
@@ -147,13 +155,19 @@ class IntakeAgent:
                     res = requests.post(url, json=payload, headers=headers, timeout=3.5)
                     if res.status_code == 200:
                         data = res.json()
-                        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                        choices = data.get("choices") if isinstance(data, dict) else None
+                        content = ""
+                        if choices and isinstance(choices, list) and len(choices) > 0 and isinstance(choices[0], dict):
+                            msg = choices[0].get("message") or {}
+                            content = msg.get("content", "")
                         clean = content.strip().replace("```json", "").replace("```", "").strip()
                         if "<think>" in clean and "</think>" in clean:
                             clean = clean.split("</think>")[-1].strip()
-                        parsed = json.loads(clean)
-                        logger.info(f"Gemini Vision ({model_name}) OpenAI endpoint success: is_job_poster={parsed.get('is_job_poster')}")
-                        return parsed
+                        if clean:
+                            parsed = json.loads(clean)
+                            if isinstance(parsed, dict):
+                                logger.info(f"Gemini Vision ({model_name}) OpenAI endpoint success: is_job_poster={parsed.get('is_job_poster')}")
+                                return parsed
                 except Exception as e:
                     logger.warning(f"Gemini Vision OpenAI endpoint notice for model {model_name}: {e}")
 
@@ -198,14 +212,20 @@ class IntakeAgent:
                 res = requests.post(deepseek_url, json=payload, headers=headers, timeout=3.5)
                 if res.status_code == 200:
                     data = res.json()
-                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    choices = data.get("choices") if isinstance(data, dict) else None
+                    content = ""
+                    if choices and isinstance(choices, list) and len(choices) > 0 and isinstance(choices[0], dict):
+                        msg = choices[0].get("message") or {}
+                        content = msg.get("content", "")
                     clean = content.strip().replace("```json", "").replace("```", "").strip()
                     if "<think>" in clean and "</think>" in clean:
                         clean = clean.split("</think>")[-1].strip()
-                    parsed = json.loads(clean)
-                    parsed["extracted_text"] = ocr_text
-                    logger.info("DeepSeek V4 Flash OCR poster classification success!")
-                    return parsed
+                    if clean:
+                        parsed = json.loads(clean)
+                        if isinstance(parsed, dict):
+                            parsed["extracted_text"] = ocr_text
+                            logger.info("DeepSeek V4 Flash OCR poster classification success!")
+                            return parsed
             except Exception as e:
                 logger.warning(f"DeepSeek V4 fallback notice: {e}")
 
@@ -335,7 +355,9 @@ class IntakeAgent:
             combined_text += input_text.strip() + "\n"
 
         if image_bytes:
-            vision_res = self.analyze_poster_with_gemini_vision(image_bytes)
+            vision_res = self.analyze_poster_with_gemini_vision(image_bytes) or {}
+            if not isinstance(vision_res, dict):
+                vision_res = {}
             is_job_poster = vision_res.get("is_job_poster", True)
             validation_error = vision_res.get("validation_error")
 
