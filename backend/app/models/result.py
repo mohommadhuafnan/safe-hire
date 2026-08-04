@@ -13,4 +13,7 @@ class AnalysisResultResponse(BaseModel):
     verification_data: Dict[str, Any]
     explanation_text: str
     recommendations: List[str]
+    breakdown_signals: Optional[List[str]] = []
+    intake_data: Optional[Dict[str, Any]] = {}
+    sub_scores: Optional[Dict[str, Any]] = {}
     created_at: datetime

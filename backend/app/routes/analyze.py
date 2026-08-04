@@ -81,5 +81,9 @@ async def analyze_submission(
         verification_data=pipeline_res["verification_data"],
         explanation_text=pipeline_res["explanation_text"],
         recommendations=pipeline_res["recommendations"],
+        breakdown_signals=pipeline_res.get("breakdown_signals", []),
+        intake_data=pipeline_res.get("intake_data", {}),
+        sub_scores=pipeline_res.get("sub_scores", {}),
         created_at=now
     )
+

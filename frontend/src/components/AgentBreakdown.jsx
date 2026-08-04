@@ -27,6 +27,8 @@ const AgentBreakdown = ({ result }) => {
 
   const riskFactors = result.risk_factors || {};
   const verificationData = result.verification_data || {};
+  const intakeData = result.intake_data || {};
+  const breakdownSignals = result.breakdown_signals || [];
 
   // Sub-scores map
   const subScores = result.sub_scores || {
@@ -63,11 +65,11 @@ const AgentBreakdown = ({ result }) => {
             <span className="font-semibold text-emerald-400">Text & Metadata Extracted</span>
           </div>
 
-          {result.intake_data?.ocr_text && (
+          {(intakeData?.ocr_text || result.risk_factors?.ocr_text) && (
             <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
               <span className="font-semibold block mb-1 text-slate-200">OCR Screenshot Extracted Text:</span>
-              <p className="text-[11px] text-slate-400 font-mono leading-relaxed bg-slate-950 p-2 rounded border border-slate-800/80">
-                "{result.intake_data.ocr_text}"
+              <p className="text-[11px] text-slate-400 font-mono leading-relaxed bg-slate-950 p-2 rounded border border-slate-800/80 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                "{intakeData?.ocr_text || result.risk_factors?.ocr_text}"
               </p>
             </div>
           )}
@@ -125,17 +127,42 @@ const AgentBreakdown = ({ result }) => {
             )}
           </div>
 
+          {/* Suspicious Channels */}
+          <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+            <span className="text-slate-300 font-medium">Suspicious Contact Channels:</span>
+            {riskFactors.has_suspicious_channels ? (
+              <span className="flex items-center text-amber-400 font-bold">
+                <AlertTriangle className="w-4 h-4 mr-1" /> Informal Channels Detected
+              </span>
+            ) : (
+              <span className="flex items-center text-emerald-400 font-semibold">
+                <CheckCircle2 className="w-4 h-4 mr-1" /> Official Channels Used
+              </span>
+            )}
+          </div>
+
           {/* Matched Keywords list */}
           {riskFactors.matched_payment?.length > 0 && (
             <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300">
-              <span className="font-semibold block mb-1">Flagged Financial Terms:</span>
+              <span className="font-semibold block mb-1">🚨 Flagged Financial Terms:</span>
               <div className="flex flex-wrap gap-1.5">
-                {riskFactors.matched_payment.map((kw, i) => (
+                {riskFactors.matched_payment.slice(0, 8).map((kw, i) => (
                   <span key={i} className="px-2 py-0.5 rounded bg-rose-500/20 text-[10px] font-mono">
                     {kw}
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {riskFactors.impersonation_flags?.length > 0 && (
+            <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
+              <span className="font-semibold block mb-1">🎭 Impersonation Flags:</span>
+              <ul className="space-y-0.5">
+                {riskFactors.impersonation_flags.map((flag, i) => (
+                  <li key={i} className="text-[11px]">• {flag}</li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
@@ -200,8 +227,28 @@ const AgentBreakdown = ({ result }) => {
       summary: t('agents.reasoning_summary', 'AI Explainable Rationale Synthesized'),
       badge: t('agents.agent_4_badge', 'Deep AI'),
       content: (
-        <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 text-xs leading-relaxed whitespace-pre-line">
-          {result.explanation_text}
+        <div className="space-y-3">
+          {/* Full structured AI explanation */}
+          <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 text-xs leading-relaxed whitespace-pre-line">
+            {result.explanation_text}
+          </div>
+
+          {/* Breakdown signals from Gemini/DeepSeek AI */}
+          {breakdownSignals.length > 0 && (
+            <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+              <span className="font-bold text-indigo-300 text-xs block mb-2 flex items-center">
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" /> AI-Detected Risk Signals
+              </span>
+              <ul className="space-y-1.5">
+                {breakdownSignals.map((signal, i) => (
+                  <li key={i} className="flex items-start space-x-2 text-xs text-slate-300">
+                    <span className="text-indigo-400 font-bold mt-0.5 flex-shrink-0">{i + 1}.</span>
+                    <span className="leading-relaxed">{signal}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )
     },
@@ -215,8 +262,14 @@ const AgentBreakdown = ({ result }) => {
       content: (
         <ul className="space-y-2 text-xs">
           {result.recommendations?.map((rec, idx) => (
-            <li key={idx} className="flex items-start space-x-2 p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-200">
-              <span className="text-indigo-400 font-bold">{idx + 1}.</span>
+            <li key={idx} className={`flex items-start space-x-2 p-2.5 rounded-lg border text-slate-200 ${
+              rec.startsWith('🚨') ? 'bg-rose-500/10 border-rose-500/30 text-rose-200' :
+              rec.startsWith('⚠️') ? 'bg-amber-500/10 border-amber-500/30 text-amber-200' :
+              rec.startsWith('📵') ? 'bg-sky-500/10 border-sky-500/30 text-sky-200' :
+              rec.startsWith('🌐') ? 'bg-orange-500/10 border-orange-500/30 text-orange-200' :
+              'bg-slate-900/80 border-slate-800'
+            }`}>
+              <span className="text-indigo-400 font-bold flex-shrink-0">{idx + 1}.</span>
               <span className="leading-relaxed">{rec}</span>
             </li>
           ))}
@@ -224,6 +277,7 @@ const AgentBreakdown = ({ result }) => {
       )
     }
   ];
+
 
   return (
     <div className="space-y-6 mt-6">

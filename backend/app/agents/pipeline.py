@@ -73,9 +73,11 @@ class AgentPipeline:
             "scam_score": scam_score,
             "confidence_score": reasoning_res.get("confidence_score", 98),
             "sub_scores": reasoning_res.get("sub_scores", {}),
+            "breakdown_signals": reasoning_res.get("breakdown_signals", []),
             "risk_level": reasoning_res.get("risk_level", "Low Risk"),
             "language": final_lang,
             "explanation_text": reasoning_res.get("explanation", "")
         }
+
 
 pipeline_runner = AgentPipeline()
