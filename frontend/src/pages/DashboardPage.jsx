@@ -386,29 +386,66 @@ const DashboardPage = () => {
 
           </div>
 
-          {/* LIVE PIPELINE PROGRESS ANIMATION */}
+          {/* LIVE PIPELINE PROGRESS & FUTURISTIC POSTER LASER SCANNER ANIMATION */}
           {analyzing && (
-            <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 space-y-3 animate-fade-in">
-              <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center">
-                <BrainCircuit className="w-4 h-4 mr-2 text-indigo-400 animate-pulse" />
-                Executing 5-Agent AI Pipeline
-              </h3>
-              <div className="space-y-2">
+            <div className="glass-card p-6 rounded-3xl border border-indigo-500/40 space-y-5 animate-fade-in shadow-2xl relative overflow-hidden bg-slate-950/90">
+              
+              {/* Top Scanner Status Bar */}
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center space-x-2">
+                  <BrainCircuit className="w-5 h-5 text-indigo-400 animate-pulse" />
+                  <span className="text-xs font-bold text-slate-100 uppercase tracking-widest">
+                    SAFE-HIRE AI 5-Agent Multimodal Scanner Active
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-sky-400 bg-sky-500/10 px-2.5 py-1 rounded-full border border-sky-500/20 animate-pulse">
+                  NEURAL SCANNING
+                </span>
+              </div>
+
+              {/* POSTER LASER SCANNER PREVIEW (If Image Uploaded) */}
+              {previewUrl && (
+                <div className="relative w-full max-w-sm mx-auto rounded-2xl overflow-hidden border-2 border-indigo-500/50 bg-slate-900 shadow-[0_0_30px_rgba(99,102,241,0.3)]">
+                  <img src={previewUrl} alt="Poster Under Scan" className="w-full max-h-56 object-contain opacity-85 p-2" />
+                  
+                  {/* Neon Cyan Laser Scan Line */}
+                  <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#38bdf8] animate-scan z-20 pointer-events-none" />
+                  
+                  {/* HUD Corner Markers */}
+                  <div className="absolute top-2 left-2 text-[9px] font-mono font-bold text-cyan-400 bg-slate-950/90 px-2 py-0.5 rounded border border-cyan-500/40">
+                    [OCR TEXT MINING]
+                  </div>
+                  <div className="absolute bottom-2 right-2 text-[9px] font-mono font-bold text-emerald-400 bg-slate-950/90 px-2 py-0.5 rounded border border-emerald-500/40">
+                    [GEMINI VISION 3.6]
+                  </div>
+                </div>
+              )}
+
+              {/* 5-Agent Step Neural Progress Indicators */}
+              <div className="space-y-2.5 pt-1">
                 {pipelineSteps.map((stepName, idx) => (
-                  <div key={idx} className="flex items-center space-x-2 text-xs">
-                    {idx + 1 < currentStep ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                    ) : idx + 1 === currentStep ? (
-                      <Sparkles className="w-4 h-4 text-indigo-400 animate-spin flex-shrink-0" />
-                    ) : (
-                      <div className="w-4 h-4 rounded-full border border-slate-700 flex-shrink-0" />
+                  <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+                    <div className="flex items-center space-x-2.5">
+                      {idx + 1 < currentStep ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      ) : idx + 1 === currentStep ? (
+                        <Sparkles className="w-4 h-4 text-indigo-400 animate-spin flex-shrink-0" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border border-slate-700 flex-shrink-0" />
+                      )}
+                      <span className={idx + 1 <= currentStep ? 'text-slate-100 font-semibold' : 'text-slate-500'}>
+                        {stepName}
+                      </span>
+                    </div>
+                    {idx + 1 === currentStep && (
+                      <span className="text-[10px] font-bold text-indigo-400 animate-pulse font-mono">
+                        ANALYZING...
+                      </span>
                     )}
-                    <span className={idx + 1 <= currentStep ? 'text-slate-200 font-medium' : 'text-slate-500'}>
-                      {stepName}
-                    </span>
                   </div>
                 ))}
               </div>
+
             </div>
           )}
 
@@ -513,49 +550,31 @@ const DashboardPage = () => {
                       <Globe className="w-4 h-4 text-sky-400" />
                       <span>Live URL & WHOIS Domain Security Audit</span>
                     </h4>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800">
                       WHOIS LIVE AUDIT
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Target Domain / URL</span>
-                      <span className="font-mono text-sky-400 font-bold text-xs truncate">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">Target Domain / URL</span>
+                      <span className="font-semibold text-slate-200 text-xs truncate block">
                         {result.verification_data.domain || 'Not Specified'}
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Domain Age</span>
-                      <span className={`font-semibold text-xs ${result.verification_data.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
-                        {result.verification_data.whois_info?.domain_years 
-                          ? `${result.verification_data.whois_info.domain_years} Years (${result.verification_data.whois_info.registered_days} Days Old)` 
-                          : (result.verification_data.whois_info?.registered_days ? `${result.verification_data.whois_info.registered_days} Days Old` : 'Verified Registry Standard')}
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">Domain Age</span>
+                      <span className={`font-semibold text-xs block ${result.verification_data.whois_info?.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
+                        {result.verification_data.whois_info?.registered_days 
+                          ? `${result.verification_data.whois_info.registered_days} Days (Registered)` 
+                          : 'Verified Registry Standard'}
                       </span>
                     </div>
 
-                    {result.verification_data.whois_info?.creation_date && (
-                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-1">
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase">Registration Date</span>
-                        <span className="font-mono text-slate-200 text-xs">
-                          {new Date(result.verification_data.whois_info.creation_date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-
-                    {result.verification_data.whois_info?.registrar && (
-                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-1">
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase">Domain Registrar</span>
-                        <span className="font-semibold text-slate-200 text-xs truncate">
-                          {result.verification_data.whois_info.registrar}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-1 sm:col-span-2">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase">WHOIS Domain Security Status</span>
-                      <span className={`font-semibold text-xs ${result.verification_data.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 sm:col-span-2">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">WHOIS Domain Security Status</span>
+                      <span className={`font-semibold text-xs block ${result.verification_data.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
                         {result.verification_data.whois_info?.whois_status || 'Domain Registry Standard'}
                       </span>
                     </div>
@@ -628,12 +647,13 @@ const DashboardPage = () => {
               <ScamGauge score={result.scam_score} riskLevel={result.risk_level} />
 
               {/* PLAIN-LANGUAGE EXPLANATION */}
-              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
-                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between">
-                  <span>{t('dashboard.explanation')}</span>
-                  <span className="text-[10px] text-sky-400 font-mono">Point-by-Point AI Audit</span>
+              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
+                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  {t('dashboard.explanation')}
                 </h3>
-                <StructuredExplanationView text={result.explanation_text} />
+                <p className="text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-line">
+                  {result.explanation_text}
+                </p>
               </div>
 
               {/* 5-AGENT BREAKDOWN ACCORDION */}

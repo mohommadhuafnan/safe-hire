@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,27 @@ const Navbar = () => {
   const [isSystemDefault, setIsSystemDefault] = useState(
     !localStorage.getItem('i18nextLng') || localStorage.getItem('i18nextLng') === 'system'
   );
+
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY < 20) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 60) {
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        setIsVisible(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   const selectLanguage = (val) => {
     if (val === 'system') {
@@ -58,7 +79,9 @@ const Navbar = () => {
 
   return (
     <>
-      <header className="sticky top-3 sm:top-4 z-50 px-3 sm:px-6">
+      <header className={`fixed top-3 sm:top-4 inset-x-0 z-50 px-3 sm:px-6 transition-all duration-300 ease-in-out ${
+        isVisible ? 'translate-y-0 opacity-100' : '-translate-y-28 opacity-0 pointer-events-none'
+      }`}>
         <nav className="max-w-6xl mx-auto rounded-full bg-slate-950/80 border border-white/15 backdrop-blur-2xl shadow-2xl shadow-slate-950/80 px-4 sm:px-6 py-2.5 transition-all duration-300">
           <div className="flex items-center justify-between">
             

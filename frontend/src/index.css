@@ -42,10 +42,14 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.glass-card:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: 0 16px 40px -10px rgba(99, 102, 241, 0.25);
-  transform: translateY(-2px);
+@keyframes scan {
+  0% { top: 0%; opacity: 0.8; }
+  50% { top: 95%; opacity: 1; }
+  100% { top: 0%; opacity: 0.8; }
+}
+
+.animate-scan {
+  animation: scan 2.2s ease-in-out infinite;
 }
 
 .glass-pricing-popular {

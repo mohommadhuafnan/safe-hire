@@ -26,44 +26,38 @@ class AgentPipeline:
             final_lang = intake_res.get("final_language", "en")
             domain = intake_res.get("domain", "")
 
-            # Check if non-job poster or non-career image was uploaded
+            # Check if non-job picture or non-career image was uploaded
             if intake_res.get("is_job_poster") is False:
-                poster_type = intake_res.get("poster_type") or "Informational Flyer / Non-Job Image"
-                poster_summary = intake_res.get("poster_summary") or "This uploaded image contains an event flyer, educational poster, or non-recruitment graphic without job vacancy offer details."
-                ocr_text = intake_res.get("ocr_text") or cleaned_text or "No readable text extracted."
-                claimed_brand = intake_res.get("claimed_brand") or "Informational Flyer"
-                
-                explanation_text = f"📋 POSTER CLASSIFICATION & TYPE:\n• Category: {poster_type}\n• Claimed Organization / Brand: {claimed_brand}\n\nℹ️ POSTER SUMMARY & DETAILS:\n{poster_summary}\n\n🎯 RECRUITMENT VERDICT:\nThis image is classified as an informational or promotional poster ({poster_type}), not a direct job vacancy offer. SAFE-HIRE verified that no recruitment fee demands or hiring impersonation risks are present.\n\n📄 EXTRACTED VERBATIM CONTENT:\n\"{ocr_text[:1200]}\""
+                validation_msg = intake_res.get("validation_error") or "⚠️ NON-JOB POSTER DETECTED: This image contains no job recruitment advertisement or career vacancy offer."
+                explanation_text = f"{validation_msg}\n\nUploading non-career images (personal photos, animals, or unrelated pictures) cannot be verified for recruitment authenticity and is flagged with a 100% Risk Alert.\n\nPlease upload a valid job recruitment screenshot, walk-in interview flyer, or paste a job posting link."
                 
                 return {
                     "intake_data": intake_res,
                     "linguistic_data": {},
                     "verification_data": {},
                     "reasoning_data": {
-                        "scam_score": 0,
-                        "risk_level": f"Non-Job Poster ({poster_type})",
+                        "scam_score": 100,
+                        "risk_level": "Non-Job Image (100% Risk Alert)",
                         "explanation": explanation_text
                     },
                     "recommendations": [
-                        f"ℹ️ POSTER TYPE: Classified as {poster_type}.",
-                        "🔍 EVENT / AD DETAILS: Verify event dates, venue, and organizer details directly with the official hosts.",
-                        "✅ NO RECRUITMENT SCAM: No job vacancy fee demands or hiring impersonation risks detected in this poster."
+                        "⚠️ Upload a valid job advertisement screenshot, recruitment flyer, or paste a job vacancy URL.",
+                        "Avoid uploading non-career photos, personal pictures, or unrelated graphics."
                     ],
-                    "scam_score": 0,
-                    "confidence_score": 98,
+                    "scam_score": 100,
+                    "confidence_score": 100,
                     "sub_scores": {
-                        "financial_fee_risk": 0,
-                        "impersonation_risk": 0,
-                        "domain_reputation_risk": 0,
-                        "urgency_pressure_risk": 0
+                        "financial_fee_risk": 100,
+                        "impersonation_risk": 100,
+                        "domain_reputation_risk": 100,
+                        "urgency_pressure_risk": 100
                     },
                     "breakdown_signals": [
-                        f"📌 Poster Classification: {poster_type}",
-                        f"🏢 Host / Brand: {claimed_brand}",
-                        "ℹ️ Informational Flyer: Non-recruitment offer document.",
-                        "✅ Safe Content: Zero job recruitment scam or fee demand risks found."
+                        "⚠️ Non-Job Image Content Detected",
+                        "No career offer or recruitment vacancy details found",
+                        "100% Risk Alert triggered for non-recruitment picture"
                     ],
-                    "risk_level": f"Non-Job Poster ({poster_type})",
+                    "risk_level": "Non-Job Image (100% Risk Alert)",
                     "language": final_lang,
                     "explanation_text": explanation_text
                 }
