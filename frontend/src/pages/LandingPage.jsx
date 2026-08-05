@@ -62,6 +62,33 @@ const LandingPage = () => {
     };
   }, []);
 
+  // Intersection Observer for Smooth Scroll Reveal Animations on Scroll
+  useEffect(() => {
+    const revealElements = document.querySelectorAll(
+      '.scroll-reveal, .scroll-reveal-left, .scroll-reveal-right, .scroll-reveal-scale'
+    );
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+          }
+        });
+      },
+      {
+        threshold: 0.12,
+        rootMargin: '0px 0px -40px 0px',
+      }
+    );
+
+    revealElements.forEach((el) => observer.observe(el));
+
+    return () => {
+      revealElements.forEach((el) => observer.unobserve(el));
+    };
+  }, []);
+
   // Pricing State: 'monthly' (1 Month) vs 'annual' (1 Year)
   const [billingCycle, setBillingCycle] = useState('monthly');
 
@@ -737,11 +764,149 @@ const LandingPage = () => {
       </section>
 
       {/* ========================================================================= */}
+      {/* 5-AGENT AI WORKFLOW PIPELINE SECTION (PLACED DIRECTLY AFTER VIDEO HERO) */}
+      {/* ========================================================================= */}
+      <section id="workflow-pipeline" className="max-w-7xl mx-auto px-6 pt-4 pb-8 scroll-mt-24">
+        
+        {/* Section Header */}
+        <div className="text-center mb-14 space-y-3 scroll-reveal">
+          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-400/30 text-sky-300 text-xs font-bold shadow-lg shadow-sky-500/10 backdrop-blur-md animate-pulse">
+            <BrainCircuit className="w-4 h-4 text-sky-400" />
+            <span>5-AGENT MULTI-AI ARCHITECTURE</span>
+          </div>
+
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
+            {t('landing.workflow_title', 'How SAFE-HIRE 5-Agent AI Works')}
+          </h2>
+          
+          <p className="text-slate-400 text-sm max-w-3xl mx-auto leading-relaxed">
+            {t('landing.workflow_desc', 'An automated multi-agent pipeline analyzes job postings, screenshots, and URLs in seconds.')}
+          </p>
+        </div>
+
+        {/* 5-Agent Sequential Cards Grid with Glowing Connectors */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
+          
+          {[
+            {
+              step: '1',
+              title: 'Intake Agent',
+              icon: FileText,
+              tag: 'Vision OCR & Ingestion',
+              desc: 'Processes text, image OCR screenshots, and URLs; auto-detects language.',
+              color: 'from-blue-600 to-indigo-600',
+              borderColor: 'border-blue-500/30 hover:border-blue-400',
+              glowColor: 'shadow-blue-500/20',
+              badgeBg: 'bg-blue-600',
+              delay: 'reveal-delay-100'
+            },
+            {
+              step: '2',
+              title: 'Linguistic Risk',
+              icon: BrainCircuit,
+              tag: 'EMSCAD Signal Engine',
+              desc: 'Evaluates EMSCAD signals: urgency, payment demands, email domain anomalies.',
+              color: 'from-sky-500 to-blue-600',
+              borderColor: 'border-sky-500/30 hover:border-sky-400',
+              glowColor: 'shadow-sky-500/20',
+              badgeBg: 'bg-sky-500',
+              delay: 'reveal-delay-200'
+            },
+            {
+              step: '3',
+              title: 'Verification Agent',
+              icon: Globe2,
+              tag: 'WHOIS & Safe Browsing',
+              desc: 'Checks WHOIS domain age, Google Safe Browsing, Abstract Email validation, and corporate presence.',
+              color: 'from-cyan-500 to-teal-500',
+              borderColor: 'border-cyan-500/30 hover:border-cyan-400',
+              glowColor: 'shadow-cyan-500/20',
+              badgeBg: 'bg-cyan-500',
+              delay: 'reveal-delay-300'
+            },
+            {
+              step: '4',
+              title: 'Reasoning Agent',
+              icon: Sparkles,
+              tag: 'Gemini 3.6 & DeepSeek',
+              desc: 'Synthesizes signals into a 0-100 score with plain language explanation.',
+              color: 'from-teal-500 to-emerald-500',
+              borderColor: 'border-teal-500/30 hover:border-teal-400',
+              glowColor: 'shadow-teal-500/20',
+              badgeBg: 'bg-teal-500',
+              delay: 'reveal-delay-400'
+            },
+            {
+              step: '5',
+              title: 'Recommendation',
+              icon: ShieldCheck,
+              tag: 'Poster-Specific Action',
+              desc: 'Delivers tailored safety guidance and university reporting steps.',
+              color: 'from-indigo-600 to-purple-600',
+              borderColor: 'border-indigo-500/30 hover:border-indigo-400',
+              glowColor: 'shadow-indigo-500/20',
+              badgeBg: 'bg-indigo-600',
+              delay: 'reveal-delay-500'
+            }
+          ].map((agent, i) => {
+            const IconComp = agent.icon;
+            return (
+              <div 
+                key={i} 
+                className={`glass-card p-6 rounded-3xl border ${agent.borderColor} relative group hover:-translate-y-2.5 transition-all duration-300 backdrop-blur-xl bg-slate-950/80 shadow-xl ${agent.glowColor} flex flex-col justify-between scroll-reveal ${agent.delay}`}
+              >
+                {/* Step Connector Line (Desktop) */}
+                {i < 4 && (
+                  <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
+                    <div className="w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-indigo-500 animate-pulse" />
+                    <div className="w-2 h-2 rounded-full bg-cyan-300 absolute -right-1 top-1/2 -translate-y-1/2 shadow-lg shadow-cyan-400" />
+                  </div>
+                )}
+
+                <div>
+                  {/* Step Badge & Icon */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`w-9 h-9 rounded-2xl ${agent.badgeBg} flex items-center justify-center text-white font-extrabold text-xs shadow-lg shadow-black/50 group-hover:scale-110 transition-transform duration-300`}>
+                      {agent.step}
+                    </div>
+                    <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-sky-400 group-hover:text-cyan-300 transition-colors">
+                      <IconComp className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  {/* Title & Tag */}
+                  <div className="space-y-1 mb-3">
+                    <h3 className="font-extrabold text-slate-100 text-base group-hover:text-cyan-300 transition-colors">
+                      {agent.title}
+                    </h3>
+                    <span className="inline-block px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-sky-300">
+                      {agent.tag}
+                    </span>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-slate-300 text-xs leading-relaxed">
+                    {agent.desc}
+                  </p>
+                </div>
+
+                {/* Bottom Active Pulse Glow Bar */}
+                <div className="mt-4 pt-3 border-t border-slate-900/80 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                  <span>Stage {agent.step} Active</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 group-hover:animate-ping" />
+                </div>
+              </div>
+            );
+          })}
+
+        </div>
+      </section>
+
       {/* ========================================================================= */}
       {/* KEY FEATURES GRID (WHY CHOOSE SAFE-HIRE - ENHANCED WITH ANIMATIONS) */}
       {/* ========================================================================= */}
       <section className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-14 space-y-3">
+        <div className="text-center mb-14 space-y-3 scroll-reveal">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold shadow-lg shadow-indigo-500/10 backdrop-blur-md animate-pulse">
             <ShieldCheck className="w-4 h-4 text-indigo-400" />
             <span>UNMATCHED RECRUITMENT PROTECTION ENGINE</span>
@@ -759,7 +924,7 @@ const LandingPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           
           {/* Feature 1 */}
-          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-indigo-500/30 hover:border-indigo-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(99,102,241,0.25)] relative overflow-hidden bg-slate-900/80">
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-indigo-500/30 hover:border-indigo-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(99,102,241,0.25)] relative overflow-hidden bg-slate-900/80 scroll-reveal-left reveal-delay-100">
             <div className="absolute top-0 right-0 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/25 transition-all duration-500 pointer-events-none" />
             <div className="p-4 rounded-2xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
               <BrainCircuit className="w-7 h-7 text-indigo-400 group-hover:rotate-12 transition-transform duration-300" />
@@ -776,7 +941,7 @@ const LandingPage = () => {
           </div>
 
           {/* Feature 2 */}
-          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-sky-500/30 hover:border-sky-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(56,189,248,0.25)] relative overflow-hidden bg-slate-900/80">
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-sky-500/30 hover:border-sky-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(56,189,248,0.25)] relative overflow-hidden bg-slate-900/80 scroll-reveal-right reveal-delay-200">
             <div className="absolute top-0 right-0 w-28 h-28 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/25 transition-all duration-500 pointer-events-none" />
             <div className="p-4 rounded-2xl bg-sky-500/15 text-sky-400 border border-sky-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
               <Globe2 className="w-7 h-7 text-sky-400 group-hover:rotate-12 transition-transform duration-300" />
@@ -793,7 +958,7 @@ const LandingPage = () => {
           </div>
 
           {/* Feature 3 */}
-          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-teal-500/30 hover:border-teal-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(20,184,166,0.25)] relative overflow-hidden bg-slate-900/80">
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-teal-500/30 hover:border-teal-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(20,184,166,0.25)] relative overflow-hidden bg-slate-900/80 scroll-reveal-left reveal-delay-300">
             <div className="absolute top-0 right-0 w-28 h-28 bg-teal-500/10 rounded-full blur-2xl group-hover:bg-teal-500/25 transition-all duration-500 pointer-events-none" />
             <div className="p-4 rounded-2xl bg-teal-500/15 text-teal-400 border border-teal-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
               <Search className="w-7 h-7 text-teal-400 group-hover:rotate-12 transition-transform duration-300" />
@@ -810,7 +975,99 @@ const LandingPage = () => {
           </div>
 
           {/* Feature 4 */}
-          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-emerald-500/30 hover:border-emerald-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(16,185,129,0.25)] relative overflow-hidden bg-slate-900/80">
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-emerald-500/30 hover:border-emerald-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(16,185,129,0.25)] relative overflow-hidden bg-slate-900/80 scroll-reveal-right reveal-delay-400">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/25 transition-all duration-500 pointer-events-none" />
+            <div className="p-4 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <ShieldCheck className="w-7 h-7 text-emerald-400 group-hover:rotate-12 transition-transform duration-300" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_4_title', 'Actionable Safety Advice')}</h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">STUDENT SAFE</span>
+              </div>
+              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
+                Clear, student-friendly recommendations to protect your money, identity, and career credentials against hiring fraud.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* KEY FEATURES GRID (WHY CHOOSE SAFE-HIRE - ENHANCED WITH ANIMATIONS) */}
+      {/* ========================================================================= */}
+      <section className="max-w-6xl mx-auto px-6">
+        <div className="text-center mb-14 space-y-3 scroll-reveal">
+          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold shadow-lg shadow-indigo-500/10 backdrop-blur-md animate-pulse">
+            <ShieldCheck className="w-4 h-4 text-indigo-400" />
+            <span>UNMATCHED RECRUITMENT PROTECTION ENGINE</span>
+          </div>
+
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
+            Why Choose <span className="gradient-text">SAFE-HIRE</span>?
+          </h2>
+          
+          <p className="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">
+            The world's first agentic multi-AI platform engineered specifically to protect South Asian undergraduates and job seekers from career scams.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+          
+          {/* Feature 1 */}
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-indigo-500/30 hover:border-indigo-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(99,102,241,0.25)] relative overflow-hidden bg-slate-900/80 scroll-reveal-left reveal-delay-100">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/25 transition-all duration-500 pointer-events-none" />
+            <div className="p-4 rounded-2xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <BrainCircuit className="w-7 h-7 text-indigo-400 group-hover:rotate-12 transition-transform duration-300" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_1_title', '5-Agent AI Pipeline')}</h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">AUTOMATED</span>
+              </div>
+              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
+                Multimodal OCR vision, linguistic signal analysis, WHOIS domain security, and Gemini 3.6 Flash reasoning working together in parallel.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 2 */}
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-sky-500/30 hover:border-sky-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(56,189,248,0.25)] relative overflow-hidden bg-slate-900/80 scroll-reveal-right reveal-delay-200">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/25 transition-all duration-500 pointer-events-none" />
+            <div className="p-4 rounded-2xl bg-sky-500/15 text-sky-400 border border-sky-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <Globe2 className="w-7 h-7 text-sky-400 group-hover:rotate-12 transition-transform duration-300" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_2_title', 'Multi-Language Support')}</h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-500/20 text-sky-300 border border-sky-500/30">5 LANGUAGES</span>
+              </div>
+              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
+                Native explanations in English, Sinhala, Tamil, Hindi, and Bengali for localized fraud detection across South Asia.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 3 */}
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-teal-500/30 hover:border-teal-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(20,184,166,0.25)] relative overflow-hidden bg-slate-900/80 scroll-reveal-left reveal-delay-300">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-teal-500/10 rounded-full blur-2xl group-hover:bg-teal-500/25 transition-all duration-500 pointer-events-none" />
+            <div className="p-4 rounded-2xl bg-teal-500/15 text-teal-400 border border-teal-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <Search className="w-7 h-7 text-teal-400 group-hover:rotate-12 transition-transform duration-300" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_3_title', 'Domain & Web Verification')}</h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-500/20 text-teal-300 border border-teal-500/30">WHOIS LIVE</span>
+              </div>
+              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
+                Live WHOIS age lookup, Google Safe Browsing reputation check, and Abstract API email domain validation.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 4 */}
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-emerald-500/30 hover:border-emerald-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(16,185,129,0.25)] relative overflow-hidden bg-slate-900/80 scroll-reveal-right reveal-delay-400">
             <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/25 transition-all duration-500 pointer-events-none" />
             <div className="p-4 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
               <ShieldCheck className="w-7 h-7 text-emerald-400 group-hover:rotate-12 transition-transform duration-300" />
@@ -833,7 +1090,7 @@ const LandingPage = () => {
       {/* PREMIUM SUBSCRIPTION & PRICING PLANS SECTION */}
       {/* ========================================================================= */}
       <section id="pricing" className="max-w-6xl mx-auto px-6 scroll-mt-24">
-        <div className="text-center mb-10 space-y-3">
+        <div className="text-center mb-10 space-y-3 scroll-reveal">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold">
             <Crown className="w-4 h-4" />
             <span>PREMIUM MEMBERSHIP PLANS</span>
@@ -882,7 +1139,7 @@ const LandingPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
           
           {/* TIER 1: STARTER PLAN */}
-          <div className="glass-card p-8 rounded-3xl border border-slate-800 flex flex-col justify-between space-y-6">
+          <div className="glass-card p-8 rounded-3xl border border-slate-800 flex flex-col justify-between space-y-6 scroll-reveal-scale reveal-delay-100">
             <div className="space-y-4">
               <div className="inline-block p-3 rounded-2xl bg-indigo-500/10 text-indigo-400">
                 <ShieldCheck className="w-6 h-6" />
@@ -930,7 +1187,7 @@ const LandingPage = () => {
           </div>
 
           {/* TIER 2: PRO STUDENT PLAN (POPULAR) */}
-          <div className="glass-pricing-popular p-8 rounded-3xl relative flex flex-col justify-between space-y-6 transform md:-translate-y-2">
+          <div className="glass-pricing-popular p-8 rounded-3xl relative flex flex-col justify-between space-y-6 transform md:-translate-y-2 scroll-reveal-scale reveal-delay-200">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 text-xs font-extrabold shadow-lg flex items-center space-x-1">
               <Crown className="w-3.5 h-3.5" />
               <span>MOST POPULAR VALUE</span>
@@ -987,7 +1244,7 @@ const LandingPage = () => {
           </div>
 
           {/* TIER 3: ENTERPRISE PLAN */}
-          <div className="glass-card p-8 rounded-3xl border border-slate-800 flex flex-col justify-between space-y-6">
+          <div className="glass-card p-8 rounded-3xl border border-slate-800 flex flex-col justify-between space-y-6 scroll-reveal-scale reveal-delay-300">
             <div className="space-y-4">
               <div className="inline-block p-3 rounded-2xl bg-amber-500/10 text-amber-400">
                 <Crown className="w-6 h-6" />
@@ -1040,7 +1297,7 @@ const LandingPage = () => {
       {/* ========================================================================= */}
       {/* USER REVIEWS & TESTIMONIALS (ANIMATED MOVING MARQUEE) */}
       {/* ========================================================================= */}
-      <section className="space-y-10 overflow-hidden py-6">
+      <section className="space-y-10 overflow-hidden py-6 scroll-reveal">
         <div className="text-center max-w-3xl mx-auto px-6 space-y-3">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold">
             <Users className="w-4 h-4 text-indigo-400" />
@@ -1057,7 +1314,7 @@ const LandingPage = () => {
         </div>
 
         {/* MARQUEE CONTAINER (PAUSES ON HOVER) */}
-        <div className="pause-on-hover space-y-6">
+        <div className="pause-on-hover space-y-6 scroll-reveal-scale">
           
           {/* ROW 1: SCROLLING LEFT */}
           <div className="overflow-hidden relative flex">
@@ -1151,7 +1408,7 @@ const LandingPage = () => {
       {/* ========================================================================= */}
       {/* BOTTOM CALL TO ACTION (PROTECT YOUR CAREER TODAY - ENHANCED) */}
       {/* ========================================================================= */}
-      <section className="max-w-4xl mx-auto px-6 text-center">
+      <section className="max-w-4xl mx-auto px-6 text-center scroll-reveal-scale">
         <div className="glass-panel p-10 sm:p-12 rounded-3xl border-2 border-indigo-500/40 bg-gradient-to-b from-indigo-950/60 via-slate-950 to-slate-950 relative overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.25)] group">
           
           {/* Glowing Background Radial Highlights */}
