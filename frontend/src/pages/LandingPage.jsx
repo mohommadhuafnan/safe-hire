@@ -327,13 +327,13 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="space-y-24 pb-16">
+    <div className="space-y-16 sm:space-y-24 pb-16">
       
-      {/* TRUE FULL-SCREEN HERO SECTION WITH LOOPING VIDEO BACKGROUND */}
-      <section className="relative w-full min-h-screen h-[100vh] min-h-[100vh] flex flex-col justify-center items-center overflow-hidden -mt-20 sm:-mt-24 pt-24 sm:pt-32 pb-12 bg-black">
+      {/* TRUE FULL-VIEWPORT (100vh / 100dvh) HERO SECTION */}
+      <section className="relative w-full h-screen min-h-[100vh] min-h-[100dvh] flex flex-col justify-between items-center overflow-hidden bg-black pt-20 sm:pt-24 pb-6 sm:pb-8">
         
         {/* FULL-VIEWPORT VIDEO BACKGROUND & MULTI-LAYER OVERLAYS */}
-        <div className="absolute inset-0 w-full h-full z-0 overflow-hidden bg-black">
+        <div className="absolute inset-0 w-full h-full z-0 overflow-hidden bg-black pointer-events-none">
           <video
             ref={videoRef}
             autoPlay
@@ -350,18 +350,18 @@ const LandingPage = () => {
 
           {/* Semi-transparent Overlay: rgba(0, 0, 0, 0.50) & dark gradient */}
           <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] z-10" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/30 to-[#090d16] z-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/25 to-[#090d16] z-10" />
           <div className="absolute inset-0 bg-radial-at-c from-sky-900/25 via-transparent to-black/80 z-10" />
           
-          {/* Seamless Bottom Blend Gradient to remove black space */}
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent via-[#090d16]/80 to-[#090d16] z-10 pointer-events-none" />
+          {/* Seamless Bottom Blend Gradient */}
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent via-[#090d16]/90 to-[#090d16] z-10 pointer-events-none" />
 
           {/* Cybernetic Digital Grid Effect */}
           <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] opacity-20 z-10" />
         </div>
 
-        {/* HERO CONTENT */}
-        <div className="relative z-20 px-6 text-center max-w-5xl mx-auto space-y-8 animate-fade-in-up">
+        {/* VERTICALLY CENTERED HERO CONTENT */}
+        <div className="relative z-20 px-6 text-center max-w-5xl mx-auto space-y-6 sm:space-y-8 my-auto animate-fade-in-up flex flex-col justify-center items-center">
           
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/20 border border-sky-400/30 text-sky-300 text-xs font-semibold shadow-lg shadow-sky-500/10 backdrop-blur-md animate-pulse">
             <ShieldCheck className="w-4 h-4 text-sky-400" />
@@ -397,7 +397,7 @@ const LandingPage = () => {
           </div>
 
           {/* Trust Badges */}
-          <div className="mt-12 pt-8 border-t border-slate-800/80 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-300 font-medium">
+          <div className="mt-8 pt-6 border-t border-slate-800/80 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-300 font-medium">
             <div className="flex items-center space-x-2 bg-slate-950/70 px-3.5 py-1.5 rounded-full border border-slate-800 backdrop-blur-md">
               <GraduationCap className="w-4 h-4 text-indigo-400" />
               <span>{t('landing.badge_students', 'Built for University Students')}</span>
@@ -420,7 +420,7 @@ const LandingPage = () => {
             const el = document.getElementById('demo-showcase');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
-          className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center space-y-1.5 cursor-pointer group select-none"
+          className="relative z-30 flex flex-col items-center space-y-1.5 cursor-pointer group select-none mb-2"
         >
           <span className="text-[10px] font-bold tracking-widest text-sky-300/80 group-hover:text-cyan-300 transition-colors uppercase flex items-center gap-1.5 backdrop-blur-md px-3 py-1 rounded-full bg-black/40 border border-sky-400/20 group-hover:border-cyan-400/50 shadow-lg shadow-sky-500/10">
             <span>{t('landing.scroll_down', 'Scroll to Explore')}</span>
