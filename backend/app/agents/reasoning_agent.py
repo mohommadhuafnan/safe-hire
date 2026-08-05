@@ -182,10 +182,8 @@ class ReasoningAgent:
 
     # Model rotation: fastest/cheapest first, most capable last
     GEMINI_MODELS = [
-        "gemini-2.5-flash",
         "gemini-2.0-flash",
         "gemini-2.0-flash-lite",
-        "gemini-2.5-pro",
     ]
 
     def _log_api_key_status(self, key: str, provider: str) -> None:
@@ -242,12 +240,14 @@ class ReasoningAgent:
             res = requests.post(url, json=payload, timeout=timeout)
             if res.status_code == 200:
                 data = res.json()
-                raw = (
-                    data.get("candidates", [{}])[0]
-                    .get("content", {})
-                    .get("parts", [{}])[0]
-                    .get("text", "")
-                )
+                raw = ""
+                candidates = data.get("candidates") if isinstance(data, dict) else None
+                if candidates and isinstance(candidates, list) and len(candidates) > 0 and isinstance(candidates[0], dict):
+                    content_obj = candidates[0].get("content") or {}
+                    if isinstance(content_obj, dict):
+                        parts_list = content_obj.get("parts") or []
+                        if parts_list and isinstance(parts_list, list) and len(parts_list) > 0 and isinstance(parts_list[0], dict):
+                            raw = parts_list[0].get("text") or ""
                 parsed = _extract_json_from_text(raw)
                 if parsed and "scam_score" in parsed:
                     logger.info(f"✅ Gemini REST ({model_name}) success — score: {parsed.get('scam_score')}")
@@ -296,11 +296,12 @@ class ReasoningAgent:
             res = requests.post(url, json=payload, headers=headers, timeout=timeout)
             if res.status_code == 200:
                 data = res.json()
-                raw = (
-                    data.get("choices", [{}])[0]
-                    .get("message", {})
-                    .get("content", "")
-                )
+                raw = ""
+                choices = data.get("choices") if isinstance(data, dict) else None
+                if choices and isinstance(choices, list) and len(choices) > 0 and isinstance(choices[0], dict):
+                    msg = choices[0].get("message") or {}
+                    if isinstance(msg, dict):
+                        raw = msg.get("content") or ""
                 parsed = _extract_json_from_text(raw)
                 if parsed and "scam_score" in parsed:
                     logger.info(f"✅ Gemini OpenAI-compat ({model_name}) success — score: {parsed.get('scam_score')}")
@@ -413,15 +414,18 @@ class ReasoningAgent:
             res = requests.post(url, json=payload, headers=headers, timeout=30)
             if res.status_code == 200:
                 data = res.json()
-                choices = data.get("choices", [])
-                if choices:
-                    raw = choices[0].get("message", {}).get("content", "")
-                    parsed = _extract_json_from_text(raw)
-                    if parsed and "scam_score" in parsed:
-                        logger.info(f"✅ DeepSeek-V4-Flash success — score: {parsed.get('scam_score')}")
-                        return parsed
-                    elif raw:
-                        logger.warning(f"DeepSeek returned non-JSON output (len={len(raw)})")
+                raw = ""
+                choices = data.get("choices") if isinstance(data, dict) else None
+                if choices and isinstance(choices, list) and len(choices) > 0 and isinstance(choices[0], dict):
+                    msg = choices[0].get("message") or {}
+                    if isinstance(msg, dict):
+                        raw = msg.get("content") or ""
+                parsed = _extract_json_from_text(raw)
+                if parsed and "scam_score" in parsed:
+                    logger.info(f"✅ DeepSeek-V4-Flash success — score: {parsed.get('scam_score')}")
+                    return parsed
+                elif raw:
+                    logger.warning(f"DeepSeek returned non-JSON output (len={len(raw)})")
             elif res.status_code == 401:
                 logger.error("DeepSeek — authentication failed (401). Check DEEPSEEK_V4_API_KEY.")
             elif res.status_code == 429:
@@ -603,6 +607,9 @@ class ReasoningAgent:
         2. DeepSeek V4 Flash (secondary — text-only)
         3. Rule engine (guaranteed fallback)
         """
+        intake_data = intake_data or {}
+        linguistic_data = linguistic_data or {}
+        verification_data = verification_data or {}
         cleaned_text = intake_data.get("cleaned_text", "")
 
         # --- Stage 1: Gemini AI (primary) ---
@@ -610,17 +617,27 @@ class ReasoningAgent:
             cleaned_text, linguistic_data, verification_data, language, image_bytes
         )
         if gemini_res and isinstance(gemini_res, dict) and "scam_score" in gemini_res:
-            score = max(0, min(100, int(gemini_res.get("scam_score", 0))))
+            try:
+                score = max(0, min(100, int(gemini_res.get("scam_score") or 0)))
+            except Exception:
+                score = 50
+            sub = gemini_res.get("sub_scores")
+            if not isinstance(sub, dict):
+                sub = self._default_sub_scores(linguistic_data, verification_data)
+            signals = gemini_res.get("reasons") or gemini_res.get("breakdown_signals") or []
+            if not isinstance(signals, list):
+                signals = []
+            recs = gemini_res.get("recommendations") or []
+            if not isinstance(recs, list):
+                recs = []
             return {
                 "scam_score": score,
-                "confidence_score": gemini_res.get("confidence_score", 98),
-                "risk_level": gemini_res.get("risk_level", "Low Risk"),
-                "explanation": gemini_res.get("explanation", ""),
-                "breakdown_signals": gemini_res.get("reasons", []),
-                "sub_scores": gemini_res.get(
-                    "sub_scores",
-                    self._default_sub_scores(linguistic_data, verification_data),
-                ),
+                "confidence_score": gemini_res.get("confidence_score") or 98,
+                "risk_level": gemini_res.get("risk_level") or "Low Risk",
+                "explanation": gemini_res.get("explanation") or "",
+                "breakdown_signals": signals,
+                "recommendations": recs,
+                "sub_scores": sub,
             }
 
         # --- Stage 2: DeepSeek V4 Flash (secondary) ---
@@ -628,17 +645,27 @@ class ReasoningAgent:
             cleaned_text, linguistic_data, verification_data, language
         )
         if deepseek_res and isinstance(deepseek_res, dict) and "scam_score" in deepseek_res:
-            score = max(0, min(100, int(deepseek_res.get("scam_score", 0))))
+            try:
+                score = max(0, min(100, int(deepseek_res.get("scam_score") or 0)))
+            except Exception:
+                score = 50
+            sub = deepseek_res.get("sub_scores")
+            if not isinstance(sub, dict):
+                sub = self._default_sub_scores(linguistic_data, verification_data)
+            signals = deepseek_res.get("reasons") or deepseek_res.get("breakdown_signals") or []
+            if not isinstance(signals, list):
+                signals = []
+            recs = deepseek_res.get("recommendations") or []
+            if not isinstance(recs, list):
+                recs = []
             return {
                 "scam_score": score,
-                "confidence_score": deepseek_res.get("confidence_score", 95),
-                "risk_level": deepseek_res.get("risk_level", "Low Risk"),
-                "explanation": deepseek_res.get("explanation", ""),
-                "breakdown_signals": deepseek_res.get("reasons", []),
-                "sub_scores": deepseek_res.get(
-                    "sub_scores",
-                    self._default_sub_scores(linguistic_data, verification_data),
-                ),
+                "confidence_score": deepseek_res.get("confidence_score") or 95,
+                "risk_level": deepseek_res.get("risk_level") or "Low Risk",
+                "explanation": deepseek_res.get("explanation") or "",
+                "breakdown_signals": signals,
+                "recommendations": recs,
+                "sub_scores": sub,
             }
 
         # --- Stage 3: Rule-engine fallback ---

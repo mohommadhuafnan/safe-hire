@@ -89,7 +89,7 @@ class IntakeAgent:
         }
         """
 
-        models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"]
+        models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite"]
 
         # 1. Try Gemini Vision REST generateContent Endpoint (most reliable for multimodal base64)
         if gemini_key:
@@ -113,10 +113,11 @@ class IntakeAgent:
                         content = ""
                         if candidates and isinstance(candidates, list) and len(candidates) > 0 and isinstance(candidates[0], dict):
                             content_obj = candidates[0].get("content") or {}
-                            parts = content_obj.get("parts") or []
-                            if parts and isinstance(parts, list) and len(parts) > 0 and isinstance(parts[0], dict):
-                                content = parts[0].get("text", "")
-                        clean = content.strip().replace("```json", "").replace("```", "").strip()
+                            if isinstance(content_obj, dict):
+                                parts = content_obj.get("parts") or []
+                                if parts and isinstance(parts, list) and len(parts) > 0 and isinstance(parts[0], dict):
+                                    content = parts[0].get("text") or ""
+                        clean = (content or "").strip().replace("```json", "").replace("```", "").strip()
                         if "<think>" in clean and "</think>" in clean:
                             clean = clean.split("</think>")[-1].strip()
                         if clean:
@@ -159,8 +160,9 @@ class IntakeAgent:
                         content = ""
                         if choices and isinstance(choices, list) and len(choices) > 0 and isinstance(choices[0], dict):
                             msg = choices[0].get("message") or {}
-                            content = msg.get("content", "")
-                        clean = content.strip().replace("```json", "").replace("```", "").strip()
+                            if isinstance(msg, dict):
+                                content = msg.get("content") or ""
+                        clean = (content or "").strip().replace("```json", "").replace("```", "").strip()
                         if "<think>" in clean and "</think>" in clean:
                             clean = clean.split("</think>")[-1].strip()
                         if clean:
@@ -216,8 +218,9 @@ class IntakeAgent:
                     content = ""
                     if choices and isinstance(choices, list) and len(choices) > 0 and isinstance(choices[0], dict):
                         msg = choices[0].get("message") or {}
-                        content = msg.get("content", "")
-                    clean = content.strip().replace("```json", "").replace("```", "").strip()
+                        if isinstance(msg, dict):
+                            content = msg.get("content") or ""
+                    clean = (content or "").strip().replace("```json", "").replace("```", "").strip()
                     if "<think>" in clean and "</think>" in clean:
                         clean = clean.split("</think>")[-1].strip()
                     if clean:
@@ -229,15 +232,12 @@ class IntakeAgent:
             except Exception as e:
                 logger.warning(f"DeepSeek V4 fallback notice: {e}")
 
-        # Rule Engine Fallback check
-        job_keywords = ["hiring", "job", "career", "vacancy", "intern", "salary", "apply", "recruiter", "interview", "walk-in", "position", "hospitality", "diploma", "management", "developer", "required", "contact"]
-        has_job_term = any(kw in ocr_text.lower() for kw in job_keywords) if ocr_text else False
-
+        # Rule Engine Fallback check — For uploaded images, always default to analyzing as job poster
         return {
-            "is_job_poster": has_job_term or len(ocr_text) > 20,
-            "extracted_text": ocr_text or "Uploaded recruitment image.",
+            "is_job_poster": True,
+            "extracted_text": ocr_text or "Uploaded poster/flyer image.",
             "claimed_brand": "",
-            "validation_error": None if (has_job_term or len(ocr_text) > 20) else "⚠️ NON-JOB POSTER DETECTED: This image does not contain recruitment or career vacancy details."
+            "validation_error": None
         }
 
     @staticmethod

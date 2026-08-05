@@ -66,7 +66,12 @@ class RecommendationAgent:
         # 3. Exact Fee Terms & Financial Payment Demand Signal
         matched_payment = risk_factors.get("matched_payment")
         if risk_factors.get("has_payment_demand") or matched_payment:
-            payment_term = matched_payment if matched_payment else "advance application/registration fee"
+            if isinstance(matched_payment, list):
+                payment_term = ", ".join(matched_payment) if matched_payment else "advance application/registration fee"
+            elif isinstance(matched_payment, str):
+                payment_term = matched_payment
+            else:
+                payment_term = "advance application/registration fee"
             dynamic_recs.append(
                 f"🚨 CRITICAL FEE DEMAND WARNING: This poster explicitly demands '{payment_term}'. Legitimate employers NEVER charge job seekers for applications, laptop deposits, uniforms, or training."
             )
@@ -94,7 +99,13 @@ class RecommendationAgent:
         extracted_phones = (intake_data.get("metadata_extracted") or {}).get("phone_numbers", [])
 
         if risk_factors.get("has_suspicious_channels") or extracted_telegrams or matched_channels:
-            contact_handle = extracted_telegrams[0] if extracted_telegrams else (matched_channels if matched_channels else "Telegram/WhatsApp")
+            raw_handle = extracted_telegrams[0] if extracted_telegrams else (matched_channels if matched_channels else "Telegram/WhatsApp")
+            if isinstance(raw_handle, list):
+                contact_handle = ", ".join(raw_handle) if raw_handle else "Telegram/WhatsApp"
+            elif isinstance(raw_handle, str):
+                contact_handle = raw_handle
+            else:
+                contact_handle = "Telegram/WhatsApp"
             dynamic_recs.append(
                 f"📵 INFORMAL MESSAGING CAUTION: This offer directs applicants to informal channels ({contact_handle}). Genuine recruitment takes place via corporate portals, official ATS systems, or verified company emails."
             )
