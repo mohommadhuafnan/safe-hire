@@ -452,22 +452,34 @@ class ReasoningAgent:
         Build a detailed multi-section explanation using rule engine signals.
         Called when all AI APIs fail — guarantees a human-readable report.
         """
-        has_payment = linguistic_data.get("has_payment_demand", False)
-        has_impersonation = linguistic_data.get("has_impersonation_risk", False)
-        has_urgency = linguistic_data.get("has_urgency_tactics", False)
-        has_suspicious_channels = linguistic_data.get("has_suspicious_channels", False)
-        payment_terms = linguistic_data.get("matched_payment", [])
-        impersonation_flags = linguistic_data.get("impersonation_flags", [])
-        urgency_terms = linguistic_data.get("matched_urgency", [])
-        suspicious_terms = linguistic_data.get("matched_suspicious_terms", [])
-        claimed_brand = linguistic_data.get("claimed_brand", "")
-        free_email = linguistic_data.get("free_email", "")
-        domain = verification_data.get("domain", "Not Specified")
-        trust_score = verification_data.get("verification_trust_score", 85)
-        whois_status = (verification_data.get("whois_info") or {}).get("whois_status", "")
-        is_new_domain = (verification_data.get("whois_info") or {}).get("is_new_domain", False)
+        linguistic_data = linguistic_data or {}
+        verification_data = verification_data or {}
+        has_payment = bool(linguistic_data.get("has_payment_demand"))
+        has_impersonation = bool(linguistic_data.get("has_impersonation_risk"))
+        has_urgency = bool(linguistic_data.get("has_urgency_tactics"))
+        has_suspicious_channels = bool(linguistic_data.get("has_suspicious_channels"))
+        payment_terms = linguistic_data.get("matched_payment") or []
+        if not isinstance(payment_terms, list):
+            payment_terms = [str(payment_terms)]
+        impersonation_flags = linguistic_data.get("impersonation_flags") or []
+        if not isinstance(impersonation_flags, list):
+            impersonation_flags = [str(impersonation_flags)]
+        urgency_terms = linguistic_data.get("matched_urgency") or []
+        if not isinstance(urgency_terms, list):
+            urgency_terms = [str(urgency_terms)]
+        suspicious_terms = linguistic_data.get("matched_suspicious_terms") or []
+        if not isinstance(suspicious_terms, list):
+            suspicious_terms = [str(suspicious_terms)]
+        claimed_brand = linguistic_data.get("claimed_brand") or ""
+        free_email = linguistic_data.get("free_email") or ""
+        domain = verification_data.get("domain") or "Not Specified"
+        trust_score = verification_data.get("verification_trust_score")
+        if trust_score is None:
+            trust_score = 85
+        whois_status = (verification_data.get("whois_info") or {}).get("whois_status") or ""
+        is_new_domain = bool((verification_data.get("whois_info") or {}).get("is_new_domain"))
 
-        snippet = cleaned_text[:500].replace("\n", " ").strip() if cleaned_text else "No content provided."
+        snippet = (cleaned_text or "")[:500].replace("\n", " ").strip() if cleaned_text else "No content provided."
 
         reasons = []
         if has_payment:
@@ -674,11 +686,15 @@ class ReasoningAgent:
 
     def _default_sub_scores(self, linguistic_data: dict, verification_data: dict) -> dict:
         """Compute default sub-scores from rule signals when the AI doesn't return them."""
-        trust_score = verification_data.get("verification_trust_score", 80)
+        linguistic_data = linguistic_data or {}
+        verification_data = verification_data or {}
+        trust_score = verification_data.get("verification_trust_score")
+        if trust_score is None:
+            trust_score = 80
         return {
             "financial_fee_risk": 90 if linguistic_data.get("has_payment_demand") else 10,
             "impersonation_risk": 85 if linguistic_data.get("has_impersonation_risk") else 15,
-            "domain_reputation_risk": max(0, 100 - trust_score),
+            "domain_reputation_risk": max(0, 100 - int(trust_score)),
             "urgency_pressure_risk": 75 if linguistic_data.get("has_urgency_tactics") else 10,
         }
 
@@ -690,17 +706,26 @@ class ReasoningAgent:
         language: str,
     ) -> dict:
         """Deterministic rule-based scoring — guaranteed to return a valid result."""
-        linguistic_score = linguistic_data.get("linguistic_score", 0)
-        trust_score = verification_data.get("verification_trust_score", 80)
-        verification_risk = 100 - trust_score
-        has_payment = linguistic_data.get("has_payment_demand", False)
-        has_impersonation = linguistic_data.get("has_impersonation_risk", False)
-        has_urgency = linguistic_data.get("has_urgency_tactics", False)
-        has_suspicious = linguistic_data.get("has_suspicious_channels", False)
-        is_new_domain = (verification_data.get("whois_info") or {}).get("is_new_domain", False)
+        linguistic_data = linguistic_data or {}
+        verification_data = verification_data or {}
+        
+        linguistic_score = linguistic_data.get("linguistic_score")
+        if linguistic_score is None:
+            linguistic_score = 0
+            
+        trust_score = verification_data.get("verification_trust_score")
+        if trust_score is None:
+            trust_score = 80
+            
+        verification_risk = max(0, 100 - int(trust_score))
+        has_payment = bool(linguistic_data.get("has_payment_demand"))
+        has_impersonation = bool(linguistic_data.get("has_impersonation_risk"))
+        has_urgency = bool(linguistic_data.get("has_urgency_tactics"))
+        has_suspicious = bool(linguistic_data.get("has_suspicious_channels"))
+        is_new_domain = bool((verification_data.get("whois_info") or {}).get("is_new_domain"))
 
         # Weighted scoring
-        raw_score = (linguistic_score * 0.50) + (verification_risk * 0.30)
+        raw_score = (int(linguistic_score) * 0.50) + (verification_risk * 0.30)
         if has_payment:
             raw_score += 50  # Fee demand ≈ near-certain scam
         if has_impersonation:

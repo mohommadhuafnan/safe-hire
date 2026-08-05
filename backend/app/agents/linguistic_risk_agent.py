@@ -69,8 +69,8 @@ class LinguisticRiskAgent:
         "work 2 hours earn", "guaranteed income", "no qualification required", "direct joining", "no experience required earn"
     ]
 
-    def analyze(self, text: str, language: str = "en") -> dict:
-        text_lower = text.lower()
+    def analyze(self, text: str = "", language: str = "en") -> dict:
+        text_lower = (text or "").lower()
 
         # 1. Urgency Detection
         urgency_matches = []
@@ -103,13 +103,13 @@ class LinguisticRiskAgent:
 
         # 3. Impersonation & Free Email Domain Risk
         impersonation_flags = []
-        claimed_brand_found = None
+        claimed_brand_found = ""
         for brand in self.CLAIMED_BRANDS:
             if brand in text_lower:
                 claimed_brand_found = brand
                 break
 
-        free_email_found = None
+        free_email_found = ""
         for free_email in self.IMPERSONATION_FREE_EMAILS:
             if f"@{free_email}" in text_lower or free_email in text_lower:
                 free_email_found = free_email
@@ -146,7 +146,7 @@ class LinguisticRiskAgent:
             "matched_payment": list(set(payment_matches)),
             "impersonation_flags": impersonation_flags,
             "matched_suspicious_terms": list(set(suspicious_contact_matches)),
-            "claimed_brand": claimed_brand_found,
-            "free_email": free_email_found
+            "claimed_brand": claimed_brand_found or "",
+            "free_email": free_email_found or ""
         }
 
