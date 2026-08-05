@@ -691,11 +691,15 @@ class ReasoningAgent:
         trust_score = verification_data.get("verification_trust_score")
         if trust_score is None:
             trust_score = 80
+        has_payment = bool(linguistic_data.get("has_payment_demand"))
+        has_impersonation = bool(linguistic_data.get("has_impersonation_risk"))
+        has_urgency = bool(linguistic_data.get("has_urgency_tactics"))
+        
         return {
-            "financial_fee_risk": 90 if linguistic_data.get("has_payment_demand") else 10,
-            "impersonation_risk": 85 if linguistic_data.get("has_impersonation_risk") else 15,
-            "domain_reputation_risk": max(0, 100 - int(trust_score)),
-            "urgency_pressure_risk": 75 if linguistic_data.get("has_urgency_tactics") else 10,
+            "financial_fee_risk": 90 if has_payment else 0,
+            "impersonation_risk": 85 if has_impersonation else 0,
+            "domain_reputation_risk": max(0, 100 - int(trust_score)) if (verification_data.get("domain") and verification_data.get("domain") != "Not Specified") else 0,
+            "urgency_pressure_risk": 75 if has_urgency else 0,
         }
 
     def _rule_engine_score(
@@ -717,27 +721,30 @@ class ReasoningAgent:
         if trust_score is None:
             trust_score = 80
             
-        verification_risk = max(0, 100 - int(trust_score))
+        has_domain = bool(verification_data.get("domain") and verification_data.get("domain") != "Not Specified")
+        verification_risk = max(0, 100 - int(trust_score)) if has_domain else 0
         has_payment = bool(linguistic_data.get("has_payment_demand"))
         has_impersonation = bool(linguistic_data.get("has_impersonation_risk"))
         has_urgency = bool(linguistic_data.get("has_urgency_tactics"))
         has_suspicious = bool(linguistic_data.get("has_suspicious_channels"))
         is_new_domain = bool((verification_data.get("whois_info") or {}).get("is_new_domain"))
 
-        # Weighted scoring
-        raw_score = (int(linguistic_score) * 0.50) + (verification_risk * 0.30)
-        if has_payment:
-            raw_score += 50  # Fee demand ≈ near-certain scam
-        if has_impersonation:
-            raw_score += 30
-        if has_urgency:
-            raw_score += 15
-        if has_suspicious:
-            raw_score += 20
-        if is_new_domain:
-            raw_score += 20
-
-        scam_score = min(100, max(0, int(raw_score)))
+        # If ZERO red flags detected -> 0% Scam Score (100% Genuine / Safe)
+        if not has_payment and not has_impersonation and not has_urgency and not has_suspicious and not is_new_domain and int(linguistic_score) == 0:
+            scam_score = 0
+        else:
+            raw_score = (int(linguistic_score) * 0.50) + (verification_risk * 0.30)
+            if has_payment:
+                raw_score += 50  # Fee demand ≈ near-certain scam
+            if has_impersonation:
+                raw_score += 30
+            if has_urgency:
+                raw_score += 15
+            if has_suspicious:
+                raw_score += 20
+            if is_new_domain:
+                raw_score += 20
+            scam_score = min(100, max(0, int(raw_score)))
 
         if scam_score >= 75:
             risk_level = "Severe Risk"
@@ -754,14 +761,14 @@ class ReasoningAgent:
 
         return {
             "scam_score": scam_score,
-            "confidence_score": 94,
+            "confidence_score": 98,
             "risk_level": risk_level,
             "explanation": full_explanation,
             "breakdown_signals": reasons,
             "sub_scores": {
-                "financial_fee_risk": 95 if has_payment else 10,
-                "impersonation_risk": 85 if has_impersonation else 15,
+                "financial_fee_risk": 95 if has_payment else 0,
+                "impersonation_risk": 85 if has_impersonation else 0,
                 "domain_reputation_risk": verification_risk,
-                "urgency_pressure_risk": 70 if has_urgency else 10,
+                "urgency_pressure_risk": 70 if has_urgency else 0,
             },
         }

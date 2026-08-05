@@ -5,7 +5,7 @@ import { useAIModal } from '../context/AIModalContext';
 import api from '../services/api';
 import ScamGauge from '../components/ScamGauge';
 import AgentBreakdown from '../components/AgentBreakdown';
-import { exportAnalysisReport } from '../services/reportExporter';
+import { exportAnalysisReport, parseExplanationSections } from '../services/reportExporter';
 import { 
   FileText, 
   Image as ImageIcon, 
@@ -15,6 +15,7 @@ import {
   Download, 
   CheckCircle2, 
   AlertCircle, 
+  AlertTriangle,
   BrainCircuit,
   History,
   ShieldCheck,
@@ -25,6 +26,68 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+const StructuredExplanationView = ({ text }) => {
+  const sections = parseExplanationSections(text);
+
+  if (!sections || sections.length === 0) {
+    return (
+      <p className="text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-line">
+        {text}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3 font-sans">
+      {sections.map((sec, idx) => {
+        const lines = (sec.body || '')
+          .split(/(?:\s*-\s+|\s*•\s+|\n-\s*|\n•\s*|\n\d+\.\s*)/)
+          .map(l => l.trim())
+          .filter(Boolean);
+
+        const hasBullets = lines.length > 1;
+
+        return (
+          <div key={idx} className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 space-y-2">
+            <div className="flex items-center space-x-2 text-xs font-extrabold text-slate-100 tracking-tight border-b border-slate-800/60 pb-2">
+              <span className="text-sm">{sec.emoji}</span>
+              <span className="uppercase text-[11px] text-sky-300 font-bold tracking-wider">{sec.title}</span>
+            </div>
+
+            {hasBullets ? (
+              <ul className="space-y-2 pt-1">
+                {lines.map((line, lIdx) => {
+                  const isWarning = line.toLowerCase().includes('fee demand') || line.toLowerCase().includes('risk') || line.toLowerCase().includes('fake') || line.toLowerCase().includes('impersonation') || line.toLowerCase().includes('telegram');
+                  const isClean = line.toLowerCase().includes('no fee') || line.toLowerCase().includes('no urgency') || line.toLowerCase().includes('clean') || line.toLowerCase().includes('safe') || line.toLowerCase().includes('genuine');
+
+                  return (
+                    <li key={lIdx} className="flex items-start space-x-2.5 text-xs text-slate-200 leading-relaxed">
+                      <span className="mt-0.5 flex-shrink-0">
+                        {isWarning ? (
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                        ) : isClean ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 block" />
+                        )}
+                      </span>
+                      <span className="font-medium text-slate-200">{line}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-xs text-slate-300 leading-relaxed pt-1 font-medium">
+                {sec.body}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -508,11 +571,11 @@ const DashboardPage = () => {
                     <span>Ingested Content & OCR Verbatim Snippet</span>
                   </h4>
                   <span className="text-[10px] font-mono text-slate-500">
-                    Source: {result.risk_factors?.source || 'Automated OCR'}
+                    Source: {result.risk_factors?.source || result.intake_data?.source || 'Automated OCR'}
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-200 font-mono leading-relaxed bg-slate-900/90 p-4 rounded-xl border border-slate-800/80 whitespace-pre-wrap max-h-[500px] overflow-y-auto select-all">
-                  "{result.risk_factors?.ocr_text || result.explanation_text || 'Job posting data analyzed.'}"
+                <p className="text-xs sm:text-sm text-slate-200 font-sans leading-relaxed bg-slate-900/90 p-4 rounded-xl border border-slate-800/80 whitespace-pre-wrap max-h-[500px] overflow-y-auto select-all">
+                  "{result.intake_data?.ocr_text || result.risk_factors?.ocr_text || result.intake_data?.cleaned_text || 'Job posting data analyzed.'}"
                 </p>
               </div>
 
@@ -525,9 +588,9 @@ const DashboardPage = () => {
                   </h4>
                   <ul className="space-y-2">
                     {result.recommendations.map((rec, idx) => (
-                      <li key={idx} className="flex items-start space-x-2 text-xs text-slate-200 leading-relaxed">
+                      <li key={idx} className="flex items-start space-x-2.5 text-xs text-slate-200 leading-relaxed font-sans">
                         <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" />
-                        <span>{rec}</span>
+                        <span className="font-medium text-slate-200">{rec}</span>
                       </li>
                     ))}
                   </ul>
@@ -565,13 +628,12 @@ const DashboardPage = () => {
               <ScamGauge score={result.scam_score} riskLevel={result.risk_level} />
 
               {/* PLAIN-LANGUAGE EXPLANATION */}
-              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
-                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  {t('dashboard.explanation')}
+              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                  <span>{t('dashboard.explanation')}</span>
+                  <span className="text-[10px] text-sky-400 font-mono">Point-by-Point AI Audit</span>
                 </h3>
-                <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">
-                  {result.explanation_text}
-                </p>
+                <StructuredExplanationView text={result.explanation_text} />
               </div>
 
               {/* 5-AGENT BREAKDOWN ACCORDION */}
