@@ -385,70 +385,91 @@ const DashboardPage = () => {
 
           {/* FULL SCREEN FUTURISTIC AI SCANNING OVERLAY WITH BLURRED BACKGROUND */}
           {analyzing && (
-            <div className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-2xl flex items-center justify-center p-4 sm:p-6 animate-fade-in">
-              <div className="w-full max-w-lg glass-panel p-6 sm:p-8 rounded-3xl border border-indigo-500/50 space-y-6 shadow-[0_0_50px_rgba(99,102,241,0.35)] relative overflow-hidden bg-slate-950/95">
+            <div className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-4 sm:p-8 animate-fade-in overflow-y-auto">
+              <div className="w-full max-w-5xl h-auto max-h-[92vh] glass-panel p-6 sm:p-10 rounded-3xl border border-indigo-500/50 space-y-6 shadow-[0_0_60px_rgba(99,102,241,0.4)] relative overflow-hidden bg-slate-950/95 flex flex-col justify-between">
                 
                 {/* Top Scanner Status Bar */}
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
-                  <div className="flex items-center space-x-2.5">
-                    <BrainCircuit className="w-6 h-6 text-sky-400 animate-pulse" />
-                    <span className="text-xs sm:text-sm font-extrabold text-slate-100 uppercase tracking-widest">
-                      SAFE-HIRE AI 5-Agent Scanner
-                    </span>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/40">
+                      <BrainCircuit className="w-6 h-6 text-sky-400 animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-extrabold text-slate-100 uppercase tracking-wider">
+                        SAFE-HIRE AI 5-Agent Multimodal Scanner Active
+                      </h3>
+                      <p className="text-xs text-slate-400">Deep Neural Verification & Vision OCR Mining in Progress...</p>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-mono font-bold text-sky-300 bg-sky-500/20 px-3 py-1 rounded-full border border-sky-400/30 animate-pulse">
-                    NEURAL SCANNING
+                  <span className="text-xs font-mono font-bold text-sky-300 bg-sky-500/20 px-3.5 py-1.5 rounded-full border border-sky-400/40 animate-pulse">
+                    ⚡ NEURAL SCANNING
                   </span>
                 </div>
 
-                {/* POSTER LASER SCANNER PREVIEW (If Image Uploaded) */}
-                {previewUrl ? (
-                  <div className="relative w-full max-w-sm mx-auto rounded-2xl overflow-hidden border-2 border-indigo-500/60 bg-slate-900 shadow-[0_0_35px_rgba(99,102,241,0.4)]">
-                    <img src={previewUrl} alt="Poster Under Scan" className="w-full max-h-60 object-contain opacity-90 p-2" />
-                    
-                    {/* Neon Cyan Laser Scan Line */}
-                    <div className="absolute inset-x-0 h-1.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_20px_#38bdf8] animate-scan z-20 pointer-events-none" />
-                    
-                    {/* HUD Corner Markers */}
-                    <div className="absolute top-2 left-2 text-[9px] font-mono font-bold text-cyan-300 bg-slate-950/90 px-2.5 py-0.5 rounded border border-cyan-500/40">
-                      [OCR TEXT MINING]
-                    </div>
-                    <div className="absolute bottom-2 right-2 text-[9px] font-mono font-bold text-emerald-300 bg-slate-950/90 px-2.5 py-0.5 rounded border border-emerald-500/40">
-                      [GEMINI VISION 3.6]
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-8 rounded-2xl border border-indigo-500/30 bg-slate-900/60 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/40">
-                      <Sparkles className="w-6 h-6 text-sky-400 animate-spin" />
-                    </div>
-                    <span className="text-xs font-bold text-slate-200">Executing Deep Multimodal NLP & Security Verification</span>
-                  </div>
-                )}
-
-                {/* 5-Agent Step Neural Progress Indicators */}
-                <div className="space-y-2.5 pt-1">
-                  {pipelineSteps.map((stepName, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs">
-                      <div className="flex items-center space-x-3">
-                        {idx + 1 < currentStep ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                        ) : idx + 1 === currentStep ? (
-                          <Sparkles className="w-4 h-4 text-indigo-400 animate-spin flex-shrink-0" />
-                        ) : (
-                          <div className="w-4 h-4 rounded-full border border-slate-700 flex-shrink-0" />
-                        )}
-                        <span className={idx + 1 <= currentStep ? 'text-slate-100 font-bold' : 'text-slate-500'}>
-                          {stepName}
-                        </span>
+                {/* DUAL-COLUMN FULL-SCREEN SCANNER BODY */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center flex-1 my-2">
+                  
+                  {/* LEFT/TOP: LARGE HIGH-RES POSTER LASER SCANNER PREVIEW */}
+                  <div className="md:col-span-7 flex justify-center">
+                    {previewUrl ? (
+                      <div className="relative w-full max-w-md rounded-2xl overflow-hidden border-2 border-indigo-500/60 bg-slate-900 shadow-[0_0_40px_rgba(99,102,241,0.45)]">
+                        <img src={previewUrl} alt="Poster Under Scan" className="w-full max-h-[380px] sm:max-h-[440px] object-contain opacity-90 p-2 mx-auto" />
+                        
+                        {/* Neon Cyan Laser Scan Line */}
+                        <div className="absolute inset-x-0 h-2 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_25px_#38bdf8] animate-scan z-20 pointer-events-none" />
+                        
+                        {/* Cyber Grid Overlay */}
+                        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-20 pointer-events-none" />
+                        
+                        {/* HUD Corner Markers */}
+                        <div className="absolute top-3 left-3 text-[10px] font-mono font-bold text-cyan-300 bg-slate-950/90 px-3 py-1 rounded-lg border border-cyan-500/40 shadow">
+                          [OCR TEXT MINING & EXTRACTION]
+                        </div>
+                        <div className="absolute bottom-3 right-3 text-[10px] font-mono font-bold text-emerald-300 bg-slate-950/90 px-3 py-1 rounded-lg border border-emerald-500/40 shadow">
+                          [GEMINI 3.6 VISION AI]
+                        </div>
                       </div>
-                      {idx + 1 === currentStep && (
-                        <span className="text-[10px] font-bold text-sky-400 animate-pulse font-mono bg-sky-500/10 px-2 py-0.5 rounded">
-                          ANALYZING...
-                        </span>
-                      )}
+                    ) : (
+                      <div className="w-full h-64 rounded-2xl border border-indigo-500/30 bg-slate-900/60 flex flex-col items-center justify-center text-center p-8 space-y-4">
+                        <div className="w-16 h-16 rounded-3xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/40">
+                          <Sparkles className="w-8 h-8 text-sky-400 animate-spin" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-200">Processing Job Offer Details</h4>
+                          <p className="text-xs text-slate-400 mt-1">Executing deep NLP linguistic audit & domain WHOIS lookup</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* RIGHT/BOTTOM: 5-AGENT NEURAL PIPELINE NODES */}
+                  <div className="md:col-span-5 space-y-3">
+                    <div className="text-xs font-bold text-slate-300 uppercase tracking-wider pb-1 border-b border-slate-800/80">
+                      5-Agent Pipeline Execution
                     </div>
-                  ))}
+                    {pipelineSteps.map((stepName, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs">
+                        <div className="flex items-center space-x-3">
+                          {idx + 1 < currentStep ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                          ) : idx + 1 === currentStep ? (
+                            <Sparkles className="w-4 h-4 text-indigo-400 animate-spin flex-shrink-0" />
+                          ) : (
+                            <div className="w-4 h-4 rounded-full border border-slate-700 flex-shrink-0" />
+                          )}
+                          <span className={idx + 1 <= currentStep ? 'text-slate-100 font-bold' : 'text-slate-500'}>
+                            {stepName}
+                          </span>
+                        </div>
+                        {idx + 1 === currentStep && (
+                          <span className="text-[10px] font-bold text-sky-400 animate-pulse font-mono bg-sky-500/15 px-2.5 py-1 rounded-md border border-sky-500/30">
+                            ANALYZING...
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
                 </div>
 
               </div>
@@ -588,19 +609,19 @@ const DashboardPage = () => {
                 </div>
               )}
 
-              {/* EXTRACTED CONTENT / OCR SNIPPET */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
-                    <FileText className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Ingested Content & OCR Verbatim Snippet</span>
+              {/* REASONING EXPLANATION CARD (LEFT SIDE PANEL) */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-2">
+                    <BrainCircuit className="w-4 h-4 text-indigo-400" />
+                    <span>Reasoning Explanation</span>
                   </h4>
-                  <span className="text-[10px] font-mono text-slate-500">
-                    Source: {result.risk_factors?.source || result.intake_data?.source || 'Automated OCR'}
+                  <span className="text-[10px] font-mono text-sky-400 bg-sky-500/10 px-2.5 py-0.5 rounded-full border border-sky-500/20">
+                    AI AUDIT RATIONALE
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-200 font-sans leading-relaxed bg-slate-900/90 p-4 rounded-xl border border-slate-800/80 whitespace-pre-wrap max-h-[500px] overflow-y-auto select-all">
-                  "{result.intake_data?.ocr_text || result.risk_factors?.ocr_text || result.intake_data?.cleaned_text || 'Job posting data analyzed.'}"
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans whitespace-pre-line bg-slate-900/90 p-4 rounded-xl border border-slate-800/80">
+                  {result.explanation_text}
                 </p>
               </div>
 
@@ -651,16 +672,6 @@ const DashboardPage = () => {
 
               {/* SCAM GAUGE */}
               <ScamGauge score={result.scam_score} riskLevel={result.risk_level} />
-
-              {/* PLAIN-LANGUAGE EXPLANATION */}
-              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
-                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  {t('dashboard.explanation')}
-                </h3>
-                <p className="text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-line">
-                  {result.explanation_text}
-                </p>
-              </div>
 
               {/* 5-AGENT BREAKDOWN ACCORDION */}
               <AgentBreakdown result={result} />
