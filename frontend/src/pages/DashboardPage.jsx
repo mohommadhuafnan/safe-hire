@@ -383,13 +383,13 @@ const DashboardPage = () => {
 
           </div>
 
-          {/* FULL SCREEN FUTURISTIC AI SCANNING OVERLAY WITH BLURRED BACKGROUND */}
+          {/* FULL SCREEN FUTURISTIC AI SCANNING OVERLAY WITH NO TOP BLANK SPACE */}
           {analyzing && (
-            <div className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-4 sm:p-8 animate-fade-in overflow-y-auto">
-              <div className="w-full max-w-5xl h-auto max-h-[92vh] glass-panel p-6 sm:p-10 rounded-3xl border border-indigo-500/50 space-y-6 shadow-[0_0_60px_rgba(99,102,241,0.4)] relative overflow-hidden bg-slate-950/95 flex flex-col justify-between">
+            <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-3xl w-screen h-screen flex flex-col justify-between p-3 sm:p-6 animate-fade-in overflow-hidden">
+              <div className="w-full h-full max-w-7xl mx-auto glass-panel p-5 sm:p-8 rounded-3xl border border-indigo-500/50 shadow-[0_0_80px_rgba(99,102,241,0.45)] relative overflow-hidden bg-slate-950/90 flex flex-col justify-between">
                 
                 {/* Top Scanner Status Bar */}
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/40">
                       <BrainCircuit className="w-6 h-6 text-sky-400 animate-pulse" />

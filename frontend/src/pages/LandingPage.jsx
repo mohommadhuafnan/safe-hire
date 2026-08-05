@@ -330,7 +330,7 @@ const LandingPage = () => {
     <div className="space-y-24 pb-16">
       
       {/* TRUE FULL-SCREEN HERO SECTION WITH LOOPING VIDEO BACKGROUND */}
-      <section className="relative w-full min-h-screen h-[100vh] min-h-[100vh] flex flex-col justify-center items-center overflow-hidden -mt-20 sm:-mt-24 pt-28 sm:pt-36 pb-16 bg-black">
+      <section className="relative w-full min-h-screen h-[100vh] min-h-[100vh] flex flex-col justify-center items-center overflow-hidden -mt-20 sm:-mt-24 pt-24 sm:pt-32 pb-12 bg-black">
         
         {/* FULL-VIEWPORT VIDEO BACKGROUND & MULTI-LAYER OVERLAYS */}
         <div className="absolute inset-0 w-full h-full z-0 overflow-hidden bg-black">
@@ -350,8 +350,11 @@ const LandingPage = () => {
 
           {/* Semi-transparent Overlay: rgba(0, 0, 0, 0.50) & dark gradient */}
           <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] z-10" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/35 to-[#090d16] z-10" />
-          <div className="absolute inset-0 bg-radial-at-c from-sky-900/25 via-transparent to-black/85 z-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/30 to-[#090d16] z-10" />
+          <div className="absolute inset-0 bg-radial-at-c from-sky-900/25 via-transparent to-black/80 z-10" />
+          
+          {/* Seamless Bottom Blend Gradient to remove black space */}
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent via-[#090d16]/80 to-[#090d16] z-10 pointer-events-none" />
 
           {/* Cybernetic Digital Grid Effect */}
           <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] opacity-20 z-10" />
@@ -734,54 +737,95 @@ const LandingPage = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* KEY FEATURES GRID (WHY CHOOSE SAFE-HIRE) */}
+      {/* ========================================================================= */}
+      {/* KEY FEATURES GRID (WHY CHOOSE SAFE-HIRE - ENHANCED WITH ANIMATIONS) */}
+      {/* ========================================================================= */}
       <section className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-100">
-            {t('landing.features_title', 'Why Choose SAFE-HIRE')}
+        <div className="text-center mb-14 space-y-3">
+          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold shadow-lg shadow-indigo-500/10 backdrop-blur-md animate-pulse">
+            <ShieldCheck className="w-4 h-4 text-indigo-400" />
+            <span>UNMATCHED RECRUITMENT PROTECTION ENGINE</span>
+          </div>
+
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
+            Why Choose <span className="gradient-text">SAFE-HIRE</span>?
           </h2>
+          
+          <p className="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">
+            The world's first agentic multi-AI platform engineered specifically to protect South Asian undergraduates and job seekers from career scams.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4 border border-indigo-500/20 hover:border-indigo-400/50 transition">
-            <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400">
-              <BrainCircuit className="w-6 h-6" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+          
+          {/* Feature 1 */}
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-indigo-500/30 hover:border-indigo-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(99,102,241,0.25)] relative overflow-hidden bg-slate-900/80">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/25 transition-all duration-500 pointer-events-none" />
+            <div className="p-4 rounded-2xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <BrainCircuit className="w-7 h-7 text-indigo-400 group-hover:rotate-12 transition-transform duration-300" />
             </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-100 mb-1">{t('landing.feature_1_title', '5-Agent AI Pipeline')}</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_1_desc', 'Multimodal OCR vision, linguistic signal analysis, WHOIS domain security, and Gemini AI reasoning working together.')}</p>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4 border border-sky-500/20 hover:border-sky-400/50 transition">
-            <div className="p-3 rounded-xl bg-sky-500/10 text-sky-400">
-              <Globe2 className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-100 mb-1">{t('landing.feature_2_title', '5 South Asian Languages')}</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_2_desc', 'Supports English, Sinhala, Tamil, Hindi, and Bengali for localized fraud detection across South Asia.')}</p>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_1_title', '5-Agent AI Pipeline')}</h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">AUTOMATED</span>
+              </div>
+              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
+                Multimodal OCR vision, linguistic signal analysis, WHOIS domain security, and Gemini 3.6 Flash reasoning working together in parallel.
+              </p>
             </div>
           </div>
 
-          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4 border border-teal-500/20 hover:border-teal-400/50 transition">
-            <div className="p-3 rounded-xl bg-teal-500/10 text-teal-400">
-              <Search className="w-6 h-6" />
+          {/* Feature 2 */}
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-sky-500/30 hover:border-sky-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(56,189,248,0.25)] relative overflow-hidden bg-slate-900/80">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/25 transition-all duration-500 pointer-events-none" />
+            <div className="p-4 rounded-2xl bg-sky-500/15 text-sky-400 border border-sky-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <Globe2 className="w-7 h-7 text-sky-400 group-hover:rotate-12 transition-transform duration-300" />
             </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-100 mb-1">{t('landing.feature_3_title', 'Live Technical API Audit')}</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_3_desc', 'Integrated with Abstract API Email Validation, Google Safe Browsing v4 threat matches, and WHOIS domain age lookups.')}</p>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_2_title', 'Multi-Language Support')}</h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-500/20 text-sky-300 border border-sky-500/30">5 LANGUAGES</span>
+              </div>
+              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
+                Native explanations in English, Sinhala, Tamil, Hindi, and Bengali for localized fraud detection across South Asia.
+              </p>
             </div>
           </div>
 
-          <div className="glass-card p-6 rounded-2xl flex items-start space-x-4 border border-emerald-500/20 hover:border-emerald-400/50 transition">
-            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
-              <ShieldCheck className="w-6 h-6" />
+          {/* Feature 3 */}
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-teal-500/30 hover:border-teal-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(20,184,166,0.25)] relative overflow-hidden bg-slate-900/80">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-teal-500/10 rounded-full blur-2xl group-hover:bg-teal-500/25 transition-all duration-500 pointer-events-none" />
+            <div className="p-4 rounded-2xl bg-teal-500/15 text-teal-400 border border-teal-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <Search className="w-7 h-7 text-teal-400 group-hover:rotate-12 transition-transform duration-300" />
             </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-100 mb-1">{t('landing.feature_4_title', 'Dynamic Action Recommendations')}</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">{t('landing.feature_4_desc', 'Generates 100% poster-tailored safety guidance referencing exact recruiter emails, fee terms, and university reporting portals.')}</p>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_3_title', 'Domain & Web Verification')}</h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-500/20 text-teal-300 border border-teal-500/30">WHOIS LIVE</span>
+              </div>
+              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
+                Live WHOIS age lookup, Google Safe Browsing reputation check, and Abstract API email domain validation.
+              </p>
             </div>
           </div>
+
+          {/* Feature 4 */}
+          <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-emerald-500/30 hover:border-emerald-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(16,185,129,0.25)] relative overflow-hidden bg-slate-900/80">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/25 transition-all duration-500 pointer-events-none" />
+            <div className="p-4 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <ShieldCheck className="w-7 h-7 text-emerald-400 group-hover:rotate-12 transition-transform duration-300" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_4_title', 'Actionable Safety Advice')}</h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">STUDENT SAFE</span>
+              </div>
+              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
+                Clear, student-friendly recommendations to protect your money, identity, and career credentials against hiring fraud.
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -1104,20 +1148,41 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* BOTTOM CALL TO ACTION */}
+      {/* ========================================================================= */}
+      {/* BOTTOM CALL TO ACTION (PROTECT YOUR CAREER TODAY - ENHANCED) */}
+      {/* ========================================================================= */}
       <section className="max-w-4xl mx-auto px-6 text-center">
-        <div className="glass-panel p-10 rounded-3xl border border-indigo-500/20 bg-gradient-to-b from-indigo-950/40 to-slate-950 relative overflow-hidden">
-          <h2 className="text-3xl font-extrabold text-slate-100 mb-3">{t('landing.cta_bottom_title', 'Protect Your Career Today')}</h2>
-          <p className="text-slate-400 text-sm max-w-xl mx-auto mb-6">
-            {t('landing.cta_bottom_desc', 'Join thousands of graduates using SAFE-HIRE to verify job postings before sharing personal details.')}
-          </p>
-          <Link
-            to="/signup"
-            className="inline-flex items-center space-x-2 px-8 py-3.5 rounded-xl btn-primary font-bold text-sm shadow-xl hover:scale-105 transition"
-          >
-            <span>{t('landing.cta_create_account', 'Create Free Account')}</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+        <div className="glass-panel p-10 sm:p-12 rounded-3xl border-2 border-indigo-500/40 bg-gradient-to-b from-indigo-950/60 via-slate-950 to-slate-950 relative overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.25)] group">
+          
+          {/* Glowing Background Radial Highlights */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/35 transition-all duration-700 pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-64 h-32 bg-sky-500/15 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-5">
+            <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 text-xs font-bold shadow-md animate-pulse">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>100% FREE RECRUITMENT VERIFICATION FOR STUDENTS</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
+              {t('landing.cta_bottom_title', 'Protect Your Career Today')}
+            </h2>
+            
+            <p className="text-slate-300 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed font-sans">
+              {t('landing.cta_bottom_desc', 'Join thousands of graduates using SAFE-HIRE to verify job postings before sharing personal details or paying registration fees.')}
+            </p>
+
+            <div className="pt-3">
+              <Link
+                to="/signup"
+                className="inline-flex items-center space-x-3 px-9 py-4 rounded-2xl btn-glow-blue font-extrabold text-sm text-white shadow-2xl hover:scale-105 transition-all duration-300"
+              >
+                <span>{t('landing.cta_create_account', 'Create Free Account')}</span>
+                <ArrowRight className="w-4 h-4 text-white" />
+              </Link>
+            </div>
+          </div>
+
         </div>
       </section>
 
