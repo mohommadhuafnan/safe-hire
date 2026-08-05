@@ -330,10 +330,10 @@ const LandingPage = () => {
     <div className="space-y-24 pb-16">
       
       {/* TRUE FULL-SCREEN HERO SECTION WITH LOOPING VIDEO BACKGROUND */}
-      <section className="relative w-full min-h-screen flex items-center justify-center overflow-hidden -mt-20 sm:-mt-24 pt-32 sm:pt-40 pb-24 bg-black">
+      <section className="relative w-full min-h-screen h-[100vh] min-h-[100vh] flex flex-col justify-center items-center overflow-hidden -mt-20 sm:-mt-24 pt-28 sm:pt-36 pb-16 bg-black">
         
         {/* FULL-VIEWPORT VIDEO BACKGROUND & MULTI-LAYER OVERLAYS */}
-        <div className="absolute inset-0 z-0 overflow-hidden bg-black">
+        <div className="absolute inset-0 w-full h-full z-0 overflow-hidden bg-black">
           <video
             ref={videoRef}
             autoPlay
@@ -341,7 +341,7 @@ const LandingPage = () => {
             muted
             playsInline
             preload="auto"
-            className="w-full h-full object-cover opacity-80 filter brightness-95 contrast-105 transition-opacity duration-1000 scale-105"
+            className="w-full h-full object-cover opacity-85 filter brightness-95 contrast-105 transition-opacity duration-1000"
           >
             <source src={heroVideo} type="video/mp4" />
             <source src="/vedio/vedio.mp4" type="video/mp4" />

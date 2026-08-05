@@ -184,7 +184,7 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-5 sm:py-8 space-y-6 sm:space-y-8">
+    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 pt-24 sm:pt-32 pb-10 space-y-6 sm:space-y-8">
       
       {/* USER DASHBOARD HEADER BAR & PREMIUM BANNER */}
       <div className="glass-panel p-5 sm:p-7 rounded-3xl border border-slate-800 relative overflow-hidden space-y-4">
@@ -333,18 +333,15 @@ const DashboardPage = () => {
               {activeTab === 'url' && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-2">
-                    Enter Job Portal URL / Recruiter Domain:
+                    Paste Job Offer URL / Company Website / Social Link:
                   </label>
-                  <div className="relative">
-                    <Globe className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                    <input
-                      type="url"
-                      value={inputUrl}
-                      onChange={(e) => setInputUrl(e.target.value)}
-                      placeholder={t('dashboard.placeholder_url')}
-                      className="w-full bg-slate-900/90 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-2xl pl-10 pr-4 py-3 text-xs text-slate-100 placeholder-slate-500 outline-none transition"
-                    />
-                  </div>
+                  <input
+                    type="url"
+                    value={inputUrl}
+                    onChange={(e) => setInputUrl(e.target.value)}
+                    placeholder={t('dashboard.placeholder_url')}
+                    className="w-full bg-slate-900/90 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-2xl p-4 text-xs text-slate-100 placeholder-slate-500 outline-none transition"
+                  />
                 </div>
               )}
 
@@ -368,12 +365,12 @@ const DashboardPage = () => {
               <button
                 type="submit"
                 disabled={analyzing}
-                className="w-full py-4 rounded-2xl btn-primary font-extrabold text-sm shadow-xl transition flex items-center justify-center space-x-2 disabled:opacity-50 hover:scale-[1.01]"
+                className="w-full py-4 px-6 rounded-2xl btn-primary font-bold text-xs sm:text-sm shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 transition"
               >
                 {analyzing ? (
                   <>
-                    <Sparkles className="w-5 h-5 animate-spin text-sky-200" />
-                    <span>{t('dashboard.analyzing')}</span>
+                    <Sparkles className="w-5 h-5 animate-spin" />
+                    <span>Executing 5-Agent AI Pipeline...</span>
                   </>
                 ) : (
                   <>
@@ -386,66 +383,75 @@ const DashboardPage = () => {
 
           </div>
 
-          {/* LIVE PIPELINE PROGRESS & FUTURISTIC POSTER LASER SCANNER ANIMATION */}
+          {/* FULL SCREEN FUTURISTIC AI SCANNING OVERLAY WITH BLURRED BACKGROUND */}
           {analyzing && (
-            <div className="glass-card p-6 rounded-3xl border border-indigo-500/40 space-y-5 animate-fade-in shadow-2xl relative overflow-hidden bg-slate-950/90">
-              
-              {/* Top Scanner Status Bar */}
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center space-x-2">
-                  <BrainCircuit className="w-5 h-5 text-indigo-400 animate-pulse" />
-                  <span className="text-xs font-bold text-slate-100 uppercase tracking-widest">
-                    SAFE-HIRE AI 5-Agent Multimodal Scanner Active
+            <div className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-2xl flex items-center justify-center p-4 sm:p-6 animate-fade-in">
+              <div className="w-full max-w-lg glass-panel p-6 sm:p-8 rounded-3xl border border-indigo-500/50 space-y-6 shadow-[0_0_50px_rgba(99,102,241,0.35)] relative overflow-hidden bg-slate-950/95">
+                
+                {/* Top Scanner Status Bar */}
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                  <div className="flex items-center space-x-2.5">
+                    <BrainCircuit className="w-6 h-6 text-sky-400 animate-pulse" />
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-100 uppercase tracking-widest">
+                      SAFE-HIRE AI 5-Agent Scanner
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-sky-300 bg-sky-500/20 px-3 py-1 rounded-full border border-sky-400/30 animate-pulse">
+                    NEURAL SCANNING
                   </span>
                 </div>
-                <span className="text-[10px] font-mono font-bold text-sky-400 bg-sky-500/10 px-2.5 py-1 rounded-full border border-sky-500/20 animate-pulse">
-                  NEURAL SCANNING
-                </span>
-              </div>
 
-              {/* POSTER LASER SCANNER PREVIEW (If Image Uploaded) */}
-              {previewUrl && (
-                <div className="relative w-full max-w-sm mx-auto rounded-2xl overflow-hidden border-2 border-indigo-500/50 bg-slate-900 shadow-[0_0_30px_rgba(99,102,241,0.3)]">
-                  <img src={previewUrl} alt="Poster Under Scan" className="w-full max-h-56 object-contain opacity-85 p-2" />
-                  
-                  {/* Neon Cyan Laser Scan Line */}
-                  <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#38bdf8] animate-scan z-20 pointer-events-none" />
-                  
-                  {/* HUD Corner Markers */}
-                  <div className="absolute top-2 left-2 text-[9px] font-mono font-bold text-cyan-400 bg-slate-950/90 px-2 py-0.5 rounded border border-cyan-500/40">
-                    [OCR TEXT MINING]
-                  </div>
-                  <div className="absolute bottom-2 right-2 text-[9px] font-mono font-bold text-emerald-400 bg-slate-950/90 px-2 py-0.5 rounded border border-emerald-500/40">
-                    [GEMINI VISION 3.6]
-                  </div>
-                </div>
-              )}
-
-              {/* 5-Agent Step Neural Progress Indicators */}
-              <div className="space-y-2.5 pt-1">
-                {pipelineSteps.map((stepName, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
-                    <div className="flex items-center space-x-2.5">
-                      {idx + 1 < currentStep ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                      ) : idx + 1 === currentStep ? (
-                        <Sparkles className="w-4 h-4 text-indigo-400 animate-spin flex-shrink-0" />
-                      ) : (
-                        <div className="w-4 h-4 rounded-full border border-slate-700 flex-shrink-0" />
-                      )}
-                      <span className={idx + 1 <= currentStep ? 'text-slate-100 font-semibold' : 'text-slate-500'}>
-                        {stepName}
-                      </span>
+                {/* POSTER LASER SCANNER PREVIEW (If Image Uploaded) */}
+                {previewUrl ? (
+                  <div className="relative w-full max-w-sm mx-auto rounded-2xl overflow-hidden border-2 border-indigo-500/60 bg-slate-900 shadow-[0_0_35px_rgba(99,102,241,0.4)]">
+                    <img src={previewUrl} alt="Poster Under Scan" className="w-full max-h-60 object-contain opacity-90 p-2" />
+                    
+                    {/* Neon Cyan Laser Scan Line */}
+                    <div className="absolute inset-x-0 h-1.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_20px_#38bdf8] animate-scan z-20 pointer-events-none" />
+                    
+                    {/* HUD Corner Markers */}
+                    <div className="absolute top-2 left-2 text-[9px] font-mono font-bold text-cyan-300 bg-slate-950/90 px-2.5 py-0.5 rounded border border-cyan-500/40">
+                      [OCR TEXT MINING]
                     </div>
-                    {idx + 1 === currentStep && (
-                      <span className="text-[10px] font-bold text-indigo-400 animate-pulse font-mono">
-                        ANALYZING...
-                      </span>
-                    )}
+                    <div className="absolute bottom-2 right-2 text-[9px] font-mono font-bold text-emerald-300 bg-slate-950/90 px-2.5 py-0.5 rounded border border-emerald-500/40">
+                      [GEMINI VISION 3.6]
+                    </div>
                   </div>
-                ))}
-              </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-8 rounded-2xl border border-indigo-500/30 bg-slate-900/60 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/40">
+                      <Sparkles className="w-6 h-6 text-sky-400 animate-spin" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-200">Executing Deep Multimodal NLP & Security Verification</span>
+                  </div>
+                )}
 
+                {/* 5-Agent Step Neural Progress Indicators */}
+                <div className="space-y-2.5 pt-1">
+                  {pipelineSteps.map((stepName, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs">
+                      <div className="flex items-center space-x-3">
+                        {idx + 1 < currentStep ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        ) : idx + 1 === currentStep ? (
+                          <Sparkles className="w-4 h-4 text-indigo-400 animate-spin flex-shrink-0" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-slate-700 flex-shrink-0" />
+                        )}
+                        <span className={idx + 1 <= currentStep ? 'text-slate-100 font-bold' : 'text-slate-500'}>
+                          {stepName}
+                        </span>
+                      </div>
+                      {idx + 1 === currentStep && (
+                        <span className="text-[10px] font-bold text-sky-400 animate-pulse font-mono bg-sky-500/10 px-2 py-0.5 rounded">
+                          ANALYZING...
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+              </div>
             </div>
           )}
 
