@@ -70,22 +70,24 @@ class IntakeAgent:
 
         prompt = """
         You are SAFE-HIRE's Senior Multimodal Vision & Recruitment Fraud Intelligence Engine.
-        Examine this uploaded image carefully to classify whether it is a Job Recruitment Poster / Career Flyer / Job Ad Screenshot OR a Non-Job Picture.
+        Examine this uploaded image carefully to classify whether it is a Job Recruitment Poster / Career Flyer / Job Ad Screenshot OR a Non-Job Picture (such as an educational event flyer, workshop banner, hackathon poster, product ad, personal photo, generic graphics, etc.).
 
         CLASSIFICATION RULES:
-        1. A JOB POSTER (`is_job_poster: true`) includes ANY hiring banner, recruitment flyer, walk-in interview notice, corporate relations poster, job ad screenshot (LinkedIn, WhatsApp, Email, Facebook, newspaper), training course flyer with job guarantee, or career vacancy offer.
-        2. A NON-JOB IMAGE (`is_job_poster: false`) is an image that has NO recruitment text or career offer context whatsoever (e.g. personal selfie, animal photo, nature/crop landscape, receipt, meme, vehicle, or random object picture).
+        1. A JOB POSTER (`is_job_poster: true`) includes ANY hiring banner, recruitment flyer, walk-in interview notice, corporate relations hiring poster, job ad screenshot (LinkedIn, WhatsApp, Email, Facebook, newspaper), training course flyer with job guarantee, or career vacancy offer.
+        2. A NON-JOB IMAGE (`is_job_poster: false`) is an image that has NO recruitment vacancy or hiring offer context whatsoever (e.g. event flyer, educational workshop, designathon banner, contest, product ad, personal photo, animal picture, meme, or random graphic).
 
         Return ONLY a raw JSON object with this exact structure (no markdown code blocks, no ```json formatting):
         {
-          "is_job_poster": boolean (true for recruitment/hiring poster/flyer, false for non-job pictures),
+          "is_job_poster": boolean (true for recruitment/hiring poster/flyer, false for non-hiring/general/event pictures),
+          "poster_type": "Specific Classification (e.g. Designathon / Hackathon Event Poster, Educational Workshop Flyer, Corporate Course Banner, Product Advertisement, Personal Photo)",
+          "poster_summary": "Clear 2-3 sentence summary of what this poster/image is about, who organized it, dates, location, and key details.",
           "extracted_text": "Full verbatim text extracted from the poster...",
-          "claimed_brand": "Extracted company or brand name if present",
-          "job_title": "Position, role, or program title if present",
+          "claimed_brand": "Extracted company, institution, or brand name if present",
+          "job_title": "Position, role, or event title if present",
           "contact_email": "Extracted email if present",
           "phone_number": "Extracted phone number if present",
           "has_fee_demand": false,
-          "validation_error": "⚠️ NON-JOB POSTER DETECTED: This uploaded image contains no job recruitment advertisement or career offer." (Provide ONLY if is_job_poster is false, else null)
+          "validation_error": null
         }
         """
 
@@ -189,16 +191,18 @@ class IntakeAgent:
                 [EXTRACTED OCR TEXT]:
                 "{ocr_text[:3000]}"
 
-                Determine if this text represents a Job Recruitment Poster / Career Flyer / Hiring Notice OR a Non-Job document.
+                Determine if this text represents a Job Recruitment Poster / Career Flyer / Hiring Notice OR a Non-Job document (such as an educational event flyer, workshop banner, hackathon poster, product ad, personal photo, generic graphics).
                 Return ONLY a raw JSON object (no markdown):
                 {{
                   "is_job_poster": boolean,
+                  "poster_type": "Specific Classification (e.g. Designathon / Hackathon Event Poster, Educational Workshop Flyer, Corporate Course Banner, Product Advertisement, Personal Photo)",
+                  "poster_summary": "Clear 2-3 sentence summary of what this poster/image is about, who organized it, dates, location, and key details.",
                   "extracted_text": "{ocr_text[:2000]}",
                   "claimed_brand": "Extracted company name",
                   "job_title": "Position title",
                   "contact_email": "Extracted email if present",
                   "phone_number": "Extracted phone if present",
-                  "validation_error": "⚠️ NON-JOB POSTER DETECTED: This image contains no job recruitment details." (ONLY if is_job_poster is false, else null)
+                  "validation_error": null
                 }}
                 """
                 headers = {
@@ -348,6 +352,8 @@ class IntakeAgent:
         extracted_domain = ""
         ocr_extracted_text = ""
         claimed_brand = ""
+        poster_type = "General Flyer / Image"
+        poster_summary = ""
         is_job_poster = True
         validation_error = None
 
@@ -359,6 +365,8 @@ class IntakeAgent:
             if not isinstance(vision_res, dict):
                 vision_res = {}
             is_job_poster = vision_res.get("is_job_poster", True)
+            poster_type = vision_res.get("poster_type", "General Poster / Flyer")
+            poster_summary = vision_res.get("poster_summary", "")
             validation_error = vision_res.get("validation_error")
 
             ocr_extracted_text = vision_res.get("extracted_text", "")
@@ -369,6 +377,10 @@ class IntakeAgent:
             combined_text += f"\n[POSTER TEXT & METADATA]:\n{ocr_extracted_text}\n"
             if claimed_brand:
                 combined_text += f"Claimed Brand: {claimed_brand}\n"
+            if poster_type:
+                combined_text += f"Poster Type: {poster_type}\n"
+            if poster_summary:
+                combined_text += f"Poster Summary: {poster_summary}\n"
             source = "image"
 
         if input_url and input_url.strip():
@@ -405,10 +417,12 @@ class IntakeAgent:
 
         return {
             "cleaned_text": combined_text.strip(),
-            "ocr_text": ocr_extracted_text,
-            "claimed_brand": claimed_brand,
+            "ocr_text": ocr_extracted_text or "",
+            "claimed_brand": claimed_brand or "",
+            "poster_type": poster_type or "General Poster / Flyer",
+            "poster_summary": poster_summary or "",
             "source": source,
-            "domain": extracted_domain,
+            "domain": extracted_domain or "",
             "detected_language": detected_lang,
             "final_language": final_lang,
             "is_job_poster": is_job_poster,

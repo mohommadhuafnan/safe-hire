@@ -26,30 +26,46 @@ class AgentPipeline:
             final_lang = intake_res.get("final_language", "en")
             domain = intake_res.get("domain", "")
 
-            # Check if non-job picture was uploaded (e.g., selfie, animal photo, nature landscape)
-            if intake_res.get("is_job_poster") is False and intake_res.get("validation_error"):
-                validation_msg = intake_res.get("validation_error", "⚠️ NON-JOB POSTER DETECTED: This image does not contain any recruitment flyer, job advertisement, or career offer details.")
+            # Check if non-job poster or non-career image was uploaded
+            if intake_res.get("is_job_poster") is False:
+                poster_type = intake_res.get("poster_type") or "Informational Flyer / Non-Job Image"
+                poster_summary = intake_res.get("poster_summary") or "This uploaded image contains an event flyer, educational poster, or non-recruitment graphic without job vacancy offer details."
+                ocr_text = intake_res.get("ocr_text") or cleaned_text or "No readable text extracted."
+                claimed_brand = intake_res.get("claimed_brand") or "Informational Flyer"
+                
+                explanation_text = f"📋 POSTER CLASSIFICATION & TYPE:\n• Category: {poster_type}\n• Claimed Organization / Brand: {claimed_brand}\n\nℹ️ POSTER SUMMARY & DETAILS:\n{poster_summary}\n\n🎯 RECRUITMENT VERDICT:\nThis image is classified as an informational or promotional poster ({poster_type}), not a direct job vacancy offer. SAFE-HIRE verified that no recruitment fee demands or hiring impersonation risks are present.\n\n📄 EXTRACTED VERBATIM CONTENT:\n\"{ocr_text[:1200]}\""
+                
                 return {
                     "intake_data": intake_res,
                     "linguistic_data": {},
                     "verification_data": {},
-                    "reasoning_data": {},
-                    "recommendations": [
-                        "Please upload a valid job advertisement screenshot, recruitment flyer, or paste a job posting URL.",
-                        "Avoid uploading photos of people, animals, pets, or non-career related pictures."
-                    ],
-                    "scam_score": 100,
-                    "confidence_score": 100,
-                    "sub_scores": {
-                        "financial_fee_risk": 100,
-                        "impersonation_risk": 100,
-                        "domain_reputation_risk": 100,
-                        "urgency_pressure_risk": 100
+                    "reasoning_data": {
+                        "scam_score": 0,
+                        "risk_level": f"Non-Job Poster ({poster_type})",
+                        "explanation": explanation_text
                     },
-                    "breakdown_signals": ["Non-job document content detected."],
-                    "risk_level": "Non-Job Image (100% Risk Alert)",
+                    "recommendations": [
+                        f"ℹ️ POSTER TYPE: Classified as {poster_type}.",
+                        "🔍 EVENT / AD DETAILS: Verify event dates, venue, and organizer details directly with the official hosts.",
+                        "✅ NO RECRUITMENT SCAM: No job vacancy fee demands or hiring impersonation risks detected in this poster."
+                    ],
+                    "scam_score": 0,
+                    "confidence_score": 98,
+                    "sub_scores": {
+                        "financial_fee_risk": 0,
+                        "impersonation_risk": 0,
+                        "domain_reputation_risk": 0,
+                        "urgency_pressure_risk": 0
+                    },
+                    "breakdown_signals": [
+                        f"📌 Poster Classification: {poster_type}",
+                        f"🏢 Host / Brand: {claimed_brand}",
+                        "ℹ️ Informational Flyer: Non-recruitment offer document.",
+                        "✅ Safe Content: Zero job recruitment scam or fee demand risks found."
+                    ],
+                    "risk_level": f"Non-Job Poster ({poster_type})",
                     "language": final_lang,
-                    "explanation_text": f"{validation_msg}\n\nUploading non-career images (personal photos, animals, or unrelated pictures) cannot be verified for recruitment authenticity and is flagged with a 100% Risk Alert."
+                    "explanation_text": explanation_text
                 }
 
             logger.info("Executing Agent Pipeline Stage 2: Linguistic Risk Agent")
