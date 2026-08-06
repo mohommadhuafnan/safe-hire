@@ -532,17 +532,6 @@ Verify job offers directly on official corporate career portals before sending d
                 `Risk Level: ${riskLevel}`
             ]
         };
-    }: {
-                financial_fee_risk: hasFee ? 90 : 0,
-                impersonation_risk: domain ? 10 : 30,
-                domain_reputation_risk: 10,
-                urgency_pressure_risk: hasUrgency ? 80 : 0
-            },
-            breakdown_signals: [
-                `Scam Risk Score: ${score}/100`,
-                `Risk Level: ${riskLevel}`
-            ]
-        };
     }
 
     /**
