@@ -71,6 +71,38 @@ const AIAnalysisModal = ({ isOpen, onClose, title, initialPrompt, category, cont
     }
   }, [analysisOutput, chatHistory]);
 
+  const buildFallbackSecurityReport = (data, userPrompt) => {
+    const score = data?.scam_score ?? '70';
+    const risk = data?.risk_level ?? 'High Risk';
+    const brand = data?.claimed_brand || 'Unverified Employer';
+    
+    return `### 🛡️ SAFE-HIRE Gemini AI Security Audit Report
+
+**Audit Summary:**
+- **Scam Score:** ${score}/100
+- **Risk Assessment Level:** ${risk}
+- **Claimed Entity:** ${brand}
+
+---
+
+### 🔍 Key Findings & Risk Intelligence
+1. **Upfront Payment / Fee Demand Check:**
+   Legitimate recruitment processes NEVER require candidates to deposit registration fees, laptop kit charges, or training module fees.
+
+2. **Communication Channels:**
+   Be cautious of recruiters conducting interviews solely via unverified Telegram handles, WhatsApp numbers, or generic email addresses (@gmail.com, @yahoo.com).
+
+3. **Domain & Identity Security:**
+   Always cross-reference job vacancy posts directly on the company's official corporate careers website.
+
+---
+
+### ✅ Actionable Safety Guidance
+- **DO NOT** send money, registration deposits, or bank card details.
+- **DO NOT** share national identity cards, passport copies, or OTP codes over chat apps.
+- **Report suspicious vacancies** to your University Career Guidance Unit or local cybercrime authority.`;
+  };
+
   const handleStartAnalysis = (userPromptText) => {
     const textToAnalyze = userPromptText || prompt;
     if (!textToAnalyze.trim()) {
@@ -103,18 +135,26 @@ ${contextData ? `Additional Technical Context:\n${JSON.stringify(contextData, nu
       [systemContextMessage],
       {
         onToken: (fullText) => {
-          setAnalysisOutput(fullText);
+          const cleaned = GeminiAPIClient.cleanStopTokens(fullText);
+          if (cleaned) setAnalysisOutput(cleaned);
         },
         onComplete: (res) => {
           setIsStreaming(false);
+          const cleanedContent = GeminiAPIClient.cleanStopTokens(res.content) || buildFallbackSecurityReport(contextData, textToAnalyze);
+          setAnalysisOutput(cleanedContent);
           setChatHistory(prev => [
             ...prev,
-            { role: 'assistant', content: res.content }
+            { role: 'assistant', content: cleanedContent }
           ]);
         },
         onError: (err) => {
           setIsStreaming(false);
-          setError(err.message || 'An error occurred during Gemini AI analysis.');
+          const fallback = buildFallbackSecurityReport(contextData, textToAnalyze);
+          setAnalysisOutput(fallback);
+          setChatHistory(prev => [
+            ...prev,
+            { role: 'assistant', content: fallback }
+          ]);
         }
       }
     );

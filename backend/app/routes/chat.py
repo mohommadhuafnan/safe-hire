@@ -86,6 +86,18 @@ class ChatResponse(BaseModel):
     model: str = "gemini-2.5-flash"
 
 
+def clean_stop_tokens(text: str) -> str:
+    if not text:
+        return ""
+    import re
+    clean = re.sub(r'<\|\s*end_of_sentence\s*\|>', '', text, flags=re.I)
+    clean = re.sub(r'<\|\s*im_end\s*\|>', '', clean, flags=re.I)
+    clean = re.sub(r'<\|\s*endoftext\s*\|>', '', clean, flags=re.I)
+    clean = re.sub(r'<\|\s*[a-z_0-9]+\s*\|>', '', clean, flags=re.I)
+    clean = re.sub(r'\[DONE\]', '', clean, flags=re.I)
+    return clean.strip()
+
+
 @router.post("", response_model=ChatResponse)
 async def chat_assistant(req: ChatRequest):
     """Provides real-time Gemini AI assistance for the Floating Chatbot and AI Analyzer."""
@@ -97,7 +109,6 @@ async def chat_assistant(req: ChatRequest):
         role = m.role if m.role in ("system", "user", "assistant") else "user"
         formatted_msgs.append({"role": role, "content": m.content})
 
-    # --- Attempt Gemini via OpenAI-compat endpoint ---
     if gemini_key:
         for model_name in _GEMINI_MODELS:
             try:
@@ -120,6 +131,7 @@ async def chat_assistant(req: ChatRequest):
                         .get("message", {})
                         .get("content", "")
                     )
+                    reply = clean_stop_tokens(reply)
                     if reply:
                         logger.info(f"✅ Chatbot ({model_name}) responded successfully.")
                         return ChatResponse(content=reply, model=model_name)
@@ -158,6 +170,7 @@ async def chat_assistant(req: ChatRequest):
                     .get("message", {})
                     .get("content", "")
                 )
+                reply = clean_stop_tokens(reply)
                 if reply:
                     logger.info("✅ Chatbot DeepSeek-V4-Flash responded successfully.")
                     return ChatResponse(content=reply, model="DeepSeek-V4-Flash")

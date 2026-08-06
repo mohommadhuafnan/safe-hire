@@ -40,13 +40,31 @@ class GeminiAPIClient {
     constructor(config = {}) {
         const defaultEnvKey = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) || "";
         this.apiKey = config.apiKey || defaultEnvKey;
-        this.modelName = config.modelName || "gemini-2.5-flash";
-        this.fallbackModels = ["gemini-2.0-flash", "gemini-2.5-pro"];
+        this.apiKey = config.apiKey || defaultEnvKey;
+        this.modelName = config.modelName || "gemini-2.0-flash";
+        this.fallbackModels = ["gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-1.5-pro"];
         this.apiBaseUrl = (config.apiBaseUrl || "https://generativelanguage.googleapis.com/v1beta/openai").replace(/\/+$/, '');
         this.temperature = config.temperature !== undefined ? config.temperature : 1.0;
         this.topP = config.topP !== undefined ? config.topP : 0.95;
         this.maxTokens = config.maxTokens || 4096;
         this.currentAbortController = null;
+    }
+
+    /**
+     * Clean raw stop tokens (<|end_of_sentence|>, <|im_end|>, etc.) from AI output
+     */
+    static cleanStopTokens(text) {
+        if (!text) return "";
+        let cleaned = text
+            .replace(/<\|\s*end_of_sentence\s*\|>/gi, "")
+            .replace(/<\|\s*im_end\s*\|>/gi, "")
+            .replace(/<\|\s*endoftext\s*\|>/gi, "")
+            .replace(/<\|\s*[a-z_0-9]+\s*\|>/gi, "")
+            .replace(/\[DONE\]/gi, "");
+        if (cleaned.includes("<think>") && cleaned.includes("</think>")) {
+            cleaned = cleaned.split("</think>").pop();
+        }
+        return cleaned.trim();
     }
 
     /**
@@ -85,7 +103,8 @@ class GeminiAPIClient {
 
                 if (response.ok) {
                     const data = await response.json();
-                    return data.choices?.[0]?.message?.content || "";
+                    const rawContent = data.choices?.[0]?.message?.content || "";
+                    return GeminiAPIClient.cleanStopTokens(rawContent);
                 }
                 lastError = new Error(`Gemini API Error (HTTP ${response.status}) for model ${model}`);
             } catch (err) {
@@ -172,7 +191,8 @@ class GeminiAPIClient {
                                 const token = parsed.choices?.[0]?.delta?.content;
                                 if (token) {
                                     accumulatedContent += token;
-                                    if (onToken) onToken(accumulatedContent, token);
+                                    const cleanedOutput = GeminiAPIClient.cleanStopTokens(accumulatedContent);
+                                    if (onToken) onToken(cleanedOutput, token);
                                 }
                             } catch (e) {
                                 // Skip invalid SSE JSON chunk
@@ -181,9 +201,10 @@ class GeminiAPIClient {
                     }
                 }
 
+                const finalCleanContent = GeminiAPIClient.cleanStopTokens(accumulatedContent);
                 streamSuccess = true;
                 if (onComplete) {
-                    onComplete({ content: accumulatedContent });
+                    onComplete({ content: finalCleanContent });
                 }
                 break; // Model succeeded!
 
@@ -208,7 +229,7 @@ class GeminiAPIClient {
 
                 if (backendRes.ok) {
                     const data = await backendRes.json();
-                    const replyText = data.content || "";
+                    const replyText = GeminiAPIClient.cleanStopTokens(data.content || "");
                     if (onToken) onToken(replyText, replyText);
                     if (onComplete) onComplete({ content: replyText });
                     return this.currentAbortController;
