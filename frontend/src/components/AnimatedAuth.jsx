@@ -128,7 +128,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
   return (
     <div 
       onMouseMove={handleMouseMove}
-      className="relative min-h-[calc(100vh-90px)] py-4 px-3 sm:p-6 flex items-center justify-center overflow-hidden"
+      className="relative min-h-screen pt-28 sm:pt-36 pb-12 px-3 sm:px-6 flex items-center justify-center overflow-hidden"
     >
 
       {/* AMBIENT BACKGROUND PARTICLES & GLOW ORBS */}

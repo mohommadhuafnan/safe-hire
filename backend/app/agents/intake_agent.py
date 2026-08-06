@@ -234,8 +234,18 @@ class IntakeAgent:
 
         # 3. Final Fallback: OCR text extraction
         ocr_text = IntakeAgent.extract_text_from_image(image_bytes)
+        ocr_lower = (ocr_text or "").lower()
+        
+        job_keywords = [
+            "hiring", "recruitment", "vacancy", "vacancies", "job offer", "apply now",
+            "we are hiring", "wanted", "walk-in interview", "walk in interview",
+            "full-time", "part-time", "job position", "open position", "send your cv",
+            "send resume", "career opportunity", " Qualificaton", "salary"
+        ]
+        has_job_kw = any(kw in ocr_lower for kw in job_keywords)
+
         return {
-            "posterType": "Job Advertisement" if ocr_text else "Not a Job Advertisement",
+            "posterType": "Job Advertisement" if has_job_kw else "Not a Job Advertisement",
             "companyName": "",
             "jobTitle": "",
             "salary": "",
@@ -245,13 +255,13 @@ class IntakeAgent:
             "address": "",
             "posterText": ocr_text or "",
             "qrCode": "",
-            "is_job_poster": bool(ocr_text),
+            "is_job_poster": has_job_kw,
             "extracted_text": ocr_text or "",
             "claimed_brand": "",
             "job_title": "",
             "contact_email": "",
             "phone_number": "",
-            "poster_summary": "Extracted text via OCR."
+            "poster_summary": "Extracted text via OCR." if has_job_kw else "The uploaded image appears to be a graduation announcement, university flyer, event poster, or general image with no recruitment vacancies."
         }
 
         deepseek_key = getattr(settings, "DEEPSEEK_V4_API_KEY", "") or ""
@@ -630,17 +640,24 @@ class IntakeAgent:
         combined_lower = (combined_text or "").lower()
         has_recruitment_signals = any(kw in combined_lower for kw in recruitment_keywords)
 
-        # Respect explicit Hugging Face posterType output
+        # Check non-job indicator keywords in extracted text (e.g. Graduation, University Ceremony, Event Banner)
+        non_job_keywords = ["congratulations", "graduates", "graduation", "university", "faculty", "ceremony", "event", "workshop", "hackathon", "portfolio", "banner", "degree"]
+        has_non_job_signals = any(kw in combined_lower for kw in non_job_keywords)
+
+        # If vision_res explicitly returns "Not a Job Advertisement" OR non-job classification
         if isinstance(vision_res, dict) and vision_res.get("posterType"):
-            if str(vision_res.get("posterType")).strip().lower() == "not a job advertisement":
+            p_type = str(vision_res.get("posterType")).strip().lower()
+            if "not a job" in p_type or "non-job" in p_type or "graduation" in p_type or "event" in p_type or "ceremony" in p_type:
                 is_job_poster = False
                 poster_type = "Not a Job Advertisement"
 
-        if combined_text and not has_recruitment_signals and not is_unreadable and (isinstance(vision_res, dict) and vision_res.get("posterType") != "Job Advertisement"):
+        if combined_text and not has_recruitment_signals and not is_unreadable:
             is_job_poster = False
             poster_type = "Not a Job Advertisement"
             
-            if source == "url":
+            if has_non_job_signals:
+                poster_summary = "The provided file is an educational graduation poster, university announcement, or event flyer. It contains no job recruitment vacancies or career offers."
+            elif source == "url":
                 poster_summary = f"The URL '{extracted_domain or input_url}' appears to be a commercial studio, portfolio, or web service. No recruitment vacancies, career opportunities, or hiring announcements were found."
             elif source == "document":
                 poster_summary = f"The uploaded document '{filename}' contains general text or documentation, but no job vacancies or recruitment offers."
