@@ -61,7 +61,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
                 target_id_or_email = raw_identity
 
     if not target_id_or_email:
-        target_id_or_email = "student@university.edu"
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please log in with your account to access the dashboard.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # Normalize target_id_or_email
     target_str = str(target_id_or_email).strip().lower()

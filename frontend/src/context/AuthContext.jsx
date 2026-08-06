@@ -19,29 +19,27 @@ export const AuthProvider = ({ children }) => {
         const response = await api.get('/api/user/profile');
         setUser(response.data);
       } catch (err) {
-        if (!err.response) {
-          // Network issue or offline mode: decode identity from token if available
-          let emailVal = "student@university.edu";
-          if (token && token.startsWith('demo_local_token_')) {
-            try {
-              emailVal = atob(token.replace('demo_local_token_', ''));
-            } catch (e) {
-              emailVal = "student@university.edu";
+        if (token && token.startsWith('demo_local_token_')) {
+          try {
+            const emailVal = atob(token.replace('demo_local_token_', ''));
+            if (emailVal && emailVal.includes('@')) {
+              setUser({
+                id: `user_${emailVal.replace(/[^a-zA-Z0-9]/g, '_')}`,
+                email: emailVal,
+                full_name: emailVal.split('@')[0].toUpperCase(),
+                institution: "University Student",
+                preferred_language: "en"
+              });
+              return;
             }
+          } catch (e) {
+            console.warn("Failed decoding local token:", e);
           }
-          setUser({
-            id: `user_${emailVal.replace(/[^a-zA-Z0-9]/g, '_')}`,
-            email: emailVal,
-            full_name: emailVal.split('@')[0].toUpperCase(),
-            institution: "University Student",
-            preferred_language: "en"
-          });
-        } else {
-          console.error('Failed to fetch user profile:', err);
-          localStorage.removeItem('safe_hire_token');
-          setToken(null);
-          setUser(null);
         }
+        console.error('Failed to fetch user profile, clearing unauthenticated session:', err);
+        localStorage.removeItem('safe_hire_token');
+        setToken(null);
+        setUser(null);
       } finally {
         setLoading(false);
       }
