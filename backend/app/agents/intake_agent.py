@@ -685,7 +685,8 @@ class IntakeAgent:
         # Decision Rules:
         # 1. If 3 or more indicators matched OR vision extracted explicit jobTitle/salary -> Job Advertisement
         # 2. If 1-2 indicators matched but uncertain -> Classify as Possible Job Advertisement and continue scam analysis!
-        # 3. Only classify as Not a Job Advertisement if indicator_count < 3 and non-job signals are clear.
+        # 3. If source is an uploaded image poster and no explicit non-job signals are detected -> Classify as Recruitment Poster & perform full AI audit!
+        # 4. Only classify as Not a Job Advertisement if explicit non-job signals (graduation, product ad, certificate) are present.
         if indicator_count >= 3 or has_vision_job_details:
             is_job_poster = True
             poster_type = "Job Advertisement"
@@ -693,8 +694,12 @@ class IntakeAgent:
             # Uncertain / Borderline poster -> Classify as "Possible Job Advertisement" & continue analysis
             is_job_poster = True
             poster_type = "Possible Job Advertisement"
+        elif source == "image" and not has_non_job_signals:
+            # Uploaded poster image without explicit non-job flags -> Treat as Recruitment Poster for full Gemini Vision audit
+            is_job_poster = True
+            poster_type = "Uploaded Poster Advertisement"
         else:
-            # Explicit Non-Job Poster (fewer than 3 indicators + clear non-job characteristics)
+            # Explicit Non-Job Poster (clear non-job characteristics like graduation, certificate, product sale)
             is_job_poster = False
             poster_type = "Not a Job Advertisement"
             
