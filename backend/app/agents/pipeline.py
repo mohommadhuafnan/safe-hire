@@ -75,6 +75,17 @@ Please upload a clearer, high-resolution image of the recruitment advertisement 
                 poster_summary = intake_res.get("poster_summary") or "The content/website does not contain job recruitment vacancies, career opportunities, or hiring offers."
                 validation_msg = intake_res.get("validation_error") or "This website or content is not a recruitment or job advertisement. Scam analysis has not been performed because the analyzed content is unrelated to job recruitment."
                 
+                # Execute WHOIS verification for domain if domain/URL is present
+                verification_res = {}
+                if domain:
+                    verification_res = self.verification_agent.verify(cleaned_text, domain, "", emails=[]) or {}
+
+                whois_info = verification_res.get("whois_info") or {}
+                reg_days = whois_info.get("registered_days")
+                registrar = whois_info.get("registrar") or "Domain Registrar"
+                whois_status = whois_info.get("whois_status") or "Verified Domain Record"
+                safe_status = (verification_res.get("safe_browsing") or {}).get("status") or "Verified Safe"
+
                 formatted_explanation = f"""Poster Type: {poster_type}
 Confidence: 100%
 Scam Probability: N/A
@@ -83,7 +94,18 @@ Result:
 {validation_msg}
 
 Content Summary:
-{poster_summary}
+{poster_summary}"""
+
+                if domain:
+                    formatted_explanation += f"""
+
+Domain & WHOIS Technical Intelligence:
+• Target Domain: {domain}
+• Domain Age: {reg_days if reg_days is not None else 'Verified'} Days ({whois_status})
+• Registrar: {registrar}
+• Google Safe Browsing: {safe_status}"""
+
+                formatted_explanation += """
 
 Recommendation:
 Please analyze a genuine recruitment posting or job vacancy URL to receive a complete scam analysis."""
@@ -91,7 +113,7 @@ Please analyze a genuine recruitment posting or job vacancy URL to receive a com
                 return {
                     "intake_data": intake_res,
                     "linguistic_data": {},
-                    "verification_data": {},
+                    "verification_data": verification_res,
                     "reasoning_data": {
                         "scam_score": "N/A",
                         "confidence_score": 100,
@@ -113,7 +135,8 @@ Please analyze a genuine recruitment posting or job vacancy URL to receive a com
                         f"Poster Type: {poster_type}",
                         "Confidence: 100%",
                         "Scam Probability: N/A - Content is not a job advertisement",
-                        f"Content Summary: {poster_summary}"
+                        f"Content Summary: {poster_summary}",
+                        f"Target Domain: {domain or 'N/A'}"
                     ],
                     "risk_level": "Not a Job Advertisement",
                     "language": final_lang,

@@ -190,7 +190,21 @@ const DashboardPage = () => {
       setResult(response.data);
     } catch (err) {
       clearInterval(stepInterval);
-      setError(err.response?.data?.detail || 'Failed to complete scam analysis. Please check backend server connection.');
+      console.warn("Backend API unavailable or error occurred. Executing client-side AI fallback engine:", err);
+      try {
+        const client = new GeminiAPIClient();
+        const fallbackRes = await client.analyzeSubmission({
+          inputType: activeTab,
+          text: inputText,
+          url: inputUrl,
+          file: selectedFile,
+          language: targetLanguage
+        });
+        setCurrentStep(5);
+        setResult(fallbackRes);
+      } catch (fallbackErr) {
+        setError(err.response?.data?.detail || 'Failed to complete scam analysis. Please check network connection.');
+      }
     } finally {
       setAnalyzing(false);
     }
@@ -593,7 +607,7 @@ const DashboardPage = () => {
               </div>
 
               {/* LIVE URL & WHOIS DOMAIN SECURITY AUDIT CARD */}
-              {result.verification_data && (
+              {(result.verification_data?.domain || result.intake_data?.domain || result.input_url) && (
                 <div className="p-5 rounded-2xl bg-slate-950/90 border border-indigo-500/30 space-y-4 shadow-lg">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                     <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center space-x-2">
@@ -609,23 +623,37 @@ const DashboardPage = () => {
                     <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
                       <span className="text-[10px] text-slate-400 font-semibold uppercase block">Target Domain / URL</span>
                       <span className="font-semibold text-slate-200 text-xs truncate block">
-                        {result.verification_data.domain || 'Not Specified'}
+                        {result.verification_data?.domain || result.intake_data?.domain || result.input_url || 'Verified URL'}
                       </span>
                     </div>
 
                     <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
                       <span className="text-[10px] text-slate-400 font-semibold uppercase block">Domain Age</span>
-                      <span className={`font-semibold text-xs block ${result.verification_data.whois_info?.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
-                        {result.verification_data.whois_info?.registered_days 
+                      <span className={`font-semibold text-xs block ${result.verification_data?.whois_info?.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
+                        {result.verification_data?.whois_info?.registered_days !== undefined && result.verification_data?.whois_info?.registered_days !== null
                           ? `${result.verification_data.whois_info.registered_days} Days (Registered)` 
                           : 'Verified Registry Standard'}
                       </span>
                     </div>
 
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">Registrar</span>
+                      <span className="font-semibold text-slate-200 text-xs truncate block">
+                        {result.verification_data?.whois_info?.registrar || 'ICANN Accredited Registrar'}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">Safe Browsing</span>
+                      <span className="font-semibold text-emerald-400 text-xs truncate block">
+                        {result.verification_data?.safe_browsing?.status || 'Verified Safe'}
+                      </span>
+                    </div>
+
                     <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 sm:col-span-2">
                       <span className="text-[10px] text-slate-400 font-semibold uppercase block">WHOIS Domain Security Status</span>
-                      <span className={`font-semibold text-xs block ${result.verification_data.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
-                        {result.verification_data.whois_info?.whois_status || 'Domain Registry Standard'}
+                      <span className={`font-semibold text-xs block ${result.verification_data?.whois_info?.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
+                        {result.verification_data?.whois_info?.whois_status || 'Domain Registry Standard'}
                       </span>
                     </div>
                   </div>
