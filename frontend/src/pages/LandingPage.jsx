@@ -458,6 +458,145 @@ const LandingPage = () => {
           <ChevronDown className="w-4 h-4 text-cyan-400 animate-bounce transition-transform duration-300 group-hover:scale-125" style={{ animationDelay: '0.15s' }} />
         </div>
       </section>
+      {/* ========================================================================= */}
+      {/* LIVE NEURAL VISION SCANNER VIDEO & DEMO SHOWCASE SECTION */}
+      {/* ========================================================================= */}
+      <section id="demo-showcase" className="max-w-7xl mx-auto px-6 py-10 scroll-mt-24">
+        
+        <div className="text-center mb-10 space-y-3 scroll-reveal">
+          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold shadow-lg shadow-cyan-500/10 backdrop-blur-md animate-pulse">
+            <Zap className="w-4 h-4 text-cyan-400" />
+            <span>REAL-TIME AI RECRUITMENT FRAUD SCANNER</span>
+          </div>
+
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
+            See <span className="gradient-text">SAFE-HIRE AI</span> in Action
+          </h2>
+          
+          <p className="text-slate-400 text-sm max-w-3xl mx-auto leading-relaxed">
+            Watch how our multimodal vision OCR engine extracts text, validates recruiter brand identity, and identifies scam red flags in real-time.
+          </p>
+        </div>
+
+        {/* FUTURISTIC VIDEO HUD SHOWCASE CONTAINER */}
+        <div className="relative rounded-3xl overflow-hidden border border-cyan-500/40 bg-slate-950/90 shadow-[0_0_90px_rgba(56,189,248,0.3)] glass-panel p-4 sm:p-7 scroll-reveal">
+          
+          {/* Top Cyber Control Bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-800">
+            <div className="flex items-center space-x-3">
+              <div className="w-3.5 h-3.5 rounded-full bg-cyan-400 animate-ping" />
+              <span className="text-xs font-mono font-bold text-cyan-300 uppercase tracking-wider">
+                SAFE-HIRE Neural Vision Core v3.6 • Live Laser OCR Stream
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                ● 100% SECURE
+              </span>
+              <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                MULTI-AI PIPELINE
+              </span>
+            </div>
+          </div>
+
+          {/* DUAL-PANEL SHOWCASE GRID: VIDEO PLAYER ON LEFT + LIVE HUD STATS ON RIGHT */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* LEFT: NEURAL VIDEO PLAYER WITH SCAN LASER OVERLAY */}
+            <div className="lg:col-span-7 relative rounded-2xl overflow-hidden border-2 border-indigo-500/50 bg-black shadow-2xl group">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                className="w-full h-[320px] sm:h-[420px] object-cover opacity-90 transition-opacity duration-500"
+              >
+                <source src={heroVideo} type="video/mp4" />
+                <source src="/vedio/vedio.mp4" type="video/mp4" />
+              </video>
+
+              {/* Animated Laser Scan Line Overlay across video */}
+              <div className="absolute inset-x-0 h-2 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_30px_#38bdf8] animate-scan z-20 pointer-events-none" />
+
+              {/* Grid Lines Overlay */}
+              <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] opacity-20 pointer-events-none" />
+
+              {/* Holographic Target Corners */}
+              <div className="absolute top-4 left-4 text-[10px] font-mono font-bold text-cyan-300 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-cyan-500/40 backdrop-blur-md">
+                [LIVE MULTIMODAL VISION OCR]
+              </div>
+              <div className="absolute bottom-4 right-4 text-[10px] font-mono font-bold text-emerald-300 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-emerald-500/40 backdrop-blur-md flex items-center space-x-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
+                <span>GEMINI 3.6 FLASH REASONING</span>
+              </div>
+            </div>
+
+            {/* RIGHT: LIVE SCAN STATISTICS & FEATURE HIGHLIGHTS */}
+            <div className="lg:col-span-5 space-y-5">
+              <div className="space-y-2">
+                <h3 className="text-xl sm:text-2xl font-extrabold text-slate-100 tracking-tight">
+                  Instant Fraud Detection in Under <span className="gradient-text">3 Seconds</span>
+                </h3>
+                <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
+                  Our system combines computer vision, natural language processing, and WHOIS cybersecurity verification to flag fraudulent job offers before you apply.
+                </p>
+              </div>
+
+              {/* LIVE FEATURES LIST */}
+              <div className="space-y-3 pt-2">
+                
+                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-start space-x-3">
+                  <div className="p-2 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 shrink-0 mt-0.5">
+                    <BrainCircuit className="w-5 h-5 text-indigo-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-200">Multimodal OCR Screenshot Scanning</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Extracts text from job flyers, WhatsApp chats, and PDF posters directly.</p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-start space-x-3">
+                  <div className="p-2 rounded-xl bg-sky-500/15 text-sky-400 border border-sky-500/30 shrink-0 mt-0.5">
+                    <Globe2 className="w-5 h-5 text-sky-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-200">WHOIS & Email Security Verification</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Detects brand impersonation, disposable email domains, and newly registered scam URLs.</p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-start space-x-3">
+                  <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0 mt-0.5">
+                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-200">0% Upfront Fee Tolerance Guarantee</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Instantly flags registration fee demands, laptop deposits, and payment traps.</p>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* ACTION BUTTON */}
+              <div className="pt-2">
+                <Link
+                  to="/dashboard"
+                  className="w-full py-3.5 rounded-xl btn-glow-blue font-bold text-xs text-white flex items-center justify-center space-x-2 shadow-xl transition"
+                >
+                  <Sparkles className="w-4 h-4 text-cyan-300 animate-spin" />
+                  <span>Start Verification Scan Now</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
 
       {/* ========================================================================= */}
       {/* 5-AGENT AI WORKFLOW PIPELINE SECTION (PLACED DIRECTLY AFTER VIDEO HERO) */}
