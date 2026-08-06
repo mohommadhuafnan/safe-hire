@@ -142,7 +142,7 @@ class IntakeAgent:
         }
         """
 
-        models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"]
+        models_to_try = ["gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash"]
 
         # 1. Try Gemini Vision REST generateContent Endpoint (most reliable for multimodal base64)
         if gemini_key:

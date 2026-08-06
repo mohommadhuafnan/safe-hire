@@ -191,8 +191,10 @@ class ReasoningAgent:
 
     # Model rotation: fastest/cheapest first, most capable last
     GEMINI_MODELS = [
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
+        "gemini-flash-latest",
+        "gemini-3.5-flash-lite",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
     ]
 
     def _log_api_key_status(self, key: str, provider: str) -> None:
