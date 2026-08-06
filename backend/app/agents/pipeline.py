@@ -109,6 +109,12 @@ This document/media has been thoroughly analyzed by SAFE-HIRE AI. It contains no
                 recommendation_text = f"Analyzed '{specific_category}' content. Upload a genuine recruitment flyer or job vacancy URL to receive a full scam probability audit."
 
                 return {
+                    "posterType": "Not a Job Advertisement",
+                    "confidence": 100,
+                    "scamProbability": None,
+                    "analysisPerformed": False,
+                    "summary": poster_summary,
+                    "recommendation": "Please upload a recruitment or job advertisement (PNG, JPG, JPEG, WEBP, PDF, DOC, or DOCX) for scam analysis.",
                     "intake_data": intake_res,
                     "linguistic_data": {},
                     "verification_data": verification_res,
@@ -119,7 +125,7 @@ This document/media has been thoroughly analyzed by SAFE-HIRE AI. It contains no
                         "explanation": formatted_explanation
                     },
                     "recommendations": [
-                        recommendation_text
+                        "Please upload a recruitment or job advertisement (PNG, JPG, JPEG, WEBP, PDF, DOC, or DOCX) for scam analysis."
                     ],
                     "scam_score": "N/A",
                     "confidence_score": 100,

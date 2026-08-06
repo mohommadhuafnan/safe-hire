@@ -632,15 +632,29 @@ class IntakeAgent:
         detected_lang = self.detect_language(combined_text)
         final_lang = target_language if (target_language and target_language in ["en", "si", "ta", "hi", "bn"]) else detected_lang
 
-        # Check Job Poster Recruitment Indicators across combined text (Image, Document, URL, Text)
-        recruitment_keywords = [
-            "we are hiring", "is hiring", "hiring for", "job vacancy", "job vacancies",
-            "recruitment notice", "career opportunity", "career opportunities", "position available",
-            "positions available", "apply now", "urgent vacancy", "urgent hiring", "walk-in interview",
-            "salary:", "full-time", "part-time", "work from home job", "data entry job",
-            "job requirement", "job requirements", "job description", "qualifications required",
-            "responsibilities:", "apply at", "apply officially", "send your cv", "send your resume",
-            "vacancy for", "hiring immediate", "looking for candidate", "looking for a",
+        # Comprehensive Job Poster Detection Indicator Dictionary
+        recruitment_indicator_list = [
+            # General Keywords
+            "job", "jobs", "vacancy", "vacancies", "hiring", "now hiring", "we're hiring", "we are hiring",
+            "recruitment", "recruit", "career", "careers", "employment", "opportunity", "job opportunity",
+            "hiring now", "immediate hiring", "walk-in interview", "interview", "join our team", "apply now",
+            "apply today", "position", "open position", "available position", "full time", "part time",
+            "internship", "intern", "graduate trainee", "freshers welcome", "experienced candidates",
+            "remote job", "work from home", "freelancer", "contract job", "temporary job",
+            # Job Information
+            "job title", "salary", "monthly salary", "annual salary", "benefits", "responsibilities",
+            "requirements", "qualifications", "skills", "experience", "age limit", "gender",
+            "working hours", "shift", "location",
+            # Application Keywords
+            "apply", "submit cv", "send cv", "resume", "upload resume", "email resume", "hr department",
+            "human resources", "recruitment team", "recruitment officer", "hiring manager", "apply here",
+            "click to apply", "deadline", "closing date",
+            # Contact & Company Keywords
+            "company email", "company website", "whatsapp", "telegram", "linkedin", "qr code",
+            "pvt ltd", "plc", "ltd", "inc", "corporation", "technologies", "solutions",
+            # Recruitment Platforms
+            "linkedin", "indeed", "glassdoor", "topjobs", "rozee", "cvlk", "careerfirst", "jobstreet",
+            # Multilingual Terms (Sinhala, Tamil, Hindi, Bengali)
             "බඳවාගැනීම්", "රැකියා", "ඇබෑර්තු", "ඉල්ලුම්", "වැටුප්", "පුරප්පාඩු", "බඳවා ගනු ලැබේ",
             "வேலை", "நியமனம்", "விண்ணப்பிக்க", "சம்பளம்", "காலியிடம்", "வேலைவாய்ப்பு",
             "भर्ती", "नौकरी", "आवेदन", "वेतन", "रिक्तियां", "रोजगार",
@@ -648,33 +662,52 @@ class IntakeAgent:
         ]
         
         combined_lower = (combined_text or "").lower()
-        has_recruitment_signals = any(kw in combined_lower for kw in recruitment_keywords)
+        
+        # Count distinct matched recruitment indicators
+        matched_indicators = [kw for kw in recruitment_indicator_list if kw in combined_lower]
+        indicator_count = len(matched_indicators)
 
-        # Check non-job indicator keywords in extracted text (e.g. Graduation, University Ceremony, Event Banner)
-        non_job_keywords = ["congratulations", "graduates", "graduation", "university", "faculty", "ceremony", "event", "workshop", "hackathon", "portfolio", "banner", "degree"]
+        # Check structured fields extracted by Vision AI
+        v_job_title = (vision_res.get("jobTitle") if isinstance(vision_res, dict) else "") or ""
+        v_salary = (vision_res.get("salary") if isinstance(vision_res, dict) else "") or ""
+        has_vision_job_details = bool(v_job_title or v_salary)
+
+        # Non-Job indicator keywords (selfies, product ads, graduation, university events, certificates, bank statements, memes, artwork)
+        non_job_keywords = [
+            "congratulations", "graduates", "graduation", "university", "faculty", "ceremony",
+            "event", "workshop", "seminar", "hackathon", "portfolio", "banner", "degree",
+            "discount", "sale", "product", "mobile phone", "laptop", "clothing", "food",
+            "vehicle", "real estate", "concert", "certificate", "report card", "lecture",
+            "passport", "driving licence", "bank statement", "invoice", "receipt", "meme", "artwork"
+        ]
         has_non_job_signals = any(kw in combined_lower for kw in non_job_keywords)
 
-        # If vision_res explicitly returns "Not a Job Advertisement" OR non-job classification
-        if isinstance(vision_res, dict) and vision_res.get("posterType"):
-            p_type = str(vision_res.get("posterType")).strip().lower()
-            if "not a job" in p_type or "non-job" in p_type or "graduation" in p_type or "event" in p_type or "ceremony" in p_type:
-                is_job_poster = False
-                poster_type = "Not a Job Advertisement"
-
-        if combined_text and not has_recruitment_signals and not is_unreadable:
+        # Decision Rules:
+        # 1. If 3 or more indicators matched OR vision extracted explicit jobTitle/salary -> Job Advertisement
+        # 2. If 1-2 indicators matched but uncertain -> Classify as Possible Job Advertisement and continue scam analysis!
+        # 3. Only classify as Not a Job Advertisement if indicator_count < 3 and non-job signals are clear.
+        if indicator_count >= 3 or has_vision_job_details:
+            is_job_poster = True
+            poster_type = "Job Advertisement"
+        elif indicator_count in [1, 2] and not has_non_job_signals:
+            # Uncertain / Borderline poster -> Classify as "Possible Job Advertisement" & continue analysis
+            is_job_poster = True
+            poster_type = "Possible Job Advertisement"
+        else:
+            # Explicit Non-Job Poster (fewer than 3 indicators + clear non-job characteristics)
             is_job_poster = False
             poster_type = "Not a Job Advertisement"
             
             if has_non_job_signals:
-                poster_summary = "The provided file is an educational graduation poster, university announcement, or event flyer. It contains no job recruitment vacancies or career offers."
+                poster_summary = "The uploaded file appears to be an educational graduation poster, university announcement, certificate, event flyer, or promotional product media with no job recruitment vacancies."
             elif source == "url":
                 poster_summary = f"The URL '{extracted_domain or input_url}' appears to be a commercial studio, portfolio, or web service. No recruitment vacancies, career opportunities, or hiring announcements were found."
             elif source == "document":
                 poster_summary = f"The uploaded document '{filename}' contains general text or documentation, but no job vacancies or recruitment offers."
             else:
-                poster_summary = "The provided content contains general text or media, but no job recruitment vacancies or career announcements."
+                poster_summary = "The provided content contains general media or text, but no job recruitment vacancies or career announcements."
 
-            validation_error = "This URL or content is not a recruitment or job advertisement. Scam analysis has not been performed because the analyzed content is unrelated to job recruitment."
+            validation_error = "Please upload a recruitment or job advertisement (PNG, JPG, JPEG, WEBP, PDF, DOC, or DOCX) for scam analysis."
 
         hf_json = {
             "posterType": poster_type if not is_job_poster else "Job Advertisement",
