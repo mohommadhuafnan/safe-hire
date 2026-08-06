@@ -159,7 +159,7 @@ class IntakeAgent:
                             }
                         ]
                     }
-                    res = requests.post(rest_url, json=rest_payload, timeout=3.5)
+                    res = requests.post(rest_url, json=rest_payload, timeout=25)
                     if res.status_code == 200:
                         data = res.json()
                         candidates = data.get("candidates") if isinstance(data, dict) else None
@@ -206,7 +206,7 @@ class IntakeAgent:
                         "max_tokens": 4096
                     }
 
-                    res = requests.post(url, json=payload, headers=headers, timeout=3.5)
+                    res = requests.post(url, json=payload, headers=headers, timeout=25)
                     if res.status_code == 200:
                         data = res.json()
                         choices = data.get("choices") if isinstance(data, dict) else None
@@ -266,7 +266,7 @@ class IntakeAgent:
                     "temperature": 0.1,
                     "max_tokens": 2048
                 }
-                res = requests.post(deepseek_url, json=payload, headers=headers, timeout=3.5)
+                res = requests.post(deepseek_url, json=payload, headers=headers, timeout=20)
                 if res.status_code == 200:
                     data = res.json()
                     choices = data.get("choices") if isinstance(data, dict) else None
@@ -374,7 +374,7 @@ class IntakeAgent:
                     "isOverlayRequired": False,
                     "OCREngine": 2
                 }
-                res = requests.post(url, data=payload, timeout=4.0)
+                res = requests.post(url, data=payload, timeout=8.0)
                 if res.status_code == 200:
                     data = res.json()
                     parsed_results = data.get("ParsedResults", [])
@@ -412,7 +412,7 @@ class IntakeAgent:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) SAFE-HIRE/1.0 AI Scam Verification Engine"
             }
-            response = requests.get(url_clean, headers=headers, timeout=6)
+            response = requests.get(url_clean, headers=headers, timeout=12)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, "html.parser")
                 for element in soup(["script", "style", "nav", "footer", "header", "noscript"]):
