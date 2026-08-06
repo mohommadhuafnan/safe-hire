@@ -683,36 +683,42 @@ class IntakeAgent:
         has_non_job_signals = any(kw in combined_lower for kw in non_job_keywords)
 
         # Decision Rules:
-        # 1. If 3 or more indicators matched OR vision extracted explicit jobTitle/salary -> Job Advertisement
-        # 2. If 1-2 indicators matched but uncertain -> Classify as Possible Job Advertisement and continue scam analysis!
-        # 3. If source is an uploaded image poster and no explicit non-job signals are detected -> Classify as Recruitment Poster & perform full AI audit!
-        # 4. Only classify as Not a Job Advertisement if explicit non-job signals (graduation, product ad, certificate) are present.
-        if indicator_count >= 3 or has_vision_job_details:
+        # 1. If Vision AI ran and determined is_job_poster is False -> Respect Vision AI classification & set Not a Job Advertisement!
+        # 2. If 3 or more indicators matched OR vision extracted explicit jobTitle/salary -> Job Advertisement
+        # 3. If 1-2 indicators matched -> Classify as Possible Job Advertisement and continue scam analysis
+        # 4. If indicator_count is 0 and no job keywords exist -> Classify as Not a Job Advertisement
+        if isinstance(vision_res, dict) and vision_res.get("is_job_poster") is False:
+            is_job_poster = False
+            poster_type = "Not a Job Advertisement"
+            poster_summary = vision_res.get("poster_summary") or vision_res.get("posterSummary") or "The uploaded image contains general graphics, nature, personal media, or non-career content with no job recruitment vacancies."
+            validation_error = "This image is not a recruitment or job advertisement. Scam analysis has not been performed because the analyzed image is unrelated to job recruitment."
+        elif indicator_count >= 3 or has_vision_job_details:
             is_job_poster = True
             poster_type = "Job Advertisement"
         elif indicator_count in [1, 2] and not has_non_job_signals:
             # Uncertain / Borderline poster -> Classify as "Possible Job Advertisement" & continue analysis
             is_job_poster = True
             poster_type = "Possible Job Advertisement"
-        elif source == "image" and not has_non_job_signals:
-            # Uploaded poster image without explicit non-job flags -> Treat as Recruitment Poster for full Gemini Vision audit
-            is_job_poster = True
-            poster_type = "Uploaded Poster Advertisement"
-        else:
-            # Explicit Non-Job Poster (clear non-job characteristics like graduation, certificate, product sale)
+        elif source == "image" and has_non_job_signals:
+            # Explicit Non-Job Poster (graduation, agricultural product, certificate, personal photo)
             is_job_poster = False
             poster_type = "Not a Job Advertisement"
-            
-            if has_non_job_signals:
-                poster_summary = "The uploaded file appears to be an educational graduation poster, university announcement, certificate, event flyer, or promotional product media with no job recruitment vacancies."
-            elif source == "url":
-                poster_summary = f"The URL '{extracted_domain or input_url}' appears to be a commercial studio, portfolio, or web service. No recruitment vacancies, career opportunities, or hiring announcements were found."
+            poster_summary = "The uploaded file appears to be an educational graduation poster, university announcement, nature/agricultural photo, certificate, or promotional product media with no job recruitment vacancies."
+            validation_error = "Please upload a recruitment or job advertisement (PNG, JPG, JPEG, WEBP, PDF, DOC, or DOCX) for scam analysis."
+        elif indicator_count == 0 and not has_vision_job_details:
+            # No job recruitment keywords found anywhere in text or vision
+            is_job_poster = False
+            poster_type = "Not a Job Advertisement"
+            if source == "url":
+                poster_summary = f"The URL '{extracted_domain or input_url}' appears to be a commercial studio, portfolio, or web service. No recruitment vacancies or hiring announcements were found."
             elif source == "document":
                 poster_summary = f"The uploaded document '{filename}' contains general text or documentation, but no job vacancies or recruitment offers."
             else:
                 poster_summary = "The provided content contains general media or text, but no job recruitment vacancies or career announcements."
-
             validation_error = "Please upload a recruitment or job advertisement (PNG, JPG, JPEG, WEBP, PDF, DOC, or DOCX) for scam analysis."
+        else:
+            is_job_poster = True
+            poster_type = "Uploaded Poster Advertisement"
 
         hf_json = {
             "posterType": poster_type if not is_job_poster else "Job Advertisement",
