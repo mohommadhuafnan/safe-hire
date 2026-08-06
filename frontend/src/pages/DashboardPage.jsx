@@ -396,13 +396,13 @@ const DashboardPage = () => {
 
           </div>
 
-          {/* FULL SCREEN FUTURISTIC AI SCANNING OVERLAY WITH NO TOP BLANK SPACE */}
+          {/* FULL SCREEN FUTURISTIC AI SCANNING OVERLAY WITH NO TOP GAPS & FROSTED GLASS BACKDROP BLUR */}
           {analyzing && (
-            <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-3xl w-screen h-screen flex flex-col justify-between p-3 sm:p-6 animate-fade-in overflow-hidden">
-              <div className="w-full h-full max-w-7xl mx-auto glass-panel p-5 sm:p-8 rounded-3xl border border-indigo-500/50 shadow-[0_0_80px_rgba(99,102,241,0.45)] relative overflow-hidden bg-slate-950/90 flex flex-col justify-between">
+            <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[9999] bg-slate-950/75 backdrop-blur-2xl w-screen h-screen min-h-screen flex flex-col items-center justify-center p-3 sm:p-6 animate-fade-in overflow-y-auto">
+              <div className="w-full max-w-6xl my-auto glass-panel p-5 sm:p-8 rounded-3xl border border-indigo-500/50 shadow-[0_0_100px_rgba(99,102,241,0.5)] relative overflow-hidden bg-slate-900/85 backdrop-blur-xl flex flex-col justify-between space-y-6">
                 
                 {/* Top Scanner Status Bar */}
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/40">
                       <BrainCircuit className="w-6 h-6 text-sky-400 animate-pulse" />
@@ -419,14 +419,14 @@ const DashboardPage = () => {
                   </span>
                 </div>
 
-                {/* DUAL-COLUMN FULL-SCREEN SCANNER BODY */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center flex-1 my-2">
+                {/* DUAL-COLUMN SCANNER BODY */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center flex-1">
                   
                   {/* LEFT/TOP: LARGE HIGH-RES POSTER LASER SCANNER PREVIEW */}
                   <div className="md:col-span-7 flex justify-center">
                     {previewUrl ? (
-                      <div className="relative w-full max-w-md rounded-2xl overflow-hidden border-2 border-indigo-500/60 bg-slate-900 shadow-[0_0_40px_rgba(99,102,241,0.45)]">
-                        <img src={previewUrl} alt="Poster Under Scan" className="w-full max-h-[380px] sm:max-h-[440px] object-contain opacity-90 p-2 mx-auto" />
+                      <div className="relative w-full max-w-md rounded-2xl overflow-hidden border-2 border-indigo-500/60 bg-slate-950/90 shadow-[0_0_50px_rgba(99,102,241,0.5)]">
+                        <img src={previewUrl} alt="Poster Under Scan" className="w-full max-h-[380px] sm:max-h-[420px] object-contain opacity-95 p-2 mx-auto" />
                         
                         {/* Neon Cyan Laser Scan Line */}
                         <div className="absolute inset-x-0 h-2 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_25px_#38bdf8] animate-scan z-20 pointer-events-none" />
@@ -443,7 +443,7 @@ const DashboardPage = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="w-full h-64 rounded-2xl border border-indigo-500/30 bg-slate-900/60 flex flex-col items-center justify-center text-center p-8 space-y-4">
+                      <div className="w-full h-64 rounded-2xl border border-indigo-500/30 bg-slate-950/70 flex flex-col items-center justify-center text-center p-8 space-y-4">
                         <div className="w-16 h-16 rounded-3xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/40">
                           <Sparkles className="w-8 h-8 text-sky-400 animate-spin" />
                         </div>
@@ -461,7 +461,7 @@ const DashboardPage = () => {
                       5-Agent Pipeline Execution
                     </div>
                     {pipelineSteps.map((stepName, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs">
+                      <div key={idx} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 text-xs backdrop-blur-md">
                         <div className="flex items-center space-x-3">
                           {idx + 1 < currentStep ? (
                             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
