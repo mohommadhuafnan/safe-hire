@@ -106,7 +106,7 @@ const HistoryPage = () => {
         <div>
           <div className="flex items-center space-x-2 text-emerald-400 font-semibold text-xs mb-1">
             <HistoryIcon className="w-4 h-4 text-emerald-400" />
-            <span>ANALYSIS RECORDS • {historyItems.length} {historyItems.length === 1 ? 'RECORD' : 'RECORDS'} STORED</span>
+            <span>{t('history.title', 'Your Analysis History')} • {historyItems.length} {historyItems.length === 1 ? 'RECORD' : 'RECORDS'} STORED</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
             {t('history.title', 'Your Analysis History')}
@@ -278,7 +278,7 @@ const HistoryPage = () => {
 
                     {/* View Report Link */}
                     <span className="text-indigo-400 font-semibold hover:underline flex items-center pl-1 text-[11px]">
-                      Report <ExternalLink className="w-3 h-3 ml-1" />
+                      {t('history.view_detail', 'Full Report')} <ExternalLink className="w-3 h-3 ml-1" />
                     </span>
                   </div>
                 </div>

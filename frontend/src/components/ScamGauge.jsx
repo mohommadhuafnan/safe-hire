@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertCircle, CheckCircle, ShieldAlert, AlertTriangle, ShieldCheck, Zap } from 'lucide-react';
 
 const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) => {
+  const { t } = useTranslation();
   const isNotJobPoster = score === 'N/A' || riskLevel === 'Not a Job Advertisement' || riskLevel === 'Unreadable Image' || (typeof score === 'string' && score.toUpperCase() === 'N/A');
   const numScore = isNaN(Number(score)) ? 0 : Number(score);
   const normalizedScore = Math.min(100, Math.max(0, numScore));
@@ -13,7 +15,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
         bgColor: 'bg-sky-500/10',
         borderColor: 'border-sky-500/30',
         textColor: 'text-sky-400',
-        label: riskLevel.toUpperCase(),
+        label: riskLevel === 'Not a Job Advertisement' ? t('risk_levels.not_job_ad', 'NOT A JOB ADVERTISEMENT') : t('risk_levels.unreadable_image', 'UNREADABLE IMAGE'),
         icon: AlertCircle
       };
     } else if (normalizedScore >= 81) {
@@ -22,7 +24,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
         bgColor: 'bg-rose-500/10',
         borderColor: 'border-rose-500/30',
         textColor: 'text-rose-400',
-        label: 'VERY HIGH SCAM RISK',
+        label: t('risk_levels.very_high_risk', 'VERY HIGH SCAM RISK'),
         icon: ShieldAlert
       };
     } else if (normalizedScore >= 61) {
@@ -31,7 +33,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
         bgColor: 'bg-orange-500/10',
         borderColor: 'border-orange-500/30',
         textColor: 'text-orange-400',
-        label: 'HIGH SCAM RISK',
+        label: t('risk_levels.high_risk', 'HIGH SCAM RISK'),
         icon: AlertTriangle
       };
     } else if (normalizedScore >= 41) {
@@ -40,7 +42,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
         bgColor: 'bg-amber-500/10',
         borderColor: 'border-amber-500/30',
         textColor: 'text-amber-400',
-        label: 'MEDIUM RISK',
+        label: t('risk_levels.medium_risk', 'MEDIUM RISK'),
         icon: AlertCircle
       };
     } else if (normalizedScore >= 21) {
@@ -49,7 +51,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
         bgColor: 'bg-yellow-500/10',
         borderColor: 'border-yellow-500/30',
         textColor: 'text-yellow-400',
-        label: 'LOW RISK',
+        label: t('risk_levels.low_risk', 'LOW RISK'),
         icon: ShieldCheck
       };
     } else {
@@ -58,7 +60,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
         bgColor: 'bg-emerald-500/10',
         borderColor: 'border-emerald-500/30',
         textColor: 'text-emerald-400',
-        label: 'VERY LOW RISK / GENUINE',
+        label: t('risk_levels.very_low_risk', 'VERY LOW RISK / GENUINE'),
         icon: CheckCircle
       };
     }
@@ -83,7 +85,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
       {/* Top Confidence Badge */}
       <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-900/90 border border-slate-800 text-[11px] font-semibold text-sky-400">
         <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-        <span>{confidenceScore}% AI Confidence Precision</span>
+        <span>{confidenceScore}% {t('risk_levels.confidence_precision', 'AI Confidence Precision')}</span>
       </div>
 
       {/* Gauge Arc */}
@@ -111,7 +113,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
         {/* Center Score Display */}
         <div className="absolute top-10 flex flex-col items-center">
           <span className="text-4xl font-extrabold text-white tracking-tight">{isNotJobPoster ? 'N/A' : normalizedScore}</span>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Scam Probability Score</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('dashboard.scam_score', 'Scam Probability Score')}</span>
         </div>
       </div>
 
@@ -119,7 +121,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
       <div className={`px-4 py-1.5 rounded-full flex items-center space-x-2 border ${risk.borderColor} ${risk.bgColor}`}>
         <IconComponent className={`w-4 h-4 ${risk.textColor}`} />
         <span className={`text-xs font-extrabold ${risk.textColor} uppercase tracking-wider`}>
-          {riskLevel || risk.label}
+          {risk.label}
         </span>
       </div>
 

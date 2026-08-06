@@ -107,6 +107,11 @@ const DashboardPage = () => {
     user?.preferred_language || i18n.resolvedLanguage || i18n.language?.split('-')[0] || 'en'
   );
 
+  const handleLanguageChange = (lang) => {
+    setTargetLanguage(lang);
+    i18n.changeLanguage(lang);
+  };
+
   // Pipeline Execution State
   const [analyzing, setAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -114,12 +119,24 @@ const DashboardPage = () => {
   const [error, setError] = useState('');
 
   const pipelineSteps = [
-    'Stage 1: Intake Agent (Text Ingestion, OCR & Language Detect)',
-    'Stage 2: Linguistic Risk Agent (EMSCAD Urgency & Fee Detection)',
-    'Stage 3: Verification Agent (WHOIS & Safe Browsing Check)',
-    'Stage 4: Reasoning Agent (Scam Probability Score Calculation)',
-    'Stage 5: Recommendation Agent (Generating Personalised Advice)'
+    t('overlay.stage_1', 'Stage 1: Intake Agent (Text Ingestion, OCR & Language Detect)'),
+    t('overlay.stage_2', 'Stage 2: Linguistic Risk Agent (EMSCAD Urgency & Fee Detection)'),
+    t('overlay.stage_3', 'Stage 3: Verification Agent (WHOIS & Safe Browsing Check)'),
+    t('overlay.stage_4', 'Stage 4: Reasoning Agent (Scam Probability Score Calculation)'),
+    t('overlay.stage_5', 'Stage 5: Recommendation Agent (Generating Personalised Advice)')
   ];
+
+  const getRiskLevelLabel = (level) => {
+    if (!level) return t('risk_levels.low_risk', 'LOW RISK');
+    if (level === 'Not a Job Advertisement') return t('risk_levels.not_job_ad', 'NOT A JOB ADVERTISEMENT');
+    if (level === 'Unreadable Image') return t('risk_levels.unreadable_image', 'UNREADABLE IMAGE');
+    if (level === 'Severe Risk' || level === 'Very High Risk') return t('risk_levels.very_high_risk', 'VERY HIGH SCAM RISK');
+    if (level === 'High Risk') return t('risk_levels.high_risk', 'HIGH SCAM RISK');
+    if (level === 'Medium Risk' || level === 'Moderate Risk') return t('risk_levels.medium_risk', 'MEDIUM RISK');
+    if (level === 'Low Risk') return t('risk_levels.low_risk', 'LOW RISK');
+    if (level === 'Very Low Risk') return t('risk_levels.very_low_risk', 'VERY LOW RISK / GENUINE');
+    return level;
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -219,13 +236,13 @@ const DashboardPage = () => {
           <div>
             <div className="flex items-center space-x-2 text-indigo-400 font-semibold text-[11px] sm:text-xs mb-1">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>AUTHENTICATED STUDENT DASHBOARD • 5-AGENT AI PIPELINE</span>
+              <span>{t('dashboard.authenticated_dashboard', 'AUTHENTICATED STUDENT DASHBOARD • 5-AGENT AI PIPELINE')}</span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-100 tracking-tight">
-              Welcome back, <span className="gradient-text">{user?.full_name || 'Student'}</span>
+              {t('dashboard.welcome_back', 'Welcome back,')} <span className="gradient-text">{user?.full_name || 'Student'}</span>
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              Analyze job postings, recruitment screenshots, or URLs for scam risk signals in seconds.
+              {t('dashboard.welcome_sub', 'Analyze job postings, recruitment screenshots, or URLs for scam risk signals in seconds.')}
             </p>
           </div>
 
@@ -234,8 +251,8 @@ const DashboardPage = () => {
             <div className="px-3.5 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold flex items-center space-x-2">
               <Crown className="w-4 h-4 text-amber-400 animate-pulse" />
               <div>
-                <span className="block text-[10px] text-amber-400/80 font-mono uppercase">Current Plan</span>
-                <span className="text-xs font-bold text-amber-300">Free Tier (LKR 0)</span>
+                <span className="block text-[10px] text-amber-400/80 font-mono uppercase">{t('dashboard.current_plan', 'Current Plan')}</span>
+                <span className="text-xs font-bold text-amber-300">{t('dashboard.free_tier', 'Free Tier (LKR 0)')}</span>
               </div>
             </div>
 
@@ -244,7 +261,7 @@ const DashboardPage = () => {
               className="flex items-center space-x-2 px-4 py-2.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition shadow-sm"
             >
               <History className="w-4 h-4 text-emerald-400" />
-              <span>Past Verifications</span>
+              <span>{t('dashboard.past_verifications', 'Past Verifications')}</span>
             </Link>
           </div>
         </div>
@@ -313,7 +330,7 @@ const DashboardPage = () => {
               {activeTab === 'text' && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-2">
-                    Paste Job Offer / Email / WhatsApp Message:
+                    {t('dashboard.label_text_offer', 'Paste Job Offer / Email / WhatsApp Message:')}
                   </label>
                   <textarea
                     rows={7}
@@ -329,7 +346,7 @@ const DashboardPage = () => {
               {activeTab === 'image' && (
                 <div className="space-y-3">
                   <label className="block text-xs font-semibold text-slate-300">
-                    Upload Job Poster, Flyer, or Document (PDF, Word, Image):
+                    {t('dashboard.label_image_upload', 'Upload Job Poster, Flyer, or Document (PDF, Word, Image):')}
                   </label>
                   <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-2xl p-6 text-center cursor-pointer bg-slate-900/50 transition">
                     <input
@@ -348,9 +365,9 @@ const DashboardPage = () => {
                         </div>
                       )}
                       <span className="text-xs font-bold text-slate-200">
-                        {selectedFile ? selectedFile.name : 'Click to select file (PDF, DOC, DOCX, PNG, JPG, WEBP)'}
+                        {selectedFile ? selectedFile.name : t('dashboard.click_select_file', 'Click to select file (PDF, DOC, DOCX, PNG, JPG, WEBP)')}
                       </span>
-                      <span className="text-[10px] text-slate-500 mt-1">Supported Formats: PDF (.pdf), Word (.doc, .docx), Images (.png, .jpg, .jpeg, .webp)</span>
+                      <span className="text-[10px] text-slate-500 mt-1">{t('dashboard.supported_formats', 'Supported Formats: PDF (.pdf), Word (.doc, .docx), Images (.png, .jpg, .jpeg, .webp)')}</span>
                     </label>
                   </div>
                 </div>
@@ -360,7 +377,7 @@ const DashboardPage = () => {
               {activeTab === 'url' && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-2">
-                    Paste Job Offer URL / Company Website / Social Link:
+                    {t('dashboard.label_url_input', 'Paste Job Offer URL / Company Website / Social Link:')}
                   </label>
                   <input
                     type="url"
@@ -377,7 +394,7 @@ const DashboardPage = () => {
                 <span className="text-xs font-medium text-slate-400">{t('dashboard.select_lang')}:</span>
                 <select
                   value={targetLanguage}
-                  onChange={(e) => setTargetLanguage(e.target.value)}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
                   className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none cursor-pointer"
                 >
                   <option value="en">English (EN)</option>
@@ -397,12 +414,12 @@ const DashboardPage = () => {
                 {analyzing ? (
                   <>
                     <Sparkles className="w-5 h-5 animate-spin" />
-                    <span>Executing 5-Agent AI Pipeline...</span>
+                    <span>{t('dashboard.analyzing', 'Executing 5-Agent AI Pipeline...')}</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>Run 5-Agent AI Analysis</span>
+                    <span>{t('dashboard.analyze_btn', 'Run 5-Agent AI Analysis')}</span>
                   </>
                 )}
               </button>
@@ -423,13 +440,13 @@ const DashboardPage = () => {
                     </div>
                     <div>
                       <h3 className="text-base sm:text-lg font-extrabold text-slate-100 uppercase tracking-wider">
-                        SAFE-HIRE AI 5-Agent Multimodal Scanner Active
+                        {t('overlay.scanner_active_title', 'SAFE-HIRE AI 5-Agent Multimodal Scanner Active')}
                       </h3>
-                      <p className="text-xs text-slate-400">Deep Neural Verification & Vision OCR Mining in Progress...</p>
+                      <p className="text-xs text-slate-400">{t('overlay.scanner_active_sub', 'Deep Neural Verification & Vision OCR Mining in Progress...')}</p>
                     </div>
                   </div>
                   <span className="text-xs font-mono font-bold text-sky-300 bg-sky-500/20 px-3.5 py-1.5 rounded-full border border-sky-400/40 animate-pulse">
-                    ⚡ NEURAL SCANNING
+                    ⚡ {t('overlay.neural_scanning', 'NEURAL SCANNING')}
                   </span>
                 </div>
 
@@ -450,10 +467,10 @@ const DashboardPage = () => {
                         
                         {/* HUD Corner Markers */}
                         <div className="absolute top-3 left-3 text-[10px] font-mono font-bold text-cyan-300 bg-slate-950/90 px-3 py-1 rounded-lg border border-cyan-500/40 shadow">
-                          [OCR TEXT MINING & EXTRACTION]
+                          {t('overlay.ocr_extraction_hud', '[OCR TEXT MINING & EXTRACTION]')}
                         </div>
                         <div className="absolute bottom-3 right-3 text-[10px] font-mono font-bold text-emerald-300 bg-slate-950/90 px-3 py-1 rounded-lg border border-emerald-500/40 shadow">
-                          [GEMINI 3.6 VISION AI]
+                          {t('overlay.gemini_vision_hud', '[GEMINI VISION AI]')}
                         </div>
                       </div>
                     ) : (
@@ -462,8 +479,8 @@ const DashboardPage = () => {
                           <Sparkles className="w-8 h-8 text-sky-400 animate-spin" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold text-slate-200">Processing Job Offer Details</h4>
-                          <p className="text-xs text-slate-400 mt-1">Executing deep NLP linguistic audit & domain WHOIS lookup</p>
+                          <h4 className="text-sm font-bold text-slate-200">{t('overlay.processing_job_offer', 'Processing Job Offer Details')}</h4>
+                          <p className="text-xs text-slate-400 mt-1">{t('overlay.executing_nlp_whois', 'Executing deep NLP linguistic audit & domain WHOIS lookup')}</p>
                         </div>
                       </div>
                     )}
@@ -472,7 +489,7 @@ const DashboardPage = () => {
                   {/* RIGHT/BOTTOM: 5-AGENT NEURAL PIPELINE NODES */}
                   <div className="md:col-span-5 space-y-3">
                     <div className="text-xs font-bold text-slate-300 uppercase tracking-wider pb-1 border-b border-slate-800/80">
-                      5-Agent Pipeline Execution
+                      {t('overlay.pipeline_execution_title', '5-Agent Pipeline Execution')}
                     </div>
                     {pipelineSteps.map((stepName, idx) => (
                       <div key={idx} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 text-xs backdrop-blur-md">
@@ -490,7 +507,7 @@ const DashboardPage = () => {
                         </div>
                         {idx + 1 === currentStep && (
                           <span className="text-[10px] font-bold text-sky-400 animate-pulse font-mono bg-sky-500/15 px-2.5 py-1 rounded-md border border-sky-500/30">
-                            ANALYZING...
+                            {t('overlay.analyzing_status', 'ANALYZING...')}
                           </span>
                         )}
                       </div>
@@ -518,14 +535,14 @@ const DashboardPage = () => {
                   <div>
                     <div className="flex items-center space-x-2">
                       <h3 className="text-base sm:text-lg font-extrabold text-slate-100 tracking-tight">
-                        Full AI Audit Report & Verification Certificate
+                        {t('dashboard.full_report_title', 'Full AI Audit Report & Verification Certificate')}
                       </h3>
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        VERIFIED
+                        {t('dashboard.verified_badge', 'VERIFIED')}
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Analyzed on {new Date(result.created_at || Date.now()).toLocaleString()} • Target: {user?.full_name || 'Student'}
+                      {t('dashboard.analyzed_on', 'Analyzed on')} {new Date(result.created_at || Date.now()).toLocaleString()} • {t('dashboard.target_user', 'Target')}: {user?.full_name || 'Student'}
                     </p>
                   </div>
                 </div>
@@ -536,7 +553,7 @@ const DashboardPage = () => {
                     <Globe className="w-3.5 h-3.5 text-sky-400" />
                     <select
                       value={i18n.language}
-                      onChange={(e) => i18n.changeLanguage(e.target.value)}
+                      onChange={(e) => handleLanguageChange(e.target.value)}
                       className="bg-transparent border-none outline-none text-slate-200 cursor-pointer text-xs font-semibold"
                     >
                       <option value="en" className="bg-slate-900">English (EN)</option>
@@ -573,7 +590,7 @@ const DashboardPage = () => {
               {/* VERDICT BANNER & METADATA GRID */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Risk Level Verdict</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('dashboard.risk_level', 'Risk Level Verdict')}</span>
                   <span className={`text-sm font-extrabold block ${
                     result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A'
                       ? 'text-sky-400'
@@ -587,19 +604,19 @@ const DashboardPage = () => {
                       ? 'text-yellow-400'
                       : 'text-emerald-400'
                   }`}>
-                    {result.risk_level}
+                    {getRiskLevelLabel(result.risk_level)}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Scam Risk Score</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('dashboard.scam_score', 'Scam Risk Score')}</span>
                   <span className="text-sm font-extrabold text-slate-100 font-mono block">
                     {result.scam_score === 'N/A' || typeof result.scam_score === 'string' ? result.scam_score : `${result.scam_score} / 100`}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Language & Pipeline</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('dashboard.select_lang', 'Language')} & Pipeline</span>
                   <span className="text-xs font-bold text-sky-400 uppercase block">
                     {result.language || 'EN'} • 5-Agent Engine
                   </span>
@@ -612,46 +629,46 @@ const DashboardPage = () => {
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                     <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center space-x-2">
                       <Globe className="w-4 h-4 text-sky-400" />
-                      <span>Live URL & WHOIS Domain Security Audit</span>
+                      <span>{t('dashboard.domain_security_title', 'Live URL & WHOIS Domain Security Audit')}</span>
                     </h4>
                     <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800">
-                      WHOIS LIVE AUDIT
+                      {t('dashboard.whois_live_audit', 'WHOIS LIVE AUDIT')}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">Target Domain / URL</span>
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.target_domain', 'Target Domain / URL')}</span>
                       <span className="font-semibold text-slate-200 text-xs truncate block">
                         {result.verification_data?.domain || result.intake_data?.domain || result.input_url || 'Verified URL'}
                       </span>
                     </div>
 
                     <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">Domain Age</span>
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.domain_age', 'Domain Age')}</span>
                       <span className={`font-semibold text-xs block ${result.verification_data?.whois_info?.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
                         {result.verification_data?.whois_info?.registered_days !== undefined && result.verification_data?.whois_info?.registered_days !== null
-                          ? `${result.verification_data.whois_info.registered_days} Days (Registered)` 
+                          ? `${result.verification_data.whois_info.registered_days} ${t('dashboard.registered_days_suffix', 'Days (Registered)')}` 
                           : 'Verified Registry Standard'}
                       </span>
                     </div>
 
                     <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">Registrar</span>
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registrar', 'Registrar')}</span>
                       <span className="font-semibold text-slate-200 text-xs truncate block">
                         {result.verification_data?.whois_info?.registrar || 'ICANN Accredited Registrar'}
                       </span>
                     </div>
 
                     <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">Safe Browsing</span>
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.safe_browsing', 'Safe Browsing')}</span>
                       <span className="font-semibold text-emerald-400 text-xs truncate block">
                         {result.verification_data?.safe_browsing?.status || 'Verified Safe'}
                       </span>
                     </div>
 
                     <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 sm:col-span-2">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">WHOIS Domain Security Status</span>
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.whois_security_status', 'WHOIS Domain Security Status')}</span>
                       <span className={`font-semibold text-xs block ${result.verification_data?.whois_info?.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
                         {result.verification_data?.whois_info?.whois_status || 'Domain Registry Standard'}
                       </span>
@@ -665,10 +682,10 @@ const DashboardPage = () => {
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
                   <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-2">
                     <BrainCircuit className="w-4 h-4 text-indigo-400" />
-                    <span>Reasoning Explanation</span>
+                    <span>{t('dashboard.reasoning_explanation', 'Reasoning Explanation')}</span>
                   </h4>
                   <span className="text-[10px] font-mono text-sky-400 bg-sky-500/10 px-2.5 py-0.5 rounded-full border border-sky-500/20">
-                    AI AUDIT RATIONALE
+                    {t('dashboard.ai_audit_rationale', 'AI AUDIT RATIONALE')}
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans whitespace-pre-line bg-slate-900/90 p-4 rounded-xl border border-slate-800/80">
@@ -681,7 +698,7 @@ const DashboardPage = () => {
                 <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-3">
                   <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center space-x-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Tailored Student Safety Recommendations</span>
+                    <span>{t('dashboard.tailored_student_safety_recommendations', 'Tailored Student Safety Recommendations')}</span>
                   </h4>
                   <ul className="space-y-2">
                     {result.recommendations.map((rec, idx) => (
@@ -698,10 +715,10 @@ const DashboardPage = () => {
               <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] text-slate-400 gap-2">
                 <div className="flex items-center space-x-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Verified by <strong>SAFE-HIRE Agentic AI Engine</strong></span>
+                  <span>{t('dashboard.verified_by_engine', 'Verified by SAFE-HIRE Agentic AI Engine')}</span>
                 </div>
                 <div className="flex items-center space-x-2 font-mono text-[10px] text-slate-500">
-                  <span>Report Hash: {result.id}</span>
+                  <span>{t('dashboard.report_hash', 'Report Hash')}: {result.id}</span>
                 </div>
               </div>
 
@@ -744,9 +761,9 @@ const DashboardPage = () => {
               <div className="p-4 rounded-2xl bg-indigo-500/10 text-indigo-400 mb-4 border border-indigo-500/20">
                 <BrainCircuit className="w-10 h-10" />
               </div>
-              <h3 className="text-base font-bold text-slate-200 mb-1">Awaiting Job Offer Input</h3>
+              <h3 className="text-base font-bold text-slate-200 mb-1">{t('dashboard.awaiting_input_title', 'Awaiting Job Offer Input')}</h3>
               <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-                Submit job offer text, a screenshot image, or a URL to trigger the 5-Agent AI pipeline.
+                {t('dashboard.awaiting_input_desc', 'Submit job offer text, a screenshot image, or a URL to trigger the 5-Agent AI pipeline.')}
               </p>
             </div>
           )}

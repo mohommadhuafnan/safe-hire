@@ -57,18 +57,18 @@ const AgentBreakdown = ({ result }) => {
       content: (
         <div className="space-y-3 text-xs text-slate-300">
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span>Primary Language:</span>
+            <span>{t('agents.primary_language', 'Primary Language')}:</span>
             <span className="font-semibold text-sky-400 uppercase">{result.language || 'English'}</span>
           </div>
 
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span>Ingestion Processing Status:</span>
-            <span className="font-semibold text-emerald-400">Text & Metadata Extracted</span>
+            <span>{t('agents.ingestion_status', 'Ingestion Processing Status')}:</span>
+            <span className="font-semibold text-emerald-400">{t('agents.ingestion_text_extracted', 'Text & Metadata Extracted')}</span>
           </div>
 
           {(intakeData?.ocr_text || result.risk_factors?.ocr_text) && (
             <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-              <span className="font-semibold block mb-1 text-slate-200">OCR Screenshot Extracted Text:</span>
+              <span className="font-semibold block mb-1 text-slate-200">{t('agents.ocr_extracted_text', 'OCR Screenshot Extracted Text')}:</span>
               <p className="text-[11px] text-slate-400 font-mono leading-relaxed bg-slate-950 p-2 rounded border border-slate-800/80 whitespace-pre-wrap max-h-48 overflow-y-auto">
                 "{intakeData?.ocr_text || result.risk_factors?.ocr_text}"
               </p>
@@ -88,56 +88,56 @@ const AgentBreakdown = ({ result }) => {
         <div className="space-y-3 text-xs">
           {/* Payment Demand Indicator */}
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">Upfront Payment / Fee Demands:</span>
+            <span className="text-slate-300 font-medium">{t('agents.payment_demands', 'Upfront Payment / Fee Demands')}:</span>
             {riskFactors.has_payment_demand ? (
               <span className="flex items-center text-rose-400 font-bold">
-                <XCircle className="w-4 h-4 mr-1" /> Flagged Demand
+                <XCircle className="w-4 h-4 mr-1" /> {t('agents.flagged_demand', 'Flagged Demand')}
               </span>
             ) : (
               <span className="flex items-center text-emerald-400 font-semibold">
-                <CheckCircle2 className="w-4 h-4 mr-1" /> No Fee Requests
+                <CheckCircle2 className="w-4 h-4 mr-1" /> {t('agents.no_fee_requests', 'No Fee Requests')}
               </span>
             )}
           </div>
 
           {/* Urgency Pressure Tactics */}
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">Urgency Pressure Tactics:</span>
+            <span className="text-slate-300 font-medium">{t('agents.urgency_tactics', 'Urgency Pressure Tactics')}:</span>
             {riskFactors.has_urgency_tactics ? (
               <span className="flex items-center text-amber-400 font-bold">
-                <AlertTriangle className="w-4 h-4 mr-1" /> Urgency Keywords Found
+                <AlertTriangle className="w-4 h-4 mr-1" /> {t('agents.urgency_keywords_found', 'Urgency Keywords Found')}
               </span>
             ) : (
               <span className="flex items-center text-emerald-400 font-semibold">
-                <CheckCircle2 className="w-4 h-4 mr-1" /> Normal Timeline
+                <CheckCircle2 className="w-4 h-4 mr-1" /> {t('agents.normal_timeline', 'Normal Timeline')}
               </span>
             )}
           </div>
 
           {/* Corporate Impersonation Check */}
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">Corporate Email Mismatch:</span>
+            <span className="text-slate-300 font-medium">{t('agents.email_mismatch', 'Corporate Email Mismatch')}:</span>
             {riskFactors.has_impersonation_risk ? (
               <span className="flex items-center text-rose-400 font-bold">
-                <XCircle className="w-4 h-4 mr-1" /> Free Email Domain (@{riskFactors.free_email})
+                <XCircle className="w-4 h-4 mr-1" /> {t('agents.free_email_domain', 'Free Email Domain')} (@{riskFactors.free_email})
               </span>
             ) : (
               <span className="flex items-center text-emerald-400 font-semibold">
-                <CheckCircle2 className="w-4 h-4 mr-1" /> Verified Domain Email
+                <CheckCircle2 className="w-4 h-4 mr-1" /> {t('agents.verified_domain_email', 'Verified Domain Email')}
               </span>
             )}
           </div>
 
           {/* Suspicious Channels */}
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">Suspicious Contact Channels:</span>
+            <span className="text-slate-300 font-medium">{t('agents.suspicious_channels', 'Suspicious Contact Channels')}:</span>
             {riskFactors.has_suspicious_channels ? (
               <span className="flex items-center text-amber-400 font-bold">
-                <AlertTriangle className="w-4 h-4 mr-1" /> Informal Channels Detected
+                <AlertTriangle className="w-4 h-4 mr-1" /> {t('agents.informal_channels_detected', 'Informal Channels Detected')}
               </span>
             ) : (
               <span className="flex items-center text-emerald-400 font-semibold">
-                <CheckCircle2 className="w-4 h-4 mr-1" /> Official Channels Used
+                <CheckCircle2 className="w-4 h-4 mr-1" /> {t('agents.official_channels_used', 'Official Channels Used')}
               </span>
             )}
           </div>
@@ -145,7 +145,7 @@ const AgentBreakdown = ({ result }) => {
           {/* Matched Keywords list */}
           {riskFactors.matched_payment?.length > 0 && (
             <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300">
-              <span className="font-semibold block mb-1">🚨 Flagged Financial Terms:</span>
+              <span className="font-semibold block mb-1">🚨 {t('agents.flagged_financial_terms', 'Flagged Financial Terms')}:</span>
               <div className="flex flex-wrap gap-1.5">
                 {riskFactors.matched_payment.slice(0, 8).map((kw, i) => (
                   <span key={i} className="px-2 py-0.5 rounded bg-rose-500/20 text-[10px] font-mono">
@@ -158,7 +158,7 @@ const AgentBreakdown = ({ result }) => {
 
           {riskFactors.impersonation_flags?.length > 0 && (
             <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
-              <span className="font-semibold block mb-1">🎭 Impersonation Flags:</span>
+              <span className="font-semibold block mb-1">🎭 {t('agents.impersonation_flags', 'Impersonation Flags')}:</span>
               <ul className="space-y-0.5">
                 {riskFactors.impersonation_flags.map((flag, i) => (
                   <li key={i} className="text-[11px]">• {flag}</li>
@@ -179,12 +179,12 @@ const AgentBreakdown = ({ result }) => {
       content: (
         <div className="space-y-3 text-xs">
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">Target Domain:</span>
+            <span className="text-slate-300 font-medium">{t('agents.target_domain', 'Target Domain')}:</span>
             <span className="font-mono text-sky-400 font-bold">{verificationData.domain || 'Not Specified'}</span>
           </div>
 
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">Domain Age:</span>
+            <span className="text-slate-300 font-medium">{t('agents.domain_age', 'Domain Age')}:</span>
             <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
               {verificationData.whois_info?.domain_years ? `${verificationData.whois_info.domain_years} Years (${verificationData.whois_info.registered_days} Days Old)` : (verificationData.whois_info?.registered_days ? `${verificationData.whois_info.registered_days} Days Old` : 'Verified Registry Standard')}
             </span>
@@ -192,27 +192,27 @@ const AgentBreakdown = ({ result }) => {
 
           {verificationData.whois_info?.creation_date && (
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-              <span className="text-slate-300 font-medium">Domain Registration Date:</span>
+              <span className="text-slate-300 font-medium">{t('agents.domain_registration_date', 'Domain Registration Date')}:</span>
               <span className="font-mono text-slate-200">{new Date(verificationData.whois_info.creation_date).toLocaleDateString()}</span>
             </div>
           )}
 
           {verificationData.whois_info?.registrar && (
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-              <span className="text-slate-300 font-medium">Domain Registrar:</span>
+              <span className="text-slate-300 font-medium">{t('agents.domain_registrar', 'Domain Registrar')}:</span>
               <span className="font-semibold text-slate-300">{verificationData.whois_info.registrar}</span>
             </div>
           )}
 
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">WHOIS Domain Security Status:</span>
+            <span className="text-slate-300 font-medium">{t('agents.whois_security_status', 'WHOIS Domain Security Status')}:</span>
             <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
               {verificationData.whois_info?.whois_status || 'Domain Registry Standard'}
             </span>
           </div>
 
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">Google Safe Browsing API:</span>
+            <span className="text-slate-300 font-medium">{t('agents.safe_browsing_api', 'Google Safe Browsing API')}:</span>
             <span className={`font-semibold ${verificationData.safe_browsing?.flagged ? 'text-rose-400' : 'text-emerald-400'}`}>
               {verificationData.safe_browsing?.status || 'SAFE'}
             </span>
@@ -227,7 +227,7 @@ const AgentBreakdown = ({ result }) => {
             }`}>
               <div className="flex items-center justify-between">
                 <span className="font-bold text-slate-200 flex items-center">
-                  📧 Abstract API Email Validation
+                  📧 {t('agents.abstract_email_validation', 'Abstract API Email Validation')}
                 </span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                   verificationData.email_validation.is_high_risk
@@ -240,21 +240,21 @@ const AgentBreakdown = ({ result }) => {
 
               <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1">
                 <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">Contact Email:</span>
+                  <span className="text-slate-400 block text-[10px]">{t('agents.contact_email', 'Contact Email')}:</span>
                   <span className="text-sky-300 font-semibold truncate block">{verificationData.email_validation.email}</span>
                 </div>
                 <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">Quality Score:</span>
+                  <span className="text-slate-400 block text-[10px]">{t('agents.quality_score', 'Quality Score')}:</span>
                   <span className="text-emerald-400 font-semibold">{Math.round((verificationData.email_validation.quality_score || 0.5) * 100)} / 100</span>
                 </div>
                 <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">Disposable Email:</span>
+                  <span className="text-slate-400 block text-[10px]">{t('agents.disposable_email', 'Disposable Email')}:</span>
                   <span className={`font-bold ${verificationData.email_validation.is_disposable_email ? 'text-rose-400' : 'text-emerald-400'}`}>
                     {verificationData.email_validation.is_disposable_email ? '⚠️ YES (Disposable)' : '✅ NO'}
                   </span>
                 </div>
                 <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">SMTP Validation:</span>
+                  <span className="text-slate-400 block text-[10px]">{t('agents.smtp_validation', 'SMTP Validation')}:</span>
                   <span className={`font-bold ${verificationData.email_validation.is_smtp_valid === false ? 'text-rose-400' : 'text-emerald-400'}`}>
                     {verificationData.email_validation.is_smtp_valid === false ? '❌ Failed' : '✅ Valid'}
                   </span>
