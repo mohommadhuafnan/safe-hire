@@ -587,6 +587,29 @@ const DashboardPage = () => {
                 </div>
               </div>
 
+              {/* NOT A JOB ADVERTISEMENT OR 100% GENUINE OFFER NOTIFICATION BANNERS */}
+              {(result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A') ? (
+                <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/30 flex items-start space-x-3 text-sky-300">
+                  <AlertCircle className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-sky-200 text-xs sm:text-sm uppercase tracking-wider">⚠️ NOT A JOB ADVERTISEMENT DETECTED (100% PRECISION)</h4>
+                    <p className="text-xs text-sky-300/90 mt-1 leading-relaxed">
+                      The SAFE-HIRE 5-Agent AI pipeline analyzed your uploaded media and confirmed with 100% precision that it contains no job recruitment vacancies, salary listings, or employment offers. Scam probability scoring is not applicable to non-recruitment media.
+                    </p>
+                  </div>
+                </div>
+              ) : (Number(result.scam_score) === 0 || (typeof result.scam_score === 'number' && result.scam_score <= 20)) && (
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start space-x-3 text-emerald-300">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-emerald-200 text-xs sm:text-sm uppercase tracking-wider">✅ 100% GENUINE RECRUITMENT OFFER (0% SCAM RISK)</h4>
+                    <p className="text-xs text-emerald-300/90 mt-1 leading-relaxed">
+                      SAFE-HIRE AI verified this job poster. No upfront fee demands, company impersonation, or fake Telegram/WhatsApp channels were detected. A score of 0/100 indicates <strong>0% Scam Probability (100% Safe & Authentic Job Vacancy)</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* VERDICT BANNER & METADATA GRID */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
@@ -604,14 +627,16 @@ const DashboardPage = () => {
                       ? 'text-yellow-400'
                       : 'text-emerald-400'
                   }`}>
-                    {getRiskLevelLabel(result.risk_level)}
+                    {result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A' 
+                      ? 'NOT A JOB ADVERTISEMENT' 
+                      : (Number(result.scam_score) === 0 ? '100% GENUINE OFFER (0% SCAM RISK)' : getRiskLevelLabel(result.risk_level))}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('dashboard.scam_score', 'Scam Risk Score')}</span>
                   <span className="text-sm font-extrabold text-slate-100 font-mono block">
-                    {result.scam_score === 'N/A' || typeof result.scam_score === 'string' ? result.scam_score : `${result.scam_score} / 100`}
+                    {result.scam_score === 'N/A' || typeof result.scam_score === 'string' ? result.scam_score : `${result.scam_score} / 100 (${result.scam_score === 0 ? '0% Scam Risk' : 'Scam Probability'})`}
                   </span>
                 </div>
 

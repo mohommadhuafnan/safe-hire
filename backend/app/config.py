@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
     # Gemini AI Settings
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "") if os.getenv("GEMINI_API_KEY", "").startswith("AIzaSy") else os.getenv("GOOGLE_SAFE_BROWSING_API_KEY", "AIzaSyC6BIN5Bl3vIsLZVb7_5EiJqwQc6oik2x4")
     GEMINI_MODEL_PRIMARY: str = os.getenv("GEMINI_MODEL_PRIMARY", "gemini-2.5-flash")
     GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "60"))
 

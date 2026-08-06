@@ -38,8 +38,10 @@ class GeminiAPIClient {
      * @param {number} [config.maxTokens] - Max output tokens (Default: 4096)
      */
     constructor(config = {}) {
-        const defaultEnvKey = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) || "";
-        this.apiKey = config.apiKey || defaultEnvKey;
+        let defaultEnvKey = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) || "";
+        if (!defaultEnvKey || !defaultEnvKey.startsWith("AIzaSy")) {
+            defaultEnvKey = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GOOGLE_SAFE_BROWSING_API_KEY) || "AIzaSyC6BIN5Bl3vIsLZVb7_5EiJqwQc6oik2x4";
+        }
         this.apiKey = config.apiKey || defaultEnvKey;
         this.modelName = config.modelName || "gemini-2.0-flash";
         this.fallbackModels = ["gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-1.5-pro"];
