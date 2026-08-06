@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     GEMINI_MODEL_PRIMARY: str = os.getenv("GEMINI_MODEL_PRIMARY", "gemini-2.5-flash")
     GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "60"))
 
+    # Hugging Face AI Settings
+    HF_TOKEN: str = os.getenv("HF_TOKEN", os.getenv("DEEPSEEK_V4_API_KEY", ""))
+    HF_MODEL_NAME: str = os.getenv("HF_MODEL_NAME", "Qwen/Qwen2.5-VL-7B-Instruct:featherless-ai")
+    HF_API_BASE_URL: str = os.getenv("HF_API_BASE_URL", "https://router.huggingface.co/v1")
+
     # DeepSeek V4 AI Settings (Hugging Face Router)
     DEEPSEEK_V4_API_KEY: str = os.getenv("DEEPSEEK_V4_API_KEY", "")
     DEEPSEEK_API_BASE_URL: str = os.getenv("DEEPSEEK_API_BASE_URL", "https://router.huggingface.co/v1")

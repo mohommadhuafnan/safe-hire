@@ -75,122 +75,77 @@ class IntakeAgent:
             return image_bytes
 
     @staticmethod
-    def analyze_poster_with_gemini_vision(image_bytes: bytes) -> dict:
-        """Analyze poster image directly using Gemini Multimodal Vision API (OCR + visual risk intelligence) with DeepSeek V4 fallback."""
+    def analyze_poster_with_huggingface_vision(image_bytes: bytes) -> dict:
+        """
+        Agent 1: Hugging Face Vision Model (Qwen/Qwen2.5-VL-7B-Instruct:featherless-ai)
+        Analyzes uploaded image/poster, extracts structured JSON fields:
+        posterType, companyName, jobTitle, salary, website, email, phone, address, posterText, qrCode.
+        Determines whether the upload is a job advertisement.
+        """
         if not image_bytes:
-            return {"is_job_poster": True, "extracted_text": "", "claimed_brand": "", "validation_error": None}
+            return {
+                "posterType": "Not a Job Advertisement",
+                "companyName": "",
+                "jobTitle": "",
+                "salary": "",
+                "website": "",
+                "email": "",
+                "phone": "",
+                "address": "",
+                "posterText": "",
+                "qrCode": "",
+                "is_job_poster": False,
+                "validation_error": "No image provided."
+            }
 
         image_bytes = IntakeAgent.optimize_image_bytes(image_bytes)
-        gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
+        hf_token = getattr(settings, "HF_TOKEN", "") or getattr(settings, "DEEPSEEK_V4_API_KEY", "") or ""
         mime_type = IntakeAgent.detect_image_mime_type(image_bytes)
         base64_img = base64.b64encode(image_bytes).decode('utf-8')
+        data_url = f"data:{mime_type};base64,{base64_img}"
 
         prompt = """
-        You are SAFE-HIRE's Senior Multimodal Vision & Recruitment Fraud Intelligence System.
+        You are SAFE-HIRE's Senior Multimodal Vision & Poster Intelligence Agent.
+        Analyze the uploaded image or poster carefully and perform full text & entity extraction.
 
-        PRIMARY OBJECTIVE:
-        Your first task is to determine whether the uploaded image/document is actually a **job advertisement or recruitment poster** before performing any scam analysis.
+        OBJECTIVES:
+        1. Determine whether the upload is a Job Recruitment Advertisement or NOT a job advertisement.
+           - Set "posterType" to "Not a Job Advertisement" if it is an event flyer, product ad, personal photo, certificate, meme, landscape, general graphics, portfolio, etc.
+           - Set "posterType" to "Job Advertisement" (or specific recruitment type) if it contains job hiring, recruitment vacancies, employment offers, or career announcements.
 
-        STEP 1: JOB POSTER DETECTION
-        Determine whether it contains a recruitment advertisement.
-        Look for indicators such as:
-        - Job title
-        - Hiring announcement
-        - Apply Now
-        - Vacancy
-        - Recruitment
-        - Careers
-        - Position Available
-        - Company name
-        - Salary
-        - Qualifications
-        - Responsibilities
-        - Contact information
-        - QR code for application
-        - Website or email for applying
-        - Deadline
-        - Employment details
+        2. Extract structured fields cleanly.
 
-        CLASSIFICATION RULES:
-        1. If the image IS NOT a job poster:
-           - "is_job_poster": false
-           - "poster_type": "Not a Job Advertisement"
-           - "poster_summary": "Clear 2-3 sentence summary explaining what the uploaded image actually contains (e.g. event poster, product advertisement, social media graphic, certificate, meme, landscape photo, personal photo, logo, flyer, infographic, etc.)."
-           - "validation_error": "This image is not a recruitment or job advertisement. Scam analysis has not been performed because the uploaded image is unrelated to job recruitment."
-
-        2. If the image IS a job poster:
-           - "is_job_poster": true
-           - "poster_type": "Job Advertisement"
-           - "poster_summary": "Summary of hiring offer, company name, position, salary, contact info."
-
-        3. If the image quality is poor or unreadable:
-           - "is_unreadable": true
-           - "validation_error": "The image quality is poor or unreadable. Please upload a clearer image of the recruitment advertisement for accurate analysis."
-
-        Return ONLY a raw JSON object with this exact structure (no markdown code blocks):
+        Return ONLY a raw JSON object with this exact structure (no markdown formatting outside the JSON):
         {
-          "is_job_poster": boolean,
-          "is_unreadable": false,
-          "poster_type": "Not a Job Advertisement | Job Advertisement | Specific Type",
-          "poster_summary": "Clear summary of what the image actually contains",
-          "extracted_text": "Extracted text from image",
-          "claimed_brand": "Company name if present",
-          "job_title": "Position title if present",
-          "contact_email": "Email if present",
-          "phone_number": "Phone if present",
-          "validation_error": null or string
+          "posterType": "Not a Job Advertisement | Job Advertisement",
+          "companyName": "Company name if present, else empty string",
+          "jobTitle": "Job title or position if present, else empty string",
+          "salary": "Salary or compensation if present, else empty string",
+          "website": "Company website or link if present, else empty string",
+          "email": "Contact email if present, else empty string",
+          "phone": "Contact phone if present, else empty string",
+          "address": "Physical location or address if present, else empty string",
+          "posterText": "Complete extracted text content from the poster image",
+          "qrCode": "QR code URL or content if present, else empty string"
         }
         """
 
-        models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"]
+        models_to_try = [
+            getattr(settings, "HF_MODEL_NAME", "Qwen/Qwen2.5-VL-7B-Instruct:featherless-ai"),
+            "Qwen/Qwen2.5-VL-7B-Instruct",
+            "Qwen/Qwen2-VL-7B-Instruct"
+        ]
 
-        # 1. Try Gemini Vision REST generateContent Endpoint (most reliable for multimodal base64)
-        if gemini_key:
+        # 1. Try Hugging Face Router Vision Models via HF_TOKEN
+        if hf_token:
+            hf_url = getattr(settings, "HF_API_BASE_URL", "https://router.huggingface.co/v1").rstrip("/") + "/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {hf_token}",
+                "Content-Type": "application/json"
+            }
+
             for model_name in models_to_try:
                 try:
-                    rest_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
-                    rest_payload = {
-                        "contents": [
-                            {
-                                "parts": [
-                                    {"text": prompt},
-                                    {"inline_data": {"mime_type": mime_type, "data": base64_img}}
-                                ]
-                            }
-                        ]
-                    }
-                    res = requests.post(rest_url, json=rest_payload, timeout=25)
-                    if res.status_code == 200:
-                        data = res.json()
-                        candidates = data.get("candidates") if isinstance(data, dict) else None
-                        content = ""
-                        if candidates and isinstance(candidates, list) and len(candidates) > 0 and isinstance(candidates[0], dict):
-                            content_obj = candidates[0].get("content") or {}
-                            if isinstance(content_obj, dict):
-                                parts = content_obj.get("parts") or []
-                                if parts and isinstance(parts, list) and len(parts) > 0 and isinstance(parts[0], dict):
-                                    content = parts[0].get("text") or ""
-                        clean = (content or "").strip().replace("```json", "").replace("```", "").strip()
-                        if "<think>" in clean and "</think>" in clean:
-                            clean = clean.split("</think>")[-1].strip()
-                        if clean:
-                            parsed = json.loads(clean)
-                            if isinstance(parsed, dict):
-                                logger.info(f"Gemini Vision ({model_name}) REST poster analysis success: is_job_poster={parsed.get('is_job_poster')}")
-                                return parsed
-                    elif res.status_code == 429:
-                        logger.warning(f"Gemini Vision ({model_name}) HTTP 429 quota notice. Trying next model...")
-                except Exception as e:
-                    logger.warning(f"Gemini Vision REST notice for model {model_name}: {e}")
-
-            # 2. Try Gemini Vision OpenAI Compatibility Endpoint
-            for model_name in models_to_try:
-                try:
-                    url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-                    headers = {
-                        "Authorization": f"Bearer {gemini_key}",
-                        "Content-Type": "application/json"
-                    }
                     payload = {
                         "model": model_name,
                         "messages": [
@@ -198,15 +153,14 @@ class IntakeAgent:
                                 "role": "user",
                                 "content": [
                                     {"type": "text", "text": prompt},
-                                    {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{base64_img}"}}
+                                    {"type": "image_url", "image_url": {"url": data_url}}
                                 ]
                             }
                         ],
                         "temperature": 0.1,
-                        "max_tokens": 4096
+                        "max_tokens": 1500
                     }
-
-                    res = requests.post(url, json=payload, headers=headers, timeout=25)
+                    res = requests.post(hf_url, headers=headers, json=payload, timeout=25)
                     if res.status_code == 200:
                         data = res.json()
                         choices = data.get("choices") if isinstance(data, dict) else None
@@ -221,14 +175,84 @@ class IntakeAgent:
                         if clean:
                             parsed = json.loads(clean)
                             if isinstance(parsed, dict):
-                                logger.info(f"Gemini Vision ({model_name}) OpenAI endpoint success: is_job_poster={parsed.get('is_job_poster')}")
+                                logger.info(f"Hugging Face Vision ({model_name}) extraction success: posterType={parsed.get('posterType')}")
+                                is_job = str(parsed.get("posterType", "")).strip().lower() != "not a job advertisement"
+                                parsed["is_job_poster"] = is_job
+                                parsed["extracted_text"] = parsed.get("posterText", "")
+                                parsed["claimed_brand"] = parsed.get("companyName", "")
+                                parsed["job_title"] = parsed.get("jobTitle", "")
+                                parsed["contact_email"] = parsed.get("email", "")
+                                parsed["phone_number"] = parsed.get("phone", "")
+                                parsed["poster_summary"] = f"Poster Type: {parsed.get('posterType')} | Company: {parsed.get('companyName')} | Job: {parsed.get('jobTitle')}"
+                                return parsed
+                    else:
+                        logger.warning(f"Hugging Face Vision ({model_name}) HTTP {res.status_code}: {res.text[:200]}")
+                except Exception as e:
+                    logger.warning(f"Hugging Face Vision notice for model {model_name}: {e}")
+
+        # 2. High-Availability Fallback to Gemini Multimodal Vision API if HF Router is overloaded
+        gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
+        if gemini_key:
+            for g_model in ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"]:
+                try:
+                    rest_url = f"https://generativelanguage.googleapis.com/v1beta/models/{g_model}:generateContent?key={gemini_key}"
+                    rest_payload = {
+                        "contents": [
+                            {
+                                "parts": [
+                                    {"text": prompt},
+                                    {"inline_data": {"mime_type": mime_type, "data": base64_img}}
+                                ]
+                            }
+                        ]
+                    }
+                    res = requests.post(rest_url, json=rest_payload, timeout=25)
+                    if res.status_code == 200:
+                        data = res.json()
+                        candidates = data.get("candidates") or []
+                        content = ""
+                        if candidates and isinstance(candidates[0], dict):
+                            parts = (candidates[0].get("content") or {}).get("parts") or []
+                            if parts and isinstance(parts[0], dict):
+                                content = parts[0].get("text") or ""
+                        clean = (content or "").strip().replace("```json", "").replace("```", "").strip()
+                        if clean:
+                            parsed = json.loads(clean)
+                            if isinstance(parsed, dict):
+                                logger.info(f"Gemini Vision Fallback ({g_model}) extraction success: posterType={parsed.get('posterType')}")
+                                is_job = str(parsed.get("posterType", "")).strip().lower() != "not a job advertisement"
+                                parsed["is_job_poster"] = is_job
+                                parsed["extracted_text"] = parsed.get("posterText", "")
+                                parsed["claimed_brand"] = parsed.get("companyName", "")
+                                parsed["job_title"] = parsed.get("jobTitle", "")
+                                parsed["contact_email"] = parsed.get("email", "")
+                                parsed["phone_number"] = parsed.get("phone", "")
+                                parsed["poster_summary"] = f"Poster Type: {parsed.get('posterType')} | Company: {parsed.get('companyName')}"
                                 return parsed
                 except Exception as e:
-                    logger.warning(f"Gemini Vision OpenAI endpoint notice for model {model_name}: {e}")
+                    logger.warning(f"Gemini Vision Fallback notice for {g_model}: {e}")
 
-        # 3. Fallback: High-Accuracy OCR + DeepSeek V4 Flash AI Analysis
-        logger.info("Executing Fallback OCR + DeepSeek V4 Flash poster analysis...")
+        # 3. Final Fallback: OCR text extraction
         ocr_text = IntakeAgent.extract_text_from_image(image_bytes)
+        return {
+            "posterType": "Job Advertisement" if ocr_text else "Not a Job Advertisement",
+            "companyName": "",
+            "jobTitle": "",
+            "salary": "",
+            "website": "",
+            "email": "",
+            "phone": "",
+            "address": "",
+            "posterText": ocr_text or "",
+            "qrCode": "",
+            "is_job_poster": bool(ocr_text),
+            "extracted_text": ocr_text or "",
+            "claimed_brand": "",
+            "job_title": "",
+            "contact_email": "",
+            "phone_number": "",
+            "poster_summary": "Extracted text via OCR."
+        }
 
         deepseek_key = getattr(settings, "DEEPSEEK_V4_API_KEY", "") or ""
         deepseek_url = getattr(settings, "DEEPSEEK_API_BASE_URL", "https://router.huggingface.co/v1") + "/chat/completions"
@@ -508,6 +532,7 @@ class IntakeAgent:
         is_job_poster = True
         is_unreadable = False
         validation_error = None
+        vision_res = {}
 
         if input_text and input_text.strip():
             combined_text += input_text.strip() + "\n"
@@ -524,20 +549,20 @@ class IntakeAgent:
                     is_unreadable = True
                     validation_error = "The uploaded document quality is poor or unreadable. Please upload a clearer document or file."
             else:
-                vision_res = self.analyze_poster_with_gemini_vision(image_bytes) or {}
+                vision_res = self.analyze_poster_with_huggingface_vision(image_bytes) or {}
                 if not isinstance(vision_res, dict):
                     vision_res = {}
                 is_job_poster = vision_res.get("is_job_poster", True)
                 is_unreadable = vision_res.get("is_unreadable", False)
-                poster_type = vision_res.get("poster_type", "General Poster / Flyer")
+                poster_type = vision_res.get("posterType", vision_res.get("poster_type", "General Poster / Flyer"))
                 poster_summary = vision_res.get("poster_summary", "")
                 validation_error = vision_res.get("validation_error")
 
-                ocr_extracted_text = vision_res.get("extracted_text", "")
+                ocr_extracted_text = vision_res.get("posterText") or vision_res.get("extracted_text", "")
                 if not ocr_extracted_text:
                     ocr_extracted_text = self.extract_text_from_image(image_bytes)
                 
-                claimed_brand = vision_res.get("claimed_brand", "")
+                claimed_brand = vision_res.get("companyName") or vision_res.get("claimed_brand", "")
                 combined_text += f"\n[POSTER TEXT & METADATA]:\n{ocr_extracted_text}\n"
                 if claimed_brand:
                     combined_text += f"Claimed Brand: {claimed_brand}\n"
@@ -560,6 +585,14 @@ class IntakeAgent:
         telegram_handles = list(set(re.findall(r'@[A-Za-z0-9_]{4,}', combined_text)))
         phone_numbers = list(set(re.findall(r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}', combined_text)))
 
+        if isinstance(vision_res, dict):
+            if vision_res.get("email") and vision_res.get("email") not in emails_found:
+                emails_found.append(vision_res.get("email"))
+            if vision_res.get("website") and vision_res.get("website") not in urls_found:
+                urls_found.append(vision_res.get("website"))
+            if vision_res.get("phone") and vision_res.get("phone") not in phone_numbers:
+                phone_numbers.append(vision_res.get("phone"))
+
         # Extract domain from URLs or emails if no domain provided
         if not extracted_domain and urls_found:
             try:
@@ -581,7 +614,6 @@ class IntakeAgent:
 
         # Check Job Poster Recruitment Indicators across combined text (Image, Document, URL, Text)
         recruitment_keywords = [
-            # English explicit recruitment vacancy indicators
             "we are hiring", "is hiring", "hiring for", "job vacancy", "job vacancies",
             "recruitment notice", "career opportunity", "career opportunities", "position available",
             "positions available", "apply now", "urgent vacancy", "urgent hiring", "walk-in interview",
@@ -589,20 +621,22 @@ class IntakeAgent:
             "job requirement", "job requirements", "job description", "qualifications required",
             "responsibilities:", "apply at", "apply officially", "send your cv", "send your resume",
             "vacancy for", "hiring immediate", "looking for candidate", "looking for a",
-            # Sinhala (සිංහල)
             "බඳවාගැනීම්", "රැකියා", "ඇබෑර්තු", "ඉල්ලුම්", "වැටුප්", "පුරප්පාඩු", "බඳවා ගනු ලැබේ",
-            # Tamil (தமிழ்)
             "வேலை", "நியமனம்", "விண்ணப்பிக்க", "சம்பளம்", "காலியிடம்", "வேலைவாய்ப்பு",
-            # Hindi (हिंदी)
             "भर्ती", "नौकरी", "आवेदन", "वेतन", "रिक्तियां", "रोजगार",
-            # Bengali (বাংলা)
             "নিয়োগ", "চাকরি", "আবেদন", "বেতন", "কাজের"
         ]
         
         combined_lower = (combined_text or "").lower()
         has_recruitment_signals = any(kw in combined_lower for kw in recruitment_keywords)
 
-        if combined_text and not has_recruitment_signals and not is_unreadable:
+        # Respect explicit Hugging Face posterType output
+        if isinstance(vision_res, dict) and vision_res.get("posterType"):
+            if str(vision_res.get("posterType")).strip().lower() == "not a job advertisement":
+                is_job_poster = False
+                poster_type = "Not a Job Advertisement"
+
+        if combined_text and not has_recruitment_signals and not is_unreadable and (isinstance(vision_res, dict) and vision_res.get("posterType") != "Job Advertisement"):
             is_job_poster = False
             poster_type = "Not a Job Advertisement"
             
@@ -614,6 +648,19 @@ class IntakeAgent:
                 poster_summary = "The provided content contains general text or media, but no job recruitment vacancies or career announcements."
 
             validation_error = "This URL or content is not a recruitment or job advertisement. Scam analysis has not been performed because the analyzed content is unrelated to job recruitment."
+
+        hf_json = {
+            "posterType": poster_type if not is_job_poster else "Job Advertisement",
+            "companyName": claimed_brand or (vision_res.get("companyName") if isinstance(vision_res, dict) else ""),
+            "jobTitle": vision_res.get("jobTitle", "") if isinstance(vision_res, dict) else "",
+            "salary": vision_res.get("salary", "") if isinstance(vision_res, dict) else "",
+            "website": vision_res.get("website", "") if isinstance(vision_res, dict) else (urls_found[0] if urls_found else ""),
+            "email": vision_res.get("email", "") if isinstance(vision_res, dict) else (emails_found[0] if emails_found else ""),
+            "phone": vision_res.get("phone", "") if isinstance(vision_res, dict) else (phone_numbers[0] if phone_numbers else ""),
+            "address": vision_res.get("address", "") if isinstance(vision_res, dict) else "",
+            "posterText": ocr_extracted_text or combined_text.strip(),
+            "qrCode": vision_res.get("qrCode", "") if isinstance(vision_res, dict) else ""
+        }
 
         return {
             "cleaned_text": combined_text.strip(),
@@ -628,6 +675,7 @@ class IntakeAgent:
             "is_job_poster": is_job_poster,
             "is_unreadable": is_unreadable,
             "validation_error": validation_error,
+            "hf_json": hf_json,
             "metadata_extracted": {
                 "emails": emails_found,
                 "urls": urls_found,

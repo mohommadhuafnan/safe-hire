@@ -68,72 +68,88 @@ def _extract_json_from_text(text: str) -> Optional[dict]:
     return None
 
 
-def _build_gemini_prompt(cleaned_text: str, linguistic_data: dict, verification_data: dict, target_lang_name: str, language: str) -> str:
-    """Build a clear, structured Gemini scam analysis prompt."""
-    return f"""You are SAFE-HIRE's Senior AI Recruitment Fraud Intelligence Specialist.
-Perform an EXHAUSTIVE analysis of the job posting below and return a single raw JSON object.
+def _build_gemini_prompt(intake_data: Any, linguistic_data: dict, verification_data: dict, target_lang_name: str, language: str) -> str:
+    """Build Gemini reasoning prompt incorporating Hugging Face Vision extracted JSON + Verification Data."""
+    if isinstance(intake_data, dict):
+        hf_json = intake_data.get("hf_json") or {
+            "posterType": intake_data.get("poster_type", "Job Advertisement"),
+            "companyName": intake_data.get("claimed_brand", ""),
+            "jobTitle": "",
+            "salary": "",
+            "website": verification_data.get("domain", ""),
+            "email": (intake_data.get("metadata_extracted") or {}).get("emails", [""])[0] if (intake_data.get("metadata_extracted") or {}).get("emails") else "",
+            "phone": "",
+            "address": "",
+            "posterText": intake_data.get("cleaned_text", ""),
+            "qrCode": ""
+        }
+    else:
+        hf_json = {
+            "posterType": "Job Advertisement",
+            "companyName": "",
+            "jobTitle": "",
+            "salary": "",
+            "website": verification_data.get("domain", ""),
+            "email": "",
+            "phone": "",
+            "address": "",
+            "posterText": str(intake_data or ""),
+            "qrCode": ""
+        }
 
-CRITICAL INSTRUCTION: Output ONLY a raw JSON object. No markdown, no code fences, no extra text before or after the JSON.
+    whois_info = verification_data.get("whois_info") or {}
+    email_val = verification_data.get("email_validation") or {}
+    safe_browsing = verification_data.get("safe_browsing") or {}
 
-[INPUT CONTENT]:
-"{cleaned_text[:4000]}"
+    return f"""You are SAFE-HIRE's Senior AI Recruitment Fraud Reasoning Specialist.
+DO NOT perform OCR. You will receive structured data extracted by the Hugging Face Vision Agent (Qwen/Qwen2.5-VL-7B-Instruct:featherless-ai) and independent company verification intelligence.
 
-[LINGUISTIC ANALYSIS SIGNALS]:
-- Payment/Registration Fee Demanded: {linguistic_data.get('has_payment_demand')}
-- Fee Terms Found: {linguistic_data.get('matched_payment')}
+Your task is to perform advanced reasoning:
+- Analyze scam indicators (upfront fees, laptop deposits, training charges)
+- Detect suspicious recruitment patterns & fake urgency
+- Analyze unrealistic salaries for entry-level/minimal effort roles
+- Analyze company email mismatch (e.g. corporate brand using free @gmail domain)
+- Evaluate domain age, SSL status, WHOIS records, and Google Maps location verification
+- Generate final scam probability score (0-100) and explicit actionable recommendations.
+
+[HUGGING FACE VISION EXTRACTED DATA (Qwen2.5-VL-7B)]:
+{json.dumps(hf_json, indent=2)}
+
+[COMPANY VERIFICATION INTELLIGENCE]:
+- Target Domain: {verification_data.get('domain', 'N/A')}
+- WHOIS Registry Status: {whois_info.get('whois_status', 'Standard')}
+- Domain Age (Days): {whois_info.get('registered_days', 'N/A')}
+- Is New Domain (<90 days): {whois_info.get('is_new_domain', False)}
+- Google Safe Browsing Result: {safe_browsing.get('status', 'SAFE')}
+- Google Maps Location Result: {verification_data.get('google_maps_status', 'Verified / Public Address')}
+- Email Validation Summary: {email_val.get('analysis_summary', 'N/A')}
+- Disposable Email: {email_val.get('is_disposable_email', False)}
+- SMTP Validation: {email_val.get('is_smtp_valid', True)}
+- Corporate Trust Rating: {verification_data.get('verification_trust_score', 80)}/100
+
+[LINGUISTIC SIGNALS]:
+- Upfront Fee Demands: {linguistic_data.get('has_payment_demand')} (Terms: {linguistic_data.get('matched_payment')})
 - Urgency Pressure Tactics: {linguistic_data.get('has_urgency_tactics')}
-- Urgency Keywords: {linguistic_data.get('matched_urgency')}
-- Brand Impersonation Flags: {linguistic_data.get('impersonation_flags')}
-- Suspicious Channels (Telegram/WhatsApp only): {linguistic_data.get('matched_suspicious_terms')}
-- Claimed Brand: {linguistic_data.get('claimed_brand')}
-- Free Email Domain Used: {linguistic_data.get('free_email')}
+- Corporate Email Mismatch: {linguistic_data.get('has_impersonation_risk')} (Free Domain: @{linguistic_data.get('free_email')})
+- Informal Contact Channels: {linguistic_data.get('matched_suspicious_terms')}
 
-[DOMAIN & EMAIL VERIFICATION SIGNALS]:
-- Target Domain: {verification_data.get('domain')}
-- WHOIS Status: {(verification_data.get('whois_info') or {}).get('whois_status')}
-- Domain Age (Days): {(verification_data.get('whois_info') or {}).get('registered_days')}
-- Is New Domain (<90 days): {(verification_data.get('whois_info') or {}).get('is_new_domain')}
-- Safe Browsing Status: {(verification_data.get('safe_browsing') or {}).get('status')}
-- Abstract API Email Analysis: {(verification_data.get('email_validation') or {}).get('analysis_summary')}
-- Recruiter Email Disposable: {(verification_data.get('email_validation') or {}).get('is_disposable_email')}
-- Recruiter Email SMTP Valid: {(verification_data.get('email_validation') or {}).get('is_smtp_valid')}
-- Recruiter Email Quality Score: {(verification_data.get('email_validation') or {}).get('quality_score')}
-- Corporate Trust Score: {verification_data.get('verification_trust_score')}
+[OUTPUT LANGUAGE REQUIREMENT]: {target_lang_name} ({language})
+Write the reasoning explanation natively in {target_lang_name}.
 
-[SCORING RULES & RISK TIERS]:
-- 0–20% → Very Low Risk
-- 21–40% → Low Risk
-- 41–60% → Medium Risk
-- 61–80% → High Risk
-- 81–100% → Very High Risk
-
-Scam Probability Calculation Criteria:
-- Very High Risk (81-100%): Registration/training fee demands, Telegram-only hiring contact, clear brand impersonation with free emails, domain age < 30 days.
-- High Risk (61-80%): Unrealistic high income for minimal effort, suspicious WhatsApp-only contact, unverifiable company details + urgency tactics.
-- Medium Risk (41-60%): Vague job description, generic email domain without corporate domain, unverifiable registry status.
-- Low Risk (21-40%): Standard job ad with minor omissions, no fee requests, valid domain.
-- Very Low Risk (0-20%): Fully authentic corporate job ad with verified official domain, no fee requests, transparent process.
-
-[OUTPUT LANGUAGE]: {target_lang_name} ({language})
-Write the "explanation" field natively in {target_lang_name}.
-
-Return EXACTLY this JSON structure (no extra fields, no markdown):
+CRITICAL: Return ONLY a raw JSON object matching this exact key structure (no markdown fences, no extra text):
 {{
-  "scam_score": <integer 0-100>,
-  "confidence_score": <integer 90-99>,
-  "risk_level": "<Very High Risk | High Risk | Medium Risk | Low Risk | Very Low Risk>",
-  "explanation": "<Multi-section analysis in {target_lang_name}>:\\n\\n📋 POSTER SUMMARY:\\n[Company name, job role, salary, contact info, application method]\\n\\n🎯 SCAM RISK VERDICT:\\n[Explicit FAKE/GENUINE verdict with scam_score and 2-3 sentence reasoning]\\n\\n🔍 DETAILED EVIDENCE & RED FLAGS:\\n[Every specific signal — exact fee terms, email addresses, suspicious contacts, domain age, brand names, or proof of legitimacy]\\n\\n✅ SAFETY CONCLUSION:\\n[Clear final verdict and specific actionable advice for the job seeker]",
+  "riskScore": <integer 0-100>,
+  "riskLevel": "<Severe | High | Medium | Low | Very Low>",
+  "confidence": <integer 90-99>,
+  "isScam": <boolean true/false>,
   "reasons": [
-    "<Specific finding 1 with exact text/keyword from the poster>",
-    "<Specific finding 2 with exact text/keyword from the poster>",
-    "<Specific finding 3 with exact text/keyword from the poster>"
+    "Company website is only X days old.",
+    "Salary is unusually high.",
+    "Uses a free Gmail address instead of a company domain.",
+    "Company registration could not be verified."
   ],
-  "recommendations": [
-    "🚨 <Poster-specific action 1: Mention exact fee amount, email, brand, or contact channel extracted from THIS poster>",
-    "⚠️ <Poster-specific action 2: Mention specific company verification or official career portal for THIS poster>",
-    "📧 <Poster-specific action 3: Email validation or domain security check for THIS poster>",
-    "💡 <Poster-specific action 4: Specific advice on how to report or handle THIS poster>"
-  ],
+  "recommendation": "Do not share personal information until the employer is independently verified.",
+  "explanation": "Multi-section detailed audit breakdown in {target_lang_name}",
   "sub_scores": {{
     "financial_fee_risk": <integer 0-100>,
     "impersonation_risk": <integer 0-100>,
@@ -258,8 +274,9 @@ class ReasoningAgent:
                         if parts_list and isinstance(parts_list, list) and len(parts_list) > 0 and isinstance(parts_list[0], dict):
                             raw = parts_list[0].get("text") or ""
                 parsed = _extract_json_from_text(raw)
-                if parsed and "scam_score" in parsed:
-                    logger.info(f"✅ Gemini REST ({model_name}) success — score: {parsed.get('scam_score')}")
+                if parsed and ("scam_score" in parsed or "riskScore" in parsed):
+                    score_val = parsed.get("riskScore", parsed.get("scam_score"))
+                    logger.info(f"✅ Gemini REST ({model_name}) success — score: {score_val}")
                     return parsed
                 elif raw:
                     logger.warning(f"Gemini REST ({model_name}) returned non-JSON output (len={len(raw)})")
@@ -285,11 +302,6 @@ class ReasoningAgent:
         Used as a secondary attempt when the REST endpoint fails or returns quota errors.
         """
         user_content = [{"type": "text", "text": prompt}]
-        if base64_img:
-            user_content.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:{mime_type};base64,{base64_img}"},
-            })
 
         url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
         headers = {"Authorization": f"Bearer {gemini_key}", "Content-Type": "application/json"}
@@ -312,8 +324,9 @@ class ReasoningAgent:
                     if isinstance(msg, dict):
                         raw = msg.get("content") or ""
                 parsed = _extract_json_from_text(raw)
-                if parsed and "scam_score" in parsed:
-                    logger.info(f"✅ Gemini OpenAI-compat ({model_name}) success — score: {parsed.get('scam_score')}")
+                if parsed and ("scam_score" in parsed or "riskScore" in parsed):
+                    score_val = parsed.get("riskScore", parsed.get("scam_score"))
+                    logger.info(f"✅ Gemini OpenAI-compat ({model_name}) success — score: {score_val}")
                     return parsed
                 elif raw:
                     logger.warning(f"Gemini OpenAI-compat ({model_name}) returned non-JSON (len={len(raw)})")
@@ -332,16 +345,15 @@ class ReasoningAgent:
 
     def call_gemini_ai_reasoning_api(
         self,
-        cleaned_text: str,
+        intake_data: dict,
         linguistic_data: dict,
         verification_data: dict,
         language: str,
         image_bytes: Optional[bytes] = None,
     ) -> Optional[Dict[str, Any]]:
         """
-        Primary reasoning: calls Google Gemini API with optional multimodal image.
-        Tries each model in GEMINI_MODELS via REST first, then OpenAI-compat endpoint,
-        with extended thinking enabled for Gemini 2.5 models.
+        Primary reasoning: calls Google Gemini AI API (no OCR performed).
+        Receives structured HF JSON + verification data.
         """
         gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
         self._log_api_key_status(gemini_key, "Gemini")
@@ -358,24 +370,24 @@ class ReasoningAgent:
         }
         target_lang_name = lang_map.get(language, "English")
 
-        prompt = _build_gemini_prompt(cleaned_text, linguistic_data, verification_data, target_lang_name, language)
+        prompt = _build_gemini_prompt(intake_data, linguistic_data, verification_data, target_lang_name, language)
 
-        # Prepare image data once (reused across all model attempts)
+        # Prepare image data if needed
         from app.agents.intake_agent import IntakeAgent
         mime_type = IntakeAgent.detect_image_mime_type(image_bytes) if image_bytes else "image/png"
         base64_img = base64.b64encode(image_bytes).decode("utf-8") if image_bytes else None
 
-        # Round 1: REST endpoint (supports vision + extended thinking)
+        # Round 1: REST endpoint (supports text/structured data reasoning)
         for model_name in self.GEMINI_MODELS:
-            use_thinking = "2.5" in model_name  # Enable thinking only for 2.5 family
-            result = self._call_gemini_rest(model_name, gemini_key, prompt, base64_img, mime_type, use_thinking)
+            use_thinking = "2.5" in model_name
+            result = self._call_gemini_rest(model_name, gemini_key, prompt, None, mime_type, use_thinking)
             if result:
                 return result
 
-        # Round 2: OpenAI-compat endpoint (fallback for auth/format differences)
+        # Round 2: OpenAI-compat endpoint (fallback)
         logger.info("Gemini REST attempts exhausted. Trying OpenAI-compat endpoint...")
         for model_name in self.GEMINI_MODELS:
-            result = self._call_gemini_openai_compat(model_name, gemini_key, prompt, base64_img, mime_type)
+            result = self._call_gemini_openai_compat(model_name, gemini_key, prompt, None, mime_type)
             if result:
                 return result
 
@@ -430,8 +442,8 @@ class ReasoningAgent:
                     if isinstance(msg, dict):
                         raw = msg.get("content") or ""
                 parsed = _extract_json_from_text(raw)
-                if parsed and "scam_score" in parsed:
-                    logger.info(f"✅ DeepSeek-V4-Flash success — score: {parsed.get('scam_score')}")
+                if parsed and ("scam_score" in parsed or "riskScore" in parsed):
+                    logger.info(f"✅ DeepSeek-V4-Flash success — score: {parsed.get('riskScore', parsed.get('scam_score'))}")
                     return parsed
                 elif raw:
                     logger.warning(f"DeepSeek returned non-JSON output (len={len(raw)})")
