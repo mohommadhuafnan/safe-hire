@@ -289,10 +289,22 @@ class IntakeAgent:
 
         # Rule Engine Fallback check when AI API is unavailable
         recruitment_keywords = [
-            "hiring", "vacancy", "job", "career", "apply", "recruitment", "position",
-            "opportunity", "salary", "full time", "part time", "walk-in", "interview",
-            "qualifications", "responsibilities", "urgent hiring", "join our team",
-            "work from home", "employment", "internship", "looking for"
+            # English explicit recruitment vacancy indicators
+            "we are hiring", "is hiring", "hiring for", "job vacancy", "job vacancies",
+            "recruitment notice", "career opportunity", "career opportunities", "position available",
+            "positions available", "apply now", "urgent vacancy", "urgent hiring", "walk-in interview",
+            "salary:", "full-time", "part-time", "work from home job", "data entry job",
+            "job requirement", "job requirements", "job description", "qualifications required",
+            "responsibilities:", "apply at", "apply officially", "send your cv", "send your resume",
+            "vacancy for", "hiring immediate", "looking for candidate", "looking for a",
+            # Sinhala (සිංහල)
+            "බඳවාගැනීම්", "රැකියා", "ඇබෑර්තු", "ඉල්ලුම්", "වැටුප්", "පුරප්පාඩු", "බඳවා ගනු ලැබේ",
+            # Tamil (தமிழ்)
+            "வேலை", "நியமனம்", "விண்ணப்பிக்க", "சம்பளம்", "காலியிடம்", "வேலைவாய்ப்பு",
+            # Hindi (हिंदी)
+            "भर्ती", "नौकरी", "आवेदन", "वेतन", "रिक्तियां", "रोजगार",
+            # Bengali (বাংলা)
+            "নিয়োগ", "চাকরি", "আবেদন", "বেতন", "কাজের"
         ]
         text_lower = (ocr_text or "").lower()
         has_job_indicators = any(kw in text_lower for kw in recruitment_keywords)
@@ -566,6 +578,42 @@ class IntakeAgent:
 
         detected_lang = self.detect_language(combined_text)
         final_lang = target_language if (target_language and target_language in ["en", "si", "ta", "hi", "bn"]) else detected_lang
+
+        # Check Job Poster Recruitment Indicators across combined text (Image, Document, URL, Text)
+        recruitment_keywords = [
+            # English explicit recruitment vacancy indicators
+            "we are hiring", "is hiring", "hiring for", "job vacancy", "job vacancies",
+            "recruitment notice", "career opportunity", "career opportunities", "position available",
+            "positions available", "apply now", "urgent vacancy", "urgent hiring", "walk-in interview",
+            "salary:", "full-time", "part-time", "work from home job", "data entry job",
+            "job requirement", "job requirements", "job description", "qualifications required",
+            "responsibilities:", "apply at", "apply officially", "send your cv", "send your resume",
+            "vacancy for", "hiring immediate", "looking for candidate", "looking for a",
+            # Sinhala (සිංහල)
+            "බඳවාගැනීම්", "රැකියා", "ඇබෑර්තු", "ඉල්ලුම්", "වැටුප්", "පුරප්පාඩු", "බඳවා ගනු ලැබේ",
+            # Tamil (தமிழ்)
+            "வேலை", "நியமனம்", "விண்ணப்பிக்க", "சம்பளம்", "காலியிடம்", "வேலைவாய்ப்பு",
+            # Hindi (हिंदी)
+            "भर्ती", "नौकरी", "आवेदन", "वेतन", "रिक्तियां", "रोजगार",
+            # Bengali (বাংলা)
+            "নিয়োগ", "চাকরি", "আবেদন", "বেতন", "কাজের"
+        ]
+        
+        combined_lower = (combined_text or "").lower()
+        has_recruitment_signals = any(kw in combined_lower for kw in recruitment_keywords)
+
+        if combined_text and not has_recruitment_signals and not is_unreadable:
+            is_job_poster = False
+            poster_type = "Not a Job Advertisement"
+            
+            if source == "url":
+                poster_summary = f"The URL '{extracted_domain or input_url}' appears to be a commercial studio, portfolio, or web service. No recruitment vacancies, career opportunities, or hiring announcements were found."
+            elif source == "document":
+                poster_summary = f"The uploaded document '{filename}' contains general text or documentation, but no job vacancies or recruitment offers."
+            else:
+                poster_summary = "The provided content contains general text or media, but no job recruitment vacancies or career announcements."
+
+            validation_error = "This URL or content is not a recruitment or job advertisement. Scam analysis has not been performed because the analyzed content is unrelated to job recruitment."
 
         return {
             "cleaned_text": combined_text.strip(),

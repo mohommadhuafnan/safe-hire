@@ -69,11 +69,11 @@ Please upload a clearer, high-resolution image of the recruitment advertisement 
                     "explanation_text": formatted_explanation
                 }
 
-            # Check if uploaded image is NOT a job poster
+            # Check if input (Image, Document, URL, or Text) is NOT a job poster
             if intake_res.get("is_job_poster") is False:
                 poster_type = intake_res.get("poster_type") or "Not a Job Advertisement"
-                poster_summary = intake_res.get("poster_summary") or "The uploaded image does not contain job recruitment details or career vacancy offers."
-                validation_msg = intake_res.get("validation_error") or "This image is not a recruitment or job advertisement. Scam analysis has not been performed because the uploaded image is unrelated to job recruitment."
+                poster_summary = intake_res.get("poster_summary") or "The content/website does not contain job recruitment vacancies, career opportunities, or hiring offers."
+                validation_msg = intake_res.get("validation_error") or "This website or content is not a recruitment or job advertisement. Scam analysis has not been performed because the analyzed content is unrelated to job recruitment."
                 
                 formatted_explanation = f"""Poster Type: {poster_type}
 Confidence: 100%
@@ -82,11 +82,11 @@ Scam Probability: N/A
 Result:
 {validation_msg}
 
-Image Summary:
+Content Summary:
 {poster_summary}
 
 Recommendation:
-Please upload a genuine recruitment or job advertisement to receive a complete scam analysis."""
+Please analyze a genuine recruitment posting or job vacancy URL to receive a complete scam analysis."""
                 
                 return {
                     "intake_data": intake_res,
@@ -99,7 +99,7 @@ Please upload a genuine recruitment or job advertisement to receive a complete s
                         "explanation": formatted_explanation
                     },
                     "recommendations": [
-                        "Please upload a genuine recruitment or job advertisement to receive a complete scam analysis."
+                        "Please analyze a genuine recruitment posting or job vacancy URL to receive a complete scam analysis."
                     ],
                     "scam_score": "N/A",
                     "confidence_score": 100,
@@ -112,8 +112,8 @@ Please upload a genuine recruitment or job advertisement to receive a complete s
                     "breakdown_signals": [
                         f"Poster Type: {poster_type}",
                         "Confidence: 100%",
-                        "Scam Probability: N/A - Image is not a job advertisement",
-                        f"Image Summary: {poster_summary}"
+                        "Scam Probability: N/A - Content is not a job advertisement",
+                        f"Content Summary: {poster_summary}"
                     ],
                     "risk_level": "Not a Job Advertisement",
                     "language": final_lang,

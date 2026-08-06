@@ -51,11 +51,13 @@ async def test_scam_detection():
         "poster_summary": "Annual University Hackathon and UI Design Competition flyer.",
         "validation_error": "This image is not a recruitment or job advertisement. Scam analysis has not been performed because the uploaded image is unrelated to job recruitment."
     }
-    res4 = await pipeline_runner.run(input_text="", image_bytes=b"fake_image_bytes", filename="event.png", target_language="en")
-    print(f"\n[Test 4 - Non-Job Poster Validation]")
-    print(f"Scam Score: {res4['scam_score']}")
-    print(f"Risk Level: {res4['risk_level']}")
-    print(f"Explanation:\n{res4['explanation_text']}")
+    # Test Sample 5: Non-Job Website URL Simulation (Photography Studio)
+    non_job_url_text = "Page Title: Image95 Studio - Photography & Videography Portfolio Qatar\nPage Body: Image95 Studio in Qatar showcasing wedding photography, commercial videography, and event portfolios. Contact us on WhatsApp."
+    res5 = await pipeline_runner.run(input_text=non_job_url_text, input_url="https://images95.com", target_language="en")
+    print(f"\n[Test 5 - Non-Job Website URL Validation]")
+    print(f"Scam Score: {res5['scam_score']}")
+    print(f"Risk Level: {res5['risk_level']}")
+    print(f"Explanation:\n{res5['explanation_text']}")
 
     print("\n✅ All 5-Agent pipeline tests executed successfully!")
 
