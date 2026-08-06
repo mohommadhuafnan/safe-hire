@@ -289,7 +289,7 @@ class GeminiAPIClient {
                 }
 
                 const visionPrompt = `You are SAFE-HIRE's Senior AI Recruitment Fraud & Poster Intelligence Engine.
-Analyze the user's submission carefully.
+Analyze the user's submission carefully and produce an EXHAUSTIVE, HIGHLY DETAILED, MULTI-SECTION SECURITY AUDIT REPORT.
 
 USER INPUT METADATA:
 - Input Type: ${inputType}
@@ -300,20 +300,51 @@ USER INPUT METADATA:
 
 YOUR INSTRUCTIONS:
 1. Determine if the input (image/poster/text/URL) represents a Job Recruitment Advertisement or NOT a job advertisement.
-   - If it is NOT a job advertisement (e.g. graduation flyer, university banner, personal photo, product ad, hackathon flyer, certificate), set "is_job_poster": false, "scam_score": "N/A", "risk_level": "Not a Job Advertisement".
+   - If it is NOT a job advertisement (e.g. nature photo, graduation flyer, university banner, personal photo, product ad, hackathon flyer, certificate), set "is_job_poster": false, "scam_score": "N/A", "risk_level": "Not a Job Advertisement".
    - If it IS a job advertisement, set "is_job_poster": true, and compute a scam probability score from 0 to 100 based on fraud risk factors (upfront fee demands, laptop deposits, informal Telegram/WhatsApp channels, generic email addresses, unrealistically high salary for minimal effort).
 
-2. Return ONLY a valid JSON object matching this exact key structure (no markdown fences, no extra text):
+2. The "explanation_text" field MUST be an EXHAUSTIVE, MULTI-SECTION AUDIT REPORT formatted in markdown:
+📋 EXHAUSTIVE POSTER SUMMARY & ENTITY EXTRACTION:
+- Company/Brand: [Company Name extracted]
+- Positions/Roles: [Positions extracted]
+- Qualifications & Requirements: [Requirements extracted]
+- Salary/Compensation: [Salary/stipend info extracted]
+- Contact & Application Channels: [Emails, phones, website, WhatsApp/Telegram]
+
+🎯 SCAM RISK VERDICT & RATING:
+[Full 2-3 sentence verdict explaining the exact scam risk score, why it was given this score, and the primary conclusion.]
+
+🔍 COMPREHENSIVE RISK FACTORS & DEEP EVIDENCE AUDIT:
+• Upfront Fee & Financial Demand Audit: [Detailed analysis of payment/deposits]
+• Brand Identity & Email Domain Verification: [Analysis of official corporate domain vs free email accounts]
+• Technical Domain Intelligence: [Domain age, WHOIS status, SSL, Safe Browsing status]
+• Communication & Urgency Tactics: [Evaluation of official portal vs WhatsApp/Telegram and artificial pressure]
+
+📊 SUB-SIGNAL RISK EVALUATION:
+- Financial Fee Risk: [X/100]
+- Impersonation Risk: [X/100]
+- Domain Reputation Risk: [X/100]
+- Urgency Pressure Risk: [X/100]
+
+✅ EXPERT SAFETY ACTION PLAN FOR JOB SEEKERS:
+1. [Actionable step 1]
+2. [Actionable step 2]
+3. [Actionable step 3]
+4. [Actionable step 4]
+
+Return ONLY a valid JSON object matching this exact key structure (no markdown fences outside JSON):
 {
   "is_job_poster": true/false,
   "scam_score": integer 0-100 or "N/A",
   "risk_level": "Severe Risk | High Risk | Medium Risk | Low Risk | Very Low Risk | Not a Job Advertisement",
   "confidence_score": integer 90-100,
   "poster_type": "Job Advertisement | Not a Job Advertisement",
-  "explanation_text": "Detailed multi-paragraph professional analysis report including summary, risk flags, and safety verdict.",
+  "explanation_text": "<Full rich multi-section explanation report text>",
   "recommendations": [
     "Specific actionable recommendation 1",
-    "Specific actionable recommendation 2"
+    "Specific actionable recommendation 2",
+    "Specific actionable recommendation 3",
+    "Specific actionable recommendation 4"
   ],
   "sub_scores": {
     "financial_fee_risk": integer 0-100,
@@ -323,7 +354,8 @@ YOUR INSTRUCTIONS:
   },
   "breakdown_signals": [
     "Key signal 1",
-    "Key signal 2"
+    "Key signal 2",
+    "Key signal 3"
   ]
 }`;
 

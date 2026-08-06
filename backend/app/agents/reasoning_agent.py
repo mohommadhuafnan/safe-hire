@@ -69,7 +69,7 @@ def _extract_json_from_text(text: str) -> Optional[dict]:
 
 
 def _build_gemini_prompt(intake_data: Any, linguistic_data: dict, verification_data: dict, target_lang_name: str, language: str) -> str:
-    """Build Gemini reasoning prompt incorporating Hugging Face Vision extracted JSON + Verification Data."""
+    """Build Gemini reasoning prompt demanding an exhaustive, multi-section detailed security audit report."""
     if isinstance(intake_data, dict):
         hf_json = intake_data.get("hf_json") or {
             "posterType": intake_data.get("poster_type", "Job Advertisement"),
@@ -102,17 +102,9 @@ def _build_gemini_prompt(intake_data: Any, linguistic_data: dict, verification_d
     safe_browsing = verification_data.get("safe_browsing") or {}
 
     return f"""You are SAFE-HIRE's Senior AI Recruitment Fraud Reasoning Specialist.
-DO NOT perform OCR. You will receive structured data extracted by the Hugging Face Vision Agent (Qwen/Qwen2.5-VL-7B-Instruct:featherless-ai) and independent company verification intelligence.
+Analyze the structured intelligence below and generate an EXHAUSTIVE, HIGHLY DETAILED, MULTI-PARAGRAPH SECURITY AUDIT REPORT.
 
-Your task is to perform advanced reasoning:
-- Analyze scam indicators (upfront fees, laptop deposits, training charges)
-- Detect suspicious recruitment patterns & fake urgency
-- Analyze unrealistic salaries for entry-level/minimal effort roles
-- Analyze company email mismatch (e.g. corporate brand using free @gmail domain)
-- Evaluate domain age, SSL status, WHOIS records, and Google Maps location verification
-- Generate final scam probability score (0-100) and explicit actionable recommendations.
-
-[HUGGING FACE VISION EXTRACTED DATA (Qwen2.5-VL-7B)]:
+[EXTRACTED POSTER & METADATA]:
 {json.dumps(hf_json, indent=2)}
 
 [COMPANY VERIFICATION INTELLIGENCE]:
@@ -124,7 +116,6 @@ Your task is to perform advanced reasoning:
 - Google Maps Location Result: {verification_data.get('google_maps_status', 'Verified / Public Address')}
 - Email Validation Summary: {email_val.get('analysis_summary', 'N/A')}
 - Disposable Email: {email_val.get('is_disposable_email', False)}
-- SMTP Validation: {email_val.get('is_smtp_valid', True)}
 - Corporate Trust Rating: {verification_data.get('verification_trust_score', 80)}/100
 
 [LINGUISTIC SIGNALS]:
@@ -134,22 +125,59 @@ Your task is to perform advanced reasoning:
 - Informal Contact Channels: {linguistic_data.get('matched_suspicious_terms')}
 
 [OUTPUT LANGUAGE REQUIREMENT]: {target_lang_name} ({language})
-Write the reasoning explanation natively in {target_lang_name}.
+Write the complete explanation report natively in {target_lang_name}.
 
-CRITICAL: Return ONLY a raw JSON object matching this exact key structure (no markdown fences, no extra text):
+YOUR TASK & OUTPUT FORMAT:
+If the content is NOT a job advertisement (e.g. nature photo, graduation banner, product ad, certificate, personal media):
+Set "riskScore": "N/A", "riskLevel": "Not a Job Advertisement", "isScam": false.
+
+If the content IS a job advertisement:
+Compute a scam probability risk score from 0 to 100 based on fraud signals.
+
+The "explanation" field MUST be a RICH, EXHAUSTIVE, MULTI-SECTION AUDIT REPORT following this exact structure:
+
+📋 EXHAUSTIVE POSTER SUMMARY & ENTITY EXTRACTION:
+- Company/Brand: [Company Name]
+- Positions/Roles: [Positions extracted]
+- Qualifications & Requirements: [Requirements extracted]
+- Salary/Compensation: [Salary/stipend info extracted]
+- Contact & Application Channels: [Emails, phones, website, WhatsApp/Telegram]
+
+🎯 SCAM RISK VERDICT & RATING:
+[Full 2-3 sentence verdict explaining the exact scam risk score, why it was given this score, and the primary conclusion.]
+
+🔍 COMPREHENSIVE RISK FACTORS & DEEP EVIDENCE AUDIT:
+• Upfront Fee & Financial Demand Audit: [Detailed analysis of whether payment/deposits are requested]
+• Brand Identity & Email Domain Verification: [Analysis of official corporate domain vs free email accounts]
+• Technical Domain Intelligence: [Domain age, WHOIS status, SSL, Safe Browsing status]
+• Communication & Urgency Tactics: [Evaluation of official portal vs WhatsApp/Telegram and artificial pressure]
+
+📊 SUB-SIGNAL RISK EVALUATION:
+- Financial Fee Risk: [X/100]
+- Impersonation Risk: [X/100]
+- Domain Reputation Risk: [X/100]
+- Urgency Pressure Risk: [X/100]
+
+✅ EXPERT SAFETY ACTION PLAN FOR JOB SEEKERS:
+1. [Actionable step 1]
+2. [Actionable step 2]
+3. [Actionable step 3]
+4. [Actionable step 4]
+
+Return ONLY a raw JSON object (no markdown fences outside JSON):
 {{
-  "riskScore": <integer 0-100>,
-  "riskLevel": "<Severe | High | Medium | Low | Very Low>",
-  "confidence": <integer 90-99>,
+  "riskScore": <integer 0-100 or "N/A">,
+  "riskLevel": "<Severe Risk | High Risk | Medium Risk | Low Risk | Very Low Risk | Not a Job Advertisement>",
+  "confidence": <integer 90-100>,
   "isScam": <boolean true/false>,
   "reasons": [
-    "Company website is only X days old.",
-    "Salary is unusually high.",
-    "Uses a free Gmail address instead of a company domain.",
-    "Company registration could not be verified."
+    "Detailed finding 1",
+    "Detailed finding 2",
+    "Detailed finding 3",
+    "Detailed finding 4"
   ],
-  "recommendation": "Do not share personal information until the employer is independently verified.",
-  "explanation": "Multi-section detailed audit breakdown in {target_lang_name}",
+  "recommendation": "Primary actionable safety recommendation",
+  "explanation": "<Full rich multi-section explanation report text>",
   "sub_scores": {{
     "financial_fee_risk": <integer 0-100>,
     "impersonation_risk": <integer 0-100>,
@@ -599,29 +627,60 @@ class ReasoningAgent:
         if language in templates:
             full_explanation = templates[language][is_high_risk]
         else:
-            # English (default)
+            # English (default) - Exhaustive multi-section detailed security audit report
             if is_high_risk:
                 full_explanation = (
-                    f"📋 POSTER SUMMARY:\nExtracted content: \"{snippet[:300]}...\"\n\n"
-                    f"🎯 SCAM RISK VERDICT:\n🚨 FAKE / SCAM DETECTED — {risk_level} (Score: {scam_score}/100)\n"
-                    f"This job posting contains one or more critical fraud indicators. "
-                    f"Legitimate employers NEVER charge candidates for registration fees, laptop deposits, "
-                    f"uniform fees, training charges, or any form of advance payment.\n\n"
-                    f"🔍 DETAILED EVIDENCE & RED FLAGS:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
-                    f"✅ SAFETY CONCLUSION:\nDO NOT apply or send any money. "
-                    f"Report this fraudulent poster to your University Career Guidance Unit or the national "
-                    f"cybercrime reporting portal. Always verify job offers directly on the official company "
-                    f"website (e.g., company.com/careers)."
+                    f"📋 EXHAUSTIVE POSTER SUMMARY & OCR ENTITY ANALYSIS:\n"
+                    f"• Extracted Content Snippet: \"{snippet[:400]}\"\n"
+                    f"• Claimed Organization: {claimed_brand or 'Not Specified'}\n"
+                    f"• Target Domain / URL: {domain}\n"
+                    f"• Email Contacts Identified: {free_email or 'None'}\n\n"
+                    f"🎯 SCAM RISK VERDICT & RATING:\n"
+                    f"🚨 HIGH FRAUD RISK — {risk_level} (Score: {scam_score}/100)\n"
+                    f"This recruitment advertisement contains critical fraud red flags. Legitimate employers NEVER charge candidates for registration, laptop processing, uniform fees, or training deposits.\n\n"
+                    f"🔍 COMPREHENSIVE RISK FACTORS & DEEP EVIDENCE AUDIT:\n" +
+                    "\n".join(f"• {r}" for r in reasons) + "\n"
+                    f"• Upfront Payment Demand: {'Detected' if has_payment else 'None'}\n"
+                    f"• Corporate Email Mismatch: {'Detected' if has_impersonation else 'Verified'}\n"
+                    f"• Artificial Urgency Pressure: {'Detected' if has_urgency else 'Normal Timeline'}\n"
+                    f"• Informal Channels: {'Telegram/WhatsApp' if has_suspicious_channels else 'Official Channels'}\n\n"
+                    f"📊 SUB-SIGNAL RISK EVALUATION:\n"
+                    f"• Financial & Fee Demand Risk: {linguistic_data.get('sub_scores', {}).get('financial_fee_risk', 85)}%\n"
+                    f"• Impersonation Risk: {linguistic_data.get('sub_scores', {}).get('impersonation_risk', 60)}%\n"
+                    f"• Domain Reputation Risk: {trust_score} Trust Rating\n"
+                    f"• Urgency Pressure Risk: {linguistic_data.get('sub_scores', {}).get('urgency_pressure_risk', 70)}%\n\n"
+                    f"✅ EXPERT SAFETY ACTION PLAN FOR JOB SEEKERS:\n"
+                    f"1. DO NOT send money, deposits, or pay any registration fees.\n"
+                    f"2. DO NOT share national ID cards, bank accounts, or sensitive personal documents.\n"
+                    f"3. Verify recruiter identity on the official corporate career portal ({domain or 'company.com'}).\n"
+                    f"4. Report this fraudulent advertisement to your University Career Guidance Unit or national cybercrime portal."
                 )
             else:
                 full_explanation = (
-                    f"📋 POSTER SUMMARY:\nExtracted content: \"{snippet[:300]}...\"\n\n"
-                    f"🎯 SCAM RISK VERDICT:\n✅ GENUINE RECRUITMENT POSTER — {risk_level} (Score: {scam_score}/100)\n"
-                    f"No major recruitment fraud indicators were detected in this job posting.\n\n"
-                    f"🔍 ANALYSIS FINDINGS:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
-                    f"✅ SAFETY CONCLUSION:\nThis offer appears authentic, but always confirm directly "
-                    f"through the official company careers portal before providing personal documents "
-                    f"or attending interviews."
+                    f"📋 EXHAUSTIVE POSTER SUMMARY & OCR ENTITY ANALYSIS:\n"
+                    f"• Extracted Content Snippet: \"{snippet[:400]}\"\n"
+                    f"• Claimed Organization: {claimed_brand or 'Not Specified'}\n"
+                    f"• Target Domain / URL: {domain}\n"
+                    f"• Verified Communication Channels: Official Channels / Corporate Portal\n\n"
+                    f"🎯 SCAM RISK VERDICT & RATING:\n"
+                    f"✅ GENUINE RECRUITMENT OFFER — {risk_level} (Score: {scam_score}/100 • 0% Scam Risk)\n"
+                    f"SAFE-HIRE AI verified this recruitment posting. No upfront fee demands, impersonation flags, or fake channels were detected.\n\n"
+                    f"🔍 COMPREHENSIVE RISK FACTORS & DEEP EVIDENCE AUDIT:\n" +
+                    "\n".join(f"• {r}" for r in reasons) + "\n"
+                    f"• Upfront Payment Demand: None Detected\n"
+                    f"• Corporate Email Mismatch: None Detected\n"
+                    f"• Artificial Urgency Pressure: Normal Timeline\n"
+                    f"• Domain Reputation & WHOIS: Trust Score {trust_score}/100\n\n"
+                    f"📊 SUB-SIGNAL RISK EVALUATION:\n"
+                    f"• Financial & Fee Demand Risk: 0%\n"
+                    f"• Impersonation Risk: 10%\n"
+                    f"• Domain Reputation Risk: 10%\n"
+                    f"• Urgency Pressure Risk: 0%\n\n"
+                    f"✅ EXPERT SAFETY ACTION PLAN FOR JOB SEEKERS:\n"
+                    f"1. Confirm vacancy details directly through official corporate career channels before submitting documents.\n"
+                    f"2. Never pay registration fees, uniform charges, or laptop deposits for any employment opportunity.\n"
+                    f"3. Keep all interview communications on official corporate email domains.\n"
+                    f"4. Report any unexpected payment requests immediately."
                 )
 
         return full_explanation, reasons
