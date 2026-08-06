@@ -106,19 +106,25 @@ class IntakeAgent:
 
         prompt = """
         You are SAFE-HIRE's Senior Multimodal Vision & Poster Intelligence Agent.
-        Analyze the uploaded image or poster carefully and perform full text & entity extraction.
+        Analyze the uploaded image or poster carefully and perform deep text, visual, and entity extraction.
 
         OBJECTIVES:
         1. Determine whether the upload is a Job Recruitment Advertisement or NOT a job advertisement.
-           - Set "posterType" to "Not a Job Advertisement" if it is an event flyer, product ad, personal photo, certificate, meme, landscape, general graphics, portfolio, etc.
-           - Set "posterType" to "Job Advertisement" (or specific recruitment type) if it contains job hiring, recruitment vacancies, employment offers, or career announcements.
+           - Set "posterType" to "Not a Job Advertisement" if it is an event flyer, university graduation poster, photography portfolio, product ad, personal photo, certificate, meme, landscape, general graphics, etc.
+           - Set "posterType" to "Job Advertisement" if it contains job hiring, recruitment vacancies, employment offers, or career announcements.
 
-        2. Extract structured fields cleanly.
+        2. Identify the specific category ("specificCategory") e.g. "University Graduation Announcement", "Photography Studio Portfolio", "Educational Course Flyer", "IT Recruitment Hiring Notice", "Product Promotion Ad", "Personal Event Invitation".
+
+        3. Provide an EXHAUSTIVE 3-4 sentence detailed summary ("posterSummary") explaining exactly what this image/poster is about, what organization/institution issued it, key names/dates/details shown, and explicitly state why it is or is not a job recruitment offer.
+
+        4. Extract structured fields cleanly.
 
         Return ONLY a raw JSON object with this exact structure (no markdown formatting outside the JSON):
         {
           "posterType": "Not a Job Advertisement | Job Advertisement",
-          "companyName": "Company name if present, else empty string",
+          "specificCategory": "Exact classification (e.g., University Graduation Ceremony Announcement)",
+          "posterSummary": "Detailed 3-4 sentence breakdown analyzing what this specific poster depicts and why",
+          "companyName": "Company or Institution name if present, else empty string",
           "jobTitle": "Job title or position if present, else empty string",
           "salary": "Salary or compensation if present, else empty string",
           "website": "Company website or link if present, else empty string",
@@ -176,14 +182,16 @@ class IntakeAgent:
                             parsed = json.loads(clean)
                             if isinstance(parsed, dict):
                                 logger.info(f"Hugging Face Vision ({model_name}) extraction success: posterType={parsed.get('posterType')}")
-                                is_job = str(parsed.get("posterType", "")).strip().lower() != "not a job advertisement"
+                                is_p_type = str(parsed.get("posterType", "")).strip().lower()
+                                is_job = "not a job" not in is_p_type and "non-job" not in is_p_type and "graduation" not in is_p_type and "event" not in is_p_type and "ceremony" not in is_p_type
                                 parsed["is_job_poster"] = is_job
                                 parsed["extracted_text"] = parsed.get("posterText", "")
                                 parsed["claimed_brand"] = parsed.get("companyName", "")
                                 parsed["job_title"] = parsed.get("jobTitle", "")
                                 parsed["contact_email"] = parsed.get("email", "")
                                 parsed["phone_number"] = parsed.get("phone", "")
-                                parsed["poster_summary"] = f"Poster Type: {parsed.get('posterType')} | Company: {parsed.get('companyName')} | Job: {parsed.get('jobTitle')}"
+                                parsed["specific_category"] = parsed.get("specificCategory") or parsed.get("posterType") or "General Document"
+                                parsed["poster_summary"] = parsed.get("posterSummary") or parsed.get("poster_summary") or f"Analyzed Content ({parsed.get('specificCategory', 'Media')}): {parsed.get('companyName')}"
                                 return parsed
                     else:
                         logger.warning(f"Hugging Face Vision ({model_name}) HTTP {res.status_code}: {res.text[:200]}")
@@ -220,14 +228,16 @@ class IntakeAgent:
                             parsed = json.loads(clean)
                             if isinstance(parsed, dict):
                                 logger.info(f"Gemini Vision Fallback ({g_model}) extraction success: posterType={parsed.get('posterType')}")
-                                is_job = str(parsed.get("posterType", "")).strip().lower() != "not a job advertisement"
+                                is_p_type = str(parsed.get("posterType", "")).strip().lower()
+                                is_job = "not a job" not in is_p_type and "non-job" not in is_p_type and "graduation" not in is_p_type and "event" not in is_p_type and "ceremony" not in is_p_type
                                 parsed["is_job_poster"] = is_job
                                 parsed["extracted_text"] = parsed.get("posterText", "")
                                 parsed["claimed_brand"] = parsed.get("companyName", "")
                                 parsed["job_title"] = parsed.get("jobTitle", "")
                                 parsed["contact_email"] = parsed.get("email", "")
                                 parsed["phone_number"] = parsed.get("phone", "")
-                                parsed["poster_summary"] = f"Poster Type: {parsed.get('posterType')} | Company: {parsed.get('companyName')}"
+                                parsed["specific_category"] = parsed.get("specificCategory") or parsed.get("posterType") or "General Document"
+                                parsed["poster_summary"] = parsed.get("posterSummary") or parsed.get("poster_summary") or f"Analyzed Content ({parsed.get('specificCategory', 'Media')}): {parsed.get('companyName')}"
                                 return parsed
                 except Exception as e:
                     logger.warning(f"Gemini Vision Fallback notice for {g_model}: {e}")

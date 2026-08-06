@@ -72,8 +72,8 @@ Please upload a clearer, high-resolution image of the recruitment advertisement 
             # Check if input (Image, Document, URL, or Text) is NOT a job poster
             if intake_res.get("is_job_poster") is False:
                 poster_type = intake_res.get("poster_type") or "Not a Job Advertisement"
-                poster_summary = intake_res.get("poster_summary") or "The content/website does not contain job recruitment vacancies, career opportunities, or hiring offers."
-                validation_msg = intake_res.get("validation_error") or "This website or content is not a recruitment or job advertisement. Scam analysis has not been performed because the analyzed content is unrelated to job recruitment."
+                specific_category = intake_res.get("specific_category") or intake_res.get("poster_type") or "Non-Recruitment Document / Media"
+                poster_summary = intake_res.get("poster_summary") or "The analyzed content contains general text or media with no job recruitment vacancies, hiring positions, or employment offers."
                 
                 # Execute WHOIS verification for domain if domain/URL is present
                 verification_res = {}
@@ -86,30 +86,28 @@ Please upload a clearer, high-resolution image of the recruitment advertisement 
                 whois_status = whois_info.get("whois_status") or "Verified Domain Record"
                 safe_status = (verification_res.get("safe_browsing") or {}).get("status") or "Verified Safe"
 
-                formatted_explanation = f"""Poster Type: {poster_type}
-Confidence: 100%
-Scam Probability: N/A
+                formatted_explanation = f"""📋 POSTER CLASSIFICATION & SUMMARY:
+• Classification: {specific_category}
+• Precision Confidence: 100%
+• Scam Risk Score: N/A (Non-Recruitment Content)
 
-Result:
-{validation_msg}
+🔍 DETAILED IMAGE & CONTENT AUDIT:
+{poster_summary}
 
-Content Summary:
-{poster_summary}"""
+💡 AUDIT CONCLUSION & ADVICE:
+This document/media has been thoroughly analyzed by SAFE-HIRE AI. It contains no job recruitment listings, open hiring vacancies, salary offers, or employment registration fee demands. Scam probability analysis is not applicable to non-recruitment media."""
 
                 if domain:
                     formatted_explanation += f"""
 
-Domain & WHOIS Technical Intelligence:
+🌐 TECHNICAL DOMAIN INTELLIGENCE:
 • Target Domain: {domain}
 • Domain Age: {reg_days if reg_days is not None else 'Verified'} Days ({whois_status})
 • Registrar: {registrar}
 • Google Safe Browsing: {safe_status}"""
 
-                formatted_explanation += """
+                recommendation_text = f"Analyzed '{specific_category}' content. Upload a genuine recruitment flyer or job vacancy URL to receive a full scam probability audit."
 
-Recommendation:
-Please analyze a genuine recruitment posting or job vacancy URL to receive a complete scam analysis."""
-                
                 return {
                     "intake_data": intake_res,
                     "linguistic_data": {},
@@ -121,7 +119,7 @@ Please analyze a genuine recruitment posting or job vacancy URL to receive a com
                         "explanation": formatted_explanation
                     },
                     "recommendations": [
-                        "Please analyze a genuine recruitment posting or job vacancy URL to receive a complete scam analysis."
+                        recommendation_text
                     ],
                     "scam_score": "N/A",
                     "confidence_score": 100,
@@ -132,11 +130,10 @@ Please analyze a genuine recruitment posting or job vacancy URL to receive a com
                         "urgency_pressure_risk": 0
                     },
                     "breakdown_signals": [
-                        f"Poster Type: {poster_type}",
-                        "Confidence: 100%",
-                        "Scam Probability: N/A - Content is not a job advertisement",
-                        f"Content Summary: {poster_summary}",
-                        f"Target Domain: {domain or 'N/A'}"
+                        f"Category: {specific_category}",
+                        "Scam Probability: N/A (Non-Recruitment Content)",
+                        f"Image Content Audit: {poster_summary}",
+                        f"Domain Target: {domain or 'N/A'}"
                     ],
                     "risk_level": "Not a Job Advertisement",
                     "language": final_lang,
