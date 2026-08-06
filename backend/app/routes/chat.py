@@ -30,10 +30,10 @@ _SYSTEM_PROMPT = {
 
 # Model rotation: try fastest/cheapest first
 _GEMINI_MODELS = [
-    "gemini-3.5-flash",
-    "gemini-3.5-flash-lite",
-    "gemini-3.6-flash",
-    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-pro",
 ]
 
 # Smart fallback answers for common questions (used when all APIs fail)
@@ -83,7 +83,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     content: str
-    model: str = "gemini-3.5-flash"
+    model: str = "gemini-2.5-flash"
 
 
 def clean_stop_tokens(text: str) -> str:
