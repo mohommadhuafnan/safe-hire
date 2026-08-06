@@ -447,21 +447,35 @@ class IntakeAgent:
             except Exception as e:
                 logger.warning(f"DOCX extraction notice: {e}")
         elif ext == ".pdf":
+            # 1. Primary: pypdf library
             try:
                 import pypdf, io
                 reader = pypdf.PdfReader(io.BytesIO(file_bytes))
                 pages_text = [page.extract_text() for page in reader.pages if page.extract_text()]
                 if pages_text:
                     return "\n".join(pages_text).strip()
+            except Exception as e:
+                logger.info(f"pypdf extraction notice ({e}). Trying PyPDF2 / fallback parsing.")
+
+            # 2. Secondary: PyPDF2 fallback
+            try:
+                import PyPDF2, io
+                reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+                pages_text = [page.extract_text() for page in reader.pages if page.extract_text()]
+                if pages_text:
+                    return "\n".join(pages_text).strip()
             except Exception:
                 pass
+
+            # 3. Tertiary: Regex byte string extraction fallback
             try:
                 import re
                 text_chunks = re.findall(rb'\((.*?)\)', file_bytes)
                 extracted = " ".join([c.decode('utf-8', errors='ignore') for c in text_chunks if len(c) > 2])
-                return extracted.strip()
+                if extracted and len(extracted.strip()) > 5:
+                    return extracted.strip()
             except Exception as e:
-                logger.warning(f"PDF extraction fallback notice: {e}")
+                logger.warning(f"PDF byte extraction notice: {e}")
         elif ext == ".doc":
             try:
                 import re

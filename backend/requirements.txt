@@ -18,3 +18,4 @@ python-whois>=0.8.0
 httpx>=0.25.0
 firebase-admin>=6.2.0
 openai>=1.0.0
+pypdf>=3.17.0
