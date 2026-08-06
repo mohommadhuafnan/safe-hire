@@ -22,14 +22,24 @@ async def analyze_submission(
     logger = logging.getLogger("safe_hire.analyze")
     
     image_bytes = None
+    filename = ""
     if image:
+        filename = image.filename or ""
+        allowed_extensions = {".pdf", ".doc", ".docx", ".png", ".jpg", ".jpeg", ".webp"}
+        ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
+        if ext and ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unsupported file format. The system only accepts PDF (.pdf), Microsoft Word (.doc, .docx), and Images (.png, .jpg, .jpeg, .webp)."
+            )
+
         image_bytes = await image.read()
-        logger.info(f"Received image upload ({len(image_bytes)} bytes) for user {current_user.get('id')}")
+        logger.info(f"Received file upload '{filename}' ({len(image_bytes)} bytes) for user {current_user.get('id')}")
 
     if not input_text and not image_bytes and not input_url:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Please provide text, upload an image, or enter a URL to analyze."
+            detail="Please provide text, upload a file (PDF, Word, Image), or enter a URL to analyze."
         )
 
     try:
@@ -38,13 +48,14 @@ async def analyze_submission(
         pipeline_res = await pipeline_runner.run(
             input_text=input_text or "",
             image_bytes=image_bytes,
+            filename=filename,
             input_url=input_url or "",
             target_language=target_language or current_user.get("preferred_language", "en")
         ) or {}
 
         scam_score = pipeline_res.get("scam_score")
         if scam_score is None:
-            scam_score = 0
+            scam_score = "N/A"
         
         risk_level = pipeline_res.get("risk_level") or "Low Risk"
         language = pipeline_res.get("language") or "en"
@@ -71,7 +82,7 @@ async def analyze_submission(
                 "user_id": user_obj_id,
                 "input_type": input_type,
                 "input_text": input_text or "",
-                "input_image_url": f"uploaded_image_{now.timestamp()}.png" if image_bytes else "",
+                "input_image_url": filename or (f"uploaded_image_{now.timestamp()}.png" if image_bytes else ""),
                 "input_url": input_url or "",
                 "language_detected": language,
                 "created_at": now
@@ -103,11 +114,13 @@ async def analyze_submission(
         except Exception as db_err:
             logger.warning(f"Database save notice: {db_err}")
 
+        final_scam_score = scam_score if (scam_score == "N/A" or isinstance(scam_score, str)) else int(scam_score)
+
         return AnalysisResultResponse(
             id=result_id,
             submission_id=submission_id,
             user_id=str(current_user.get("id", "")),
-            scam_score=int(scam_score),
+            scam_score=final_scam_score,
             risk_level=str(risk_level),
             language=str(language),
             risk_factors=linguistic_data if isinstance(linguistic_data, dict) else {},

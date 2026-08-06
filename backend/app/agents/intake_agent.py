@@ -59,39 +59,90 @@ class IntakeAgent:
         return "image/png"
 
     @staticmethod
+    def optimize_image_bytes(image_bytes: bytes, max_bytes: int = 1024 * 1024) -> bytes:
+        """Optimize and compress image bytes if larger than max_bytes for fast & reliable AI OCR processing."""
+        if not image_bytes or len(image_bytes) <= max_bytes:
+            return image_bytes
+        try:
+            from PIL import Image
+            import io
+            img = Image.open(io.BytesIO(image_bytes))
+            img.thumbnail((1600, 1600))
+            buf = io.BytesIO()
+            img.convert('RGB').save(buf, format='JPEG', quality=85)
+            return buf.getvalue()
+        except Exception:
+            return image_bytes
+
+    @staticmethod
     def analyze_poster_with_gemini_vision(image_bytes: bytes) -> dict:
         """Analyze poster image directly using Gemini Multimodal Vision API (OCR + visual risk intelligence) with DeepSeek V4 fallback."""
         if not image_bytes:
             return {"is_job_poster": True, "extracted_text": "", "claimed_brand": "", "validation_error": None}
 
+        image_bytes = IntakeAgent.optimize_image_bytes(image_bytes)
         gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
         mime_type = IntakeAgent.detect_image_mime_type(image_bytes)
         base64_img = base64.b64encode(image_bytes).decode('utf-8')
 
         prompt = """
-        You are SAFE-HIRE's Senior Multimodal Vision & Recruitment Fraud Intelligence Engine.
-        Examine this uploaded image carefully to classify whether it is a Job Recruitment Poster / Career Flyer / Job Ad Screenshot OR a Non-Job Picture (such as an educational event flyer, workshop banner, hackathon poster, product ad, personal photo, generic graphics, etc.).
+        You are SAFE-HIRE's Senior Multimodal Vision & Recruitment Fraud Intelligence System.
+
+        PRIMARY OBJECTIVE:
+        Your first task is to determine whether the uploaded image/document is actually a **job advertisement or recruitment poster** before performing any scam analysis.
+
+        STEP 1: JOB POSTER DETECTION
+        Determine whether it contains a recruitment advertisement.
+        Look for indicators such as:
+        - Job title
+        - Hiring announcement
+        - Apply Now
+        - Vacancy
+        - Recruitment
+        - Careers
+        - Position Available
+        - Company name
+        - Salary
+        - Qualifications
+        - Responsibilities
+        - Contact information
+        - QR code for application
+        - Website or email for applying
+        - Deadline
+        - Employment details
 
         CLASSIFICATION RULES:
-        1. A JOB POSTER (`is_job_poster: true`) includes ANY hiring banner, recruitment flyer, walk-in interview notice, corporate relations hiring poster, job ad screenshot (LinkedIn, WhatsApp, Email, Facebook, newspaper), training course flyer with job guarantee, or career vacancy offer.
-        2. A NON-JOB IMAGE (`is_job_poster: false`) is an image that has NO recruitment vacancy or hiring offer context whatsoever (e.g. event flyer, educational workshop, designathon banner, contest, product ad, personal photo, animal picture, meme, or random graphic).
+        1. If the image IS NOT a job poster:
+           - "is_job_poster": false
+           - "poster_type": "Not a Job Advertisement"
+           - "poster_summary": "Clear 2-3 sentence summary explaining what the uploaded image actually contains (e.g. event poster, product advertisement, social media graphic, certificate, meme, landscape photo, personal photo, logo, flyer, infographic, etc.)."
+           - "validation_error": "This image is not a recruitment or job advertisement. Scam analysis has not been performed because the uploaded image is unrelated to job recruitment."
 
-        Return ONLY a raw JSON object with this exact structure (no markdown code blocks, no ```json formatting):
+        2. If the image IS a job poster:
+           - "is_job_poster": true
+           - "poster_type": "Job Advertisement"
+           - "poster_summary": "Summary of hiring offer, company name, position, salary, contact info."
+
+        3. If the image quality is poor or unreadable:
+           - "is_unreadable": true
+           - "validation_error": "The image quality is poor or unreadable. Please upload a clearer image of the recruitment advertisement for accurate analysis."
+
+        Return ONLY a raw JSON object with this exact structure (no markdown code blocks):
         {
-          "is_job_poster": boolean (true for recruitment/hiring poster/flyer, false for non-hiring/general/event pictures),
-          "poster_type": "Specific Classification (e.g. Designathon / Hackathon Event Poster, Educational Workshop Flyer, Corporate Course Banner, Product Advertisement, Personal Photo)",
-          "poster_summary": "Clear 2-3 sentence summary of what this poster/image is about, who organized it, dates, location, and key details.",
-          "extracted_text": "Full verbatim text extracted from the poster...",
-          "claimed_brand": "Extracted company, institution, or brand name if present",
-          "job_title": "Position, role, or event title if present",
-          "contact_email": "Extracted email if present",
-          "phone_number": "Extracted phone number if present",
-          "has_fee_demand": false,
-          "validation_error": null
+          "is_job_poster": boolean,
+          "is_unreadable": false,
+          "poster_type": "Not a Job Advertisement | Job Advertisement | Specific Type",
+          "poster_summary": "Clear summary of what the image actually contains",
+          "extracted_text": "Extracted text from image",
+          "claimed_brand": "Company name if present",
+          "job_title": "Position title if present",
+          "contact_email": "Email if present",
+          "phone_number": "Phone if present",
+          "validation_error": null or string
         }
         """
 
-        models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite"]
+        models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"]
 
         # 1. Try Gemini Vision REST generateContent Endpoint (most reliable for multimodal base64)
         if gemini_key:
@@ -236,7 +287,26 @@ class IntakeAgent:
             except Exception as e:
                 logger.warning(f"DeepSeek V4 fallback notice: {e}")
 
-        # Rule Engine Fallback check — For uploaded images, always default to analyzing as job poster
+        # Rule Engine Fallback check when AI API is unavailable
+        recruitment_keywords = [
+            "hiring", "vacancy", "job", "career", "apply", "recruitment", "position",
+            "opportunity", "salary", "full time", "part time", "walk-in", "interview",
+            "qualifications", "responsibilities", "urgent hiring", "join our team",
+            "work from home", "employment", "internship", "looking for"
+        ]
+        text_lower = (ocr_text or "").lower()
+        has_job_indicators = any(kw in text_lower for kw in recruitment_keywords)
+        
+        if ocr_text and not has_job_indicators:
+            return {
+                "is_job_poster": False,
+                "poster_type": "Not a Job Advertisement",
+                "poster_summary": "Extracted text contains general graphics, non-career announcements, or unrelated content.",
+                "extracted_text": ocr_text,
+                "claimed_brand": "",
+                "validation_error": "This image is not a recruitment or job advertisement. Scam analysis has not been performed because the uploaded image is unrelated to job recruitment."
+            }
+
         return {
             "is_job_poster": True,
             "extracted_text": ocr_text or "Uploaded poster/flyer image.",
@@ -250,8 +320,20 @@ class IntakeAgent:
         if not image_bytes:
             return ""
 
+        image_bytes = IntakeAgent.optimize_image_bytes(image_bytes)
+
         # 1. Local Tesseract OCR
         if pytesseract is not None:
+            import os
+            for path in [
+                r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+                r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
+                os.path.expanduser(r'~\AppData\Local\Programs\Tesseract-OCR\tesseract.exe')
+            ]:
+                if os.path.exists(path):
+                    pytesseract.pytesseract.tesseract_cmd = path
+                    break
+
             try:
                 from PIL import Image, ImageEnhance
                 import io
@@ -267,28 +349,30 @@ class IntakeAgent:
             except Exception as e:
                 logger.info(f"Local Tesseract OCR notice ({e}). Switching to Cloud OCR fallback.")
 
-        # 2. High-Accuracy Cloud OCR API Fallback (OCR.space)
-        try:
-            url = "https://api.ocr.space/parse/image"
-            base64_str = "data:image/png;base64," + base64.b64encode(image_bytes).decode('utf-8')
-            payload = {
-                "apikey": "K88888888888957",
-                "base64Image": base64_str,
-                "language": "eng",
-                "isOverlayRequired": False,
-                "OCREngine": 2
-            }
-            res = requests.post(url, data=payload, timeout=3.5)
-            if res.status_code == 200:
-                data = res.json()
-                parsed_results = data.get("ParsedResults", [])
-                if parsed_results:
-                    cloud_text = parsed_results[0].get("ParsedText", "").strip()
-                    if cloud_text and len(cloud_text) > 5:
-                        logger.info("Successfully extracted poster text via Cloud OCR API.")
-                        return cloud_text
-        except Exception as e:
-            logger.warning(f"Cloud OCR API notice: {e}")
+        # 2. High-Accuracy Cloud OCR API Fallback (OCR.space multi-key rotation)
+        ocr_keys = ["K88888888888957", "helloworld", "K83677843888957"]
+        base64_str = "data:image/jpeg;base64," + base64.b64encode(image_bytes).decode('utf-8')
+        for key in ocr_keys:
+            try:
+                url = "https://api.ocr.space/parse/image"
+                payload = {
+                    "apikey": key,
+                    "base64Image": base64_str,
+                    "language": "eng",
+                    "isOverlayRequired": False,
+                    "OCREngine": 2
+                }
+                res = requests.post(url, data=payload, timeout=4.0)
+                if res.status_code == 200:
+                    data = res.json()
+                    parsed_results = data.get("ParsedResults", [])
+                    if parsed_results:
+                        cloud_text = parsed_results[0].get("ParsedText", "").strip()
+                        if cloud_text and len(cloud_text) > 5:
+                            logger.info("Successfully extracted poster text via Cloud OCR API.")
+                            return cloud_text
+            except Exception as e:
+                logger.warning(f"Cloud OCR API key notice ({key}): {e}")
 
         return ""
 
@@ -346,7 +430,48 @@ class IntakeAgent:
             "title": domain
         }
 
-    def process(self, input_text: str = "", image_bytes: bytes = None, input_url: str = "", target_language: str = None) -> dict:
+    @staticmethod
+    def extract_text_from_document(file_bytes: bytes, filename: str) -> str:
+        """Extract text from PDF, DOCX, or DOC document bytes."""
+        if not file_bytes:
+            return ""
+        ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
+        if ext == ".docx":
+            try:
+                import zipfile, xml.etree.ElementTree as ET, io
+                with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
+                    xml_content = z.read("word/document.xml")
+                    tree = ET.fromstring(xml_content)
+                    texts = [node.text for node in tree.iter() if node.text]
+                    return " ".join(texts).strip()
+            except Exception as e:
+                logger.warning(f"DOCX extraction notice: {e}")
+        elif ext == ".pdf":
+            try:
+                import pypdf, io
+                reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+                pages_text = [page.extract_text() for page in reader.pages if page.extract_text()]
+                if pages_text:
+                    return "\n".join(pages_text).strip()
+            except Exception:
+                pass
+            try:
+                import re
+                text_chunks = re.findall(rb'\((.*?)\)', file_bytes)
+                extracted = " ".join([c.decode('utf-8', errors='ignore') for c in text_chunks if len(c) > 2])
+                return extracted.strip()
+            except Exception as e:
+                logger.warning(f"PDF extraction fallback notice: {e}")
+        elif ext == ".doc":
+            try:
+                import re
+                readable = re.findall(r'[\x20-\x7E]{4,}', file_bytes.decode('latin-1', errors='ignore'))
+                return " ".join(readable).strip()
+            except Exception as e:
+                logger.warning(f"DOC extraction notice: {e}")
+        return ""
+
+    def process(self, input_text: str = "", image_bytes: bytes = None, filename: str = "", input_url: str = "", target_language: str = None) -> dict:
         combined_text = ""
         source = "text"
         extracted_domain = ""
@@ -355,33 +480,46 @@ class IntakeAgent:
         poster_type = "General Flyer / Image"
         poster_summary = ""
         is_job_poster = True
+        is_unreadable = False
         validation_error = None
 
         if input_text and input_text.strip():
             combined_text += input_text.strip() + "\n"
 
         if image_bytes:
-            vision_res = self.analyze_poster_with_gemini_vision(image_bytes) or {}
-            if not isinstance(vision_res, dict):
-                vision_res = {}
-            is_job_poster = vision_res.get("is_job_poster", True)
-            poster_type = vision_res.get("poster_type", "General Poster / Flyer")
-            poster_summary = vision_res.get("poster_summary", "")
-            validation_error = vision_res.get("validation_error")
+            ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
+            if ext in [".pdf", ".doc", ".docx"]:
+                doc_text = IntakeAgent.extract_text_from_document(image_bytes, filename)
+                if doc_text:
+                    ocr_extracted_text = doc_text
+                    combined_text += f"\n[DOCUMENT EXTRACTED TEXT ({filename})]:\n{doc_text}\n"
+                    source = "document"
+                else:
+                    is_unreadable = True
+                    validation_error = "The uploaded document quality is poor or unreadable. Please upload a clearer document or file."
+            else:
+                vision_res = self.analyze_poster_with_gemini_vision(image_bytes) or {}
+                if not isinstance(vision_res, dict):
+                    vision_res = {}
+                is_job_poster = vision_res.get("is_job_poster", True)
+                is_unreadable = vision_res.get("is_unreadable", False)
+                poster_type = vision_res.get("poster_type", "General Poster / Flyer")
+                poster_summary = vision_res.get("poster_summary", "")
+                validation_error = vision_res.get("validation_error")
 
-            ocr_extracted_text = vision_res.get("extracted_text", "")
-            if not ocr_extracted_text:
-                ocr_extracted_text = self.extract_text_from_image(image_bytes)
-            
-            claimed_brand = vision_res.get("claimed_brand", "")
-            combined_text += f"\n[POSTER TEXT & METADATA]:\n{ocr_extracted_text}\n"
-            if claimed_brand:
-                combined_text += f"Claimed Brand: {claimed_brand}\n"
-            if poster_type:
-                combined_text += f"Poster Type: {poster_type}\n"
-            if poster_summary:
-                combined_text += f"Poster Summary: {poster_summary}\n"
-            source = "image"
+                ocr_extracted_text = vision_res.get("extracted_text", "")
+                if not ocr_extracted_text:
+                    ocr_extracted_text = self.extract_text_from_image(image_bytes)
+                
+                claimed_brand = vision_res.get("claimed_brand", "")
+                combined_text += f"\n[POSTER TEXT & METADATA]:\n{ocr_extracted_text}\n"
+                if claimed_brand:
+                    combined_text += f"Claimed Brand: {claimed_brand}\n"
+                if poster_type:
+                    combined_text += f"Poster Type: {poster_type}\n"
+                if poster_summary:
+                    combined_text += f"Poster Summary: {poster_summary}\n"
+                source = "image"
 
         if input_url and input_url.strip():
             url_res = self.extract_text_from_url(input_url.strip())
@@ -426,6 +564,7 @@ class IntakeAgent:
             "detected_language": detected_lang,
             "final_language": final_lang,
             "is_job_poster": is_job_poster,
+            "is_unreadable": is_unreadable,
             "validation_error": validation_error,
             "metadata_extracted": {
                 "emails": emails_found,

@@ -124,8 +124,21 @@ const DashboardPage = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      const allowedExts = ['.pdf', '.doc', '.docx', '.png', '.jpg', '.jpeg', '.webp'];
+      const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+      if (!allowedExts.includes(fileExt)) {
+        setError('Unsupported file format. The system only accepts PDF (.pdf), Microsoft Word (.doc, .docx), and Images (.png, .jpg, .jpeg, .webp).');
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        return;
+      }
+      setError('');
       setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      if (['.png', '.jpg', '.jpeg', '.webp'].includes(fileExt)) {
+        setPreviewUrl(URL.createObjectURL(file));
+      } else {
+        setPreviewUrl(null);
+      }
     }
   };
 
@@ -298,16 +311,16 @@ const DashboardPage = () => {
                 </div>
               )}
 
-              {/* TAB 2: IMAGE OCR */}
+              {/* TAB 2: IMAGE / DOCUMENT FILE UPLOAD */}
               {activeTab === 'image' && (
                 <div className="space-y-3">
                   <label className="block text-xs font-semibold text-slate-300">
-                    Upload Screenshot of Job Ad or Chat (SAFE-HIRE AI Scanner):
+                    Upload Job Poster, Flyer, or Document (PDF, Word, Image):
                   </label>
                   <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-2xl p-6 text-center cursor-pointer bg-slate-900/50 transition">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       onChange={handleFileChange}
                       className="hidden"
                       id="image-upload"
@@ -321,9 +334,9 @@ const DashboardPage = () => {
                         </div>
                       )}
                       <span className="text-xs font-bold text-slate-200">
-                        {selectedFile ? selectedFile.name : 'Click to select image file (PNG, JPG, WEBP)'}
+                        {selectedFile ? selectedFile.name : 'Click to select file (PDF, DOC, DOCX, PNG, JPG, WEBP)'}
                       </span>
-                      <span className="text-[10px] text-slate-500 mt-1">Automatic AI OCR text extraction and poster validation</span>
+                      <span className="text-[10px] text-slate-500 mt-1">Supported Formats: PDF (.pdf), Word (.doc, .docx), Images (.png, .jpg, .jpeg, .webp)</span>
                     </label>
                   </div>
                 </div>
@@ -548,7 +561,17 @@ const DashboardPage = () => {
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Risk Level Verdict</span>
                   <span className={`text-sm font-extrabold block ${
-                    result.scam_score >= 60 ? 'text-rose-400' : result.scam_score >= 30 ? 'text-amber-400' : 'text-emerald-400'
+                    result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A'
+                      ? 'text-sky-400'
+                      : Number(result.scam_score) >= 81
+                      ? 'text-rose-400'
+                      : Number(result.scam_score) >= 61
+                      ? 'text-orange-400'
+                      : Number(result.scam_score) >= 41
+                      ? 'text-amber-400'
+                      : Number(result.scam_score) >= 21
+                      ? 'text-yellow-400'
+                      : 'text-emerald-400'
                   }`}>
                     {result.risk_level}
                   </span>
@@ -557,7 +580,7 @@ const DashboardPage = () => {
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Scam Risk Score</span>
                   <span className="text-sm font-extrabold text-slate-100 font-mono block">
-                    {result.scam_score} / 100
+                    {result.scam_score === 'N/A' || typeof result.scam_score === 'string' ? result.scam_score : `${result.scam_score} / 100`}
                   </span>
                 </div>
 

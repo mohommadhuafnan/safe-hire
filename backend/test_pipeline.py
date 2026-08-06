@@ -44,11 +44,18 @@ async def test_scam_detection():
     Requirements: Bachelor's degree in Computer Science, 2+ years React experience.
     Apply officially at https://careers.virtusa.com/job-id-9982
     """
-    res3 = await pipeline_runner.run(input_text=genuine_text, target_language="en")
-    print(f"\n[Test 3 - Genuine Job Posting]")
-    print(f"Scam Score: {res3['scam_score']}/100")
-    print(f"Risk Level: {res3['risk_level']}")
-    print(f"Explanation:\n{res3['explanation_text']}")
+    # Test Sample 4: Non-Job Poster Image / Document Simulation
+    non_job_intake = {
+        "is_job_poster": False,
+        "poster_type": "Designathon / Workshop Banner",
+        "poster_summary": "Annual University Hackathon and UI Design Competition flyer.",
+        "validation_error": "This image is not a recruitment or job advertisement. Scam analysis has not been performed because the uploaded image is unrelated to job recruitment."
+    }
+    res4 = await pipeline_runner.run(input_text="", image_bytes=b"fake_image_bytes", filename="event.png", target_language="en")
+    print(f"\n[Test 4 - Non-Job Poster Validation]")
+    print(f"Scam Score: {res4['scam_score']}")
+    print(f"Risk Level: {res4['risk_level']}")
+    print(f"Explanation:\n{res4['explanation_text']}")
 
     print("\n✅ All 5-Agent pipeline tests executed successfully!")
 

@@ -2,19 +2,30 @@ import React from 'react';
 import { AlertCircle, CheckCircle, ShieldAlert, AlertTriangle, ShieldCheck, Zap } from 'lucide-react';
 
 const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) => {
-  const normalizedScore = Math.min(100, Math.max(0, score));
+  const isNotJobPoster = score === 'N/A' || riskLevel === 'Not a Job Advertisement' || riskLevel === 'Unreadable Image' || (typeof score === 'string' && score.toUpperCase() === 'N/A');
+  const numScore = isNaN(Number(score)) ? 0 : Number(score);
+  const normalizedScore = Math.min(100, Math.max(0, numScore));
 
   const getRiskDetails = () => {
-    if (normalizedScore >= 85) {
+    if (isNotJobPoster) {
+      return {
+        color: '#38bdf8',
+        bgColor: 'bg-sky-500/10',
+        borderColor: 'border-sky-500/30',
+        textColor: 'text-sky-400',
+        label: riskLevel.toUpperCase(),
+        icon: AlertCircle
+      };
+    } else if (normalizedScore >= 81) {
       return {
         color: '#f43f5e',
         bgColor: 'bg-rose-500/10',
         borderColor: 'border-rose-500/30',
         textColor: 'text-rose-400',
-        label: 'SEVERE FRAUD RISK',
+        label: 'VERY HIGH SCAM RISK',
         icon: ShieldAlert
       };
-    } else if (normalizedScore >= 60) {
+    } else if (normalizedScore >= 61) {
       return {
         color: '#f97316',
         bgColor: 'bg-orange-500/10',
@@ -23,14 +34,23 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
         label: 'HIGH SCAM RISK',
         icon: AlertTriangle
       };
-    } else if (normalizedScore >= 30) {
+    } else if (normalizedScore >= 41) {
       return {
         color: '#f59e0b',
         bgColor: 'bg-amber-500/10',
         borderColor: 'border-amber-500/30',
         textColor: 'text-amber-400',
-        label: 'MODERATE RISK',
+        label: 'MEDIUM RISK',
         icon: AlertCircle
+      };
+    } else if (normalizedScore >= 21) {
+      return {
+        color: '#eab308',
+        bgColor: 'bg-yellow-500/10',
+        borderColor: 'border-yellow-500/30',
+        textColor: 'text-yellow-400',
+        label: 'LOW RISK',
+        icon: ShieldCheck
       };
     } else {
       return {
@@ -38,7 +58,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
         bgColor: 'bg-emerald-500/10',
         borderColor: 'border-emerald-500/30',
         textColor: 'text-emerald-400',
-        label: 'LOW RISK / LIKELY GENUINE',
+        label: 'VERY LOW RISK / GENUINE',
         icon: CheckCircle
       };
     }
@@ -49,7 +69,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
 
   const radius = 80;
   const circumference = Math.PI * radius;
-  const strokeDashoffset = circumference - (normalizedScore / 100) * circumference;
+  const strokeDashoffset = isNotJobPoster ? circumference * 0.5 : circumference - (normalizedScore / 100) * circumference;
 
   return (
     <div className={`flex flex-col items-center justify-center p-6 rounded-3xl border ${risk.bgColor} ${risk.borderColor} glass-card relative overflow-hidden space-y-4`}>
@@ -90,7 +110,7 @@ const ScamGauge = ({ score = 0, riskLevel = "Low Risk", confidenceScore = 98 }) 
 
         {/* Center Score Display */}
         <div className="absolute top-10 flex flex-col items-center">
-          <span className="text-4xl font-extrabold text-white tracking-tight">{normalizedScore}</span>
+          <span className="text-4xl font-extrabold text-white tracking-tight">{isNotJobPoster ? 'N/A' : normalizedScore}</span>
           <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Scam Probability Score</span>
         </div>
       </div>

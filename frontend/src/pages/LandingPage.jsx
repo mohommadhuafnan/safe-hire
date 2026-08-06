@@ -465,7 +465,7 @@ const LandingPage = () => {
       <section id="workflow-pipeline" className="max-w-7xl mx-auto px-6 pt-4 pb-8 scroll-mt-24">
         
         {/* Section Header */}
-        <div className="text-center mb-14 space-y-3">
+        <div className="text-center mb-14 space-y-3 scroll-reveal">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-400/30 text-sky-300 text-xs font-bold shadow-lg shadow-sky-500/10 backdrop-blur-md animate-pulse">
             <BrainCircuit className="w-4 h-4 text-sky-400" />
             <span>5-AGENT MULTI-AI ARCHITECTURE</span>
@@ -493,7 +493,8 @@ const LandingPage = () => {
               color: 'from-blue-600 to-indigo-600',
               borderColor: 'border-blue-500/30 hover:border-blue-400',
               glowColor: 'shadow-blue-500/20',
-              badgeBg: 'bg-blue-600'
+              badgeBg: 'bg-blue-600',
+              delay: 'reveal-delay-100'
             },
             {
               step: '2',
@@ -504,7 +505,8 @@ const LandingPage = () => {
               color: 'from-sky-500 to-blue-600',
               borderColor: 'border-sky-500/30 hover:border-sky-400',
               glowColor: 'shadow-sky-500/20',
-              badgeBg: 'bg-sky-500'
+              badgeBg: 'bg-sky-500',
+              delay: 'reveal-delay-200'
             },
             {
               step: '3',
@@ -515,7 +517,8 @@ const LandingPage = () => {
               color: 'from-cyan-500 to-teal-500',
               borderColor: 'border-cyan-500/30 hover:border-cyan-400',
               glowColor: 'shadow-cyan-500/20',
-              badgeBg: 'bg-cyan-500'
+              badgeBg: 'bg-cyan-500',
+              delay: 'reveal-delay-300'
             },
             {
               step: '4',
@@ -526,7 +529,8 @@ const LandingPage = () => {
               color: 'from-teal-500 to-emerald-500',
               borderColor: 'border-teal-500/30 hover:border-teal-400',
               glowColor: 'shadow-teal-500/20',
-              badgeBg: 'bg-teal-500'
+              badgeBg: 'bg-teal-500',
+              delay: 'reveal-delay-400'
             },
             {
               step: '5',
@@ -537,14 +541,15 @@ const LandingPage = () => {
               color: 'from-indigo-600 to-purple-600',
               borderColor: 'border-indigo-500/30 hover:border-indigo-400',
               glowColor: 'shadow-indigo-500/20',
-              badgeBg: 'bg-indigo-600'
+              badgeBg: 'bg-indigo-600',
+              delay: 'reveal-delay-500'
             }
           ].map((agent, i) => {
             const IconComp = agent.icon;
             return (
               <div 
                 key={i} 
-                className={`glass-card p-6 rounded-3xl border ${agent.borderColor} relative group hover:-translate-y-2.5 transition-all duration-300 backdrop-blur-xl bg-slate-950/80 shadow-xl ${agent.glowColor} flex flex-col justify-between`}
+                className={`glass-card p-6 rounded-3xl border ${agent.borderColor} relative group hover:-translate-y-2.5 transition-all duration-300 backdrop-blur-xl bg-slate-950/80 shadow-xl ${agent.glowColor} flex flex-col justify-between scroll-reveal ${agent.delay}`}
               >
                 {/* Step Connector Line (Desktop) */}
                 {i < 4 && (
@@ -763,144 +768,6 @@ const LandingPage = () => {
 
       </section>
 
-      {/* ========================================================================= */}
-      {/* 5-AGENT AI WORKFLOW PIPELINE SECTION (PLACED DIRECTLY AFTER VIDEO HERO) */}
-      {/* ========================================================================= */}
-      <section id="workflow-pipeline" className="max-w-7xl mx-auto px-6 pt-4 pb-8 scroll-mt-24">
-        
-        {/* Section Header */}
-        <div className="text-center mb-14 space-y-3 scroll-reveal">
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-400/30 text-sky-300 text-xs font-bold shadow-lg shadow-sky-500/10 backdrop-blur-md animate-pulse">
-            <BrainCircuit className="w-4 h-4 text-sky-400" />
-            <span>5-AGENT MULTI-AI ARCHITECTURE</span>
-          </div>
-
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
-            {t('landing.workflow_title', 'How SAFE-HIRE 5-Agent AI Works')}
-          </h2>
-          
-          <p className="text-slate-400 text-sm max-w-3xl mx-auto leading-relaxed">
-            {t('landing.workflow_desc', 'An automated multi-agent pipeline analyzes job postings, screenshots, and URLs in seconds.')}
-          </p>
-        </div>
-
-        {/* 5-Agent Sequential Cards Grid with Glowing Connectors */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
-          
-          {[
-            {
-              step: '1',
-              title: 'Intake Agent',
-              icon: FileText,
-              tag: 'Vision OCR & Ingestion',
-              desc: 'Processes text, image OCR screenshots, and URLs; auto-detects language.',
-              color: 'from-blue-600 to-indigo-600',
-              borderColor: 'border-blue-500/30 hover:border-blue-400',
-              glowColor: 'shadow-blue-500/20',
-              badgeBg: 'bg-blue-600',
-              delay: 'reveal-delay-100'
-            },
-            {
-              step: '2',
-              title: 'Linguistic Risk',
-              icon: BrainCircuit,
-              tag: 'EMSCAD Signal Engine',
-              desc: 'Evaluates EMSCAD signals: urgency, payment demands, email domain anomalies.',
-              color: 'from-sky-500 to-blue-600',
-              borderColor: 'border-sky-500/30 hover:border-sky-400',
-              glowColor: 'shadow-sky-500/20',
-              badgeBg: 'bg-sky-500',
-              delay: 'reveal-delay-200'
-            },
-            {
-              step: '3',
-              title: 'Verification Agent',
-              icon: Globe2,
-              tag: 'WHOIS & Safe Browsing',
-              desc: 'Checks WHOIS domain age, Google Safe Browsing, Abstract Email validation, and corporate presence.',
-              color: 'from-cyan-500 to-teal-500',
-              borderColor: 'border-cyan-500/30 hover:border-cyan-400',
-              glowColor: 'shadow-cyan-500/20',
-              badgeBg: 'bg-cyan-500',
-              delay: 'reveal-delay-300'
-            },
-            {
-              step: '4',
-              title: 'Reasoning Agent',
-              icon: Sparkles,
-              tag: 'Gemini 3.6 & DeepSeek',
-              desc: 'Synthesizes signals into a 0-100 score with plain language explanation.',
-              color: 'from-teal-500 to-emerald-500',
-              borderColor: 'border-teal-500/30 hover:border-teal-400',
-              glowColor: 'shadow-teal-500/20',
-              badgeBg: 'bg-teal-500',
-              delay: 'reveal-delay-400'
-            },
-            {
-              step: '5',
-              title: 'Recommendation',
-              icon: ShieldCheck,
-              tag: 'Poster-Specific Action',
-              desc: 'Delivers tailored safety guidance and university reporting steps.',
-              color: 'from-indigo-600 to-purple-600',
-              borderColor: 'border-indigo-500/30 hover:border-indigo-400',
-              glowColor: 'shadow-indigo-500/20',
-              badgeBg: 'bg-indigo-600',
-              delay: 'reveal-delay-500'
-            }
-          ].map((agent, i) => {
-            const IconComp = agent.icon;
-            return (
-              <div 
-                key={i} 
-                className={`glass-card p-6 rounded-3xl border ${agent.borderColor} relative group hover:-translate-y-2.5 transition-all duration-300 backdrop-blur-xl bg-slate-950/80 shadow-xl ${agent.glowColor} flex flex-col justify-between scroll-reveal ${agent.delay}`}
-              >
-                {/* Step Connector Line (Desktop) */}
-                {i < 4 && (
-                  <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
-                    <div className="w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-indigo-500 animate-pulse" />
-                    <div className="w-2 h-2 rounded-full bg-cyan-300 absolute -right-1 top-1/2 -translate-y-1/2 shadow-lg shadow-cyan-400" />
-                  </div>
-                )}
-
-                <div>
-                  {/* Step Badge & Icon */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`w-9 h-9 rounded-2xl ${agent.badgeBg} flex items-center justify-center text-white font-extrabold text-xs shadow-lg shadow-black/50 group-hover:scale-110 transition-transform duration-300`}>
-                      {agent.step}
-                    </div>
-                    <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-sky-400 group-hover:text-cyan-300 transition-colors">
-                      <IconComp className="w-4 h-4" />
-                    </div>
-                  </div>
-
-                  {/* Title & Tag */}
-                  <div className="space-y-1 mb-3">
-                    <h3 className="font-extrabold text-slate-100 text-base group-hover:text-cyan-300 transition-colors">
-                      {agent.title}
-                    </h3>
-                    <span className="inline-block px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-sky-300">
-                      {agent.tag}
-                    </span>
-                  </div>
-
-                  {/* Description */}
-                  <p className="text-slate-300 text-xs leading-relaxed">
-                    {agent.desc}
-                  </p>
-                </div>
-
-                {/* Bottom Active Pulse Glow Bar */}
-                <div className="mt-4 pt-3 border-t border-slate-900/80 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                  <span>Stage {agent.step} Active</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 group-hover:animate-ping" />
-                </div>
-              </div>
-            );
-          })}
-
-        </div>
-      </section>
 
       {/* ========================================================================= */}
       {/* KEY FEATURES GRID (WHY CHOOSE SAFE-HIRE - ENHANCED WITH ANIMATIONS) */}

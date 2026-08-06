@@ -17,49 +17,107 @@ class AgentPipeline:
         self.reasoning_agent = ReasoningAgent()
         self.recommendation_agent = RecommendationAgent()
 
-    async def run(self, input_text: str = "", image_bytes: bytes = None, input_url: str = "", target_language: str = None) -> dict:
+    async def run(self, input_text: str = "", image_bytes: bytes = None, filename: str = "", input_url: str = "", target_language: str = None) -> dict:
         try:
             logger.info("Executing Agent Pipeline Stage 1: Intake Agent")
-            intake_res = self.intake_agent.process(input_text, image_bytes, input_url, target_language) or {}
+            intake_res = self.intake_agent.process(input_text, image_bytes, filename, input_url, target_language) or {}
 
             cleaned_text = intake_res.get("cleaned_text", "")
             final_lang = intake_res.get("final_language", "en")
             domain = intake_res.get("domain", "")
 
-            # Check if non-job picture or non-career image was uploaded
+            # Check if image quality is unreadable
+            if intake_res.get("is_unreadable") is True:
+                validation_msg = intake_res.get("validation_error") or "The uploaded image quality is poor or unreadable. Please upload a clearer image of the recruitment advertisement for accurate analysis."
+                formatted_explanation = f"""Poster Type: Unreadable Image
+Confidence: N/A
+Scam Probability: N/A
+
+Result:
+{validation_msg}
+
+Recommendation:
+Please upload a clearer, high-resolution image of the recruitment advertisement to receive an accurate scam analysis."""
+
+                return {
+                    "intake_data": intake_res,
+                    "linguistic_data": {},
+                    "verification_data": {},
+                    "reasoning_data": {
+                        "scam_score": "N/A",
+                        "confidence_score": 0,
+                        "risk_level": "Unreadable Image",
+                        "explanation": formatted_explanation
+                    },
+                    "recommendations": [
+                        "Please upload a clearer image of the recruitment advertisement for accurate analysis."
+                    ],
+                    "scam_score": "N/A",
+                    "confidence_score": 0,
+                    "sub_scores": {
+                        "financial_fee_risk": 0,
+                        "impersonation_risk": 0,
+                        "domain_reputation_risk": 0,
+                        "urgency_pressure_risk": 0
+                    },
+                    "breakdown_signals": [
+                        "Image quality poor or text unreadable",
+                        "Scam analysis paused until clearer image provided"
+                    ],
+                    "risk_level": "Unreadable Image",
+                    "language": final_lang,
+                    "explanation_text": formatted_explanation
+                }
+
+            # Check if uploaded image is NOT a job poster
             if intake_res.get("is_job_poster") is False:
-                validation_msg = intake_res.get("validation_error") or "⚠️ NON-JOB POSTER DETECTED: This image contains no job recruitment advertisement or career vacancy offer."
-                explanation_text = f"{validation_msg}\n\nUploading non-career images (personal photos, animals, or unrelated pictures) cannot be verified for recruitment authenticity and is flagged with a 100% Risk Alert.\n\nPlease upload a valid job recruitment screenshot, walk-in interview flyer, or paste a job posting link."
+                poster_type = intake_res.get("poster_type") or "Not a Job Advertisement"
+                poster_summary = intake_res.get("poster_summary") or "The uploaded image does not contain job recruitment details or career vacancy offers."
+                validation_msg = intake_res.get("validation_error") or "This image is not a recruitment or job advertisement. Scam analysis has not been performed because the uploaded image is unrelated to job recruitment."
+                
+                formatted_explanation = f"""Poster Type: {poster_type}
+Confidence: 100%
+Scam Probability: N/A
+
+Result:
+{validation_msg}
+
+Image Summary:
+{poster_summary}
+
+Recommendation:
+Please upload a genuine recruitment or job advertisement to receive a complete scam analysis."""
                 
                 return {
                     "intake_data": intake_res,
                     "linguistic_data": {},
                     "verification_data": {},
                     "reasoning_data": {
-                        "scam_score": 100,
-                        "risk_level": "Non-Job Image (100% Risk Alert)",
-                        "explanation": explanation_text
+                        "scam_score": "N/A",
+                        "confidence_score": 100,
+                        "risk_level": "Not a Job Advertisement",
+                        "explanation": formatted_explanation
                     },
                     "recommendations": [
-                        "⚠️ Upload a valid job advertisement screenshot, recruitment flyer, or paste a job vacancy URL.",
-                        "Avoid uploading non-career photos, personal pictures, or unrelated graphics."
+                        "Please upload a genuine recruitment or job advertisement to receive a complete scam analysis."
                     ],
-                    "scam_score": 100,
+                    "scam_score": "N/A",
                     "confidence_score": 100,
                     "sub_scores": {
-                        "financial_fee_risk": 100,
-                        "impersonation_risk": 100,
-                        "domain_reputation_risk": 100,
-                        "urgency_pressure_risk": 100
+                        "financial_fee_risk": 0,
+                        "impersonation_risk": 0,
+                        "domain_reputation_risk": 0,
+                        "urgency_pressure_risk": 0
                     },
                     "breakdown_signals": [
-                        "⚠️ Non-Job Image Content Detected",
-                        "No career offer or recruitment vacancy details found",
-                        "100% Risk Alert triggered for non-recruitment picture"
+                        f"Poster Type: {poster_type}",
+                        "Confidence: 100%",
+                        "Scam Probability: N/A - Image is not a job advertisement",
+                        f"Image Summary: {poster_summary}"
                     ],
-                    "risk_level": "Non-Job Image (100% Risk Alert)",
+                    "risk_level": "Not a Job Advertisement",
                     "language": final_lang,
-                    "explanation_text": explanation_text
+                    "explanation_text": formatted_explanation
                 }
 
             logger.info("Executing Agent Pipeline Stage 2: Linguistic Risk Agent")

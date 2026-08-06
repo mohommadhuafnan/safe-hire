@@ -100,10 +100,19 @@ CRITICAL INSTRUCTION: Output ONLY a raw JSON object. No markdown, no code fences
 - Recruiter Email Quality Score: {(verification_data.get('email_validation') or {}).get('quality_score')}
 - Corporate Trust Score: {verification_data.get('verification_trust_score')}
 
-[SCORING RULES]:
-1. SCAM/HIGH RISK (scam_score 75-100): ANY of → fee demand, Telegram-only contact, brand impersonation with free email (@gmail/@yahoo), domain <90 days old + fee demand, unrealistic income for simple work.
-2. GENUINE/LOW RISK (scam_score 5-25): ALL of → zero fee demands, official corporate email/domain, realistic role and salary, no Telegram-only contact.
-3. MODERATE RISK (scam_score 30-60): Questionable but lacks decisive fraud signal (vague salary, unverifiable domain, no direct fee demand).
+[SCORING RULES & RISK TIERS]:
+- 0–20% → Very Low Risk
+- 21–40% → Low Risk
+- 41–60% → Medium Risk
+- 61–80% → High Risk
+- 81–100% → Very High Risk
+
+Scam Probability Calculation Criteria:
+- Very High Risk (81-100%): Registration/training fee demands, Telegram-only hiring contact, clear brand impersonation with free emails, domain age < 30 days.
+- High Risk (61-80%): Unrealistic high income for minimal effort, suspicious WhatsApp-only contact, unverifiable company details + urgency tactics.
+- Medium Risk (41-60%): Vague job description, generic email domain without corporate domain, unverifiable registry status.
+- Low Risk (21-40%): Standard job ad with minor omissions, no fee requests, valid domain.
+- Very Low Risk (0-20%): Fully authentic corporate job ad with verified official domain, no fee requests, transparent process.
 
 [OUTPUT LANGUAGE]: {target_lang_name} ({language})
 Write the "explanation" field natively in {target_lang_name}.
@@ -112,7 +121,7 @@ Return EXACTLY this JSON structure (no extra fields, no markdown):
 {{
   "scam_score": <integer 0-100>,
   "confidence_score": <integer 90-99>,
-  "risk_level": "<Severe Risk | High Risk | Moderate Risk | Low Risk>",
+  "risk_level": "<Very High Risk | High Risk | Medium Risk | Low Risk | Very Low Risk>",
   "explanation": "<Multi-section analysis in {target_lang_name}>:\\n\\n📋 POSTER SUMMARY:\\n[Company name, job role, salary, contact info, application method]\\n\\n🎯 SCAM RISK VERDICT:\\n[Explicit FAKE/GENUINE verdict with scam_score and 2-3 sentence reasoning]\\n\\n🔍 DETAILED EVIDENCE & RED FLAGS:\\n[Every specific signal — exact fee terms, email addresses, suspicious contacts, domain age, brand names, or proof of legitimacy]\\n\\n✅ SAFETY CONCLUSION:\\n[Clear final verdict and specific actionable advice for the job seeker]",
   "reasons": [
     "<Specific finding 1 with exact text/keyword from the poster>",
