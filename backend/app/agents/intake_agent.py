@@ -183,7 +183,7 @@ class IntakeAgent:
                             if isinstance(parsed, dict):
                                 logger.info(f"Hugging Face Vision ({model_name}) extraction success: posterType={parsed.get('posterType')}")
                                 is_p_type = str(parsed.get("posterType", "")).strip().lower()
-                                is_job = "not a job" not in is_p_type and "non-job" not in is_p_type and "graduation" not in is_p_type and "event" not in is_p_type and "ceremony" not in is_p_type
+                                is_job = (is_p_type == "job advertisement") or ("recruitment" in is_p_type and "not" not in is_p_type) or ("hiring" in is_p_type and "not" not in is_p_type)
                                 parsed["is_job_poster"] = is_job
                                 parsed["extracted_text"] = parsed.get("posterText", "")
                                 parsed["claimed_brand"] = parsed.get("companyName", "")
@@ -229,7 +229,7 @@ class IntakeAgent:
                             if isinstance(parsed, dict):
                                 logger.info(f"Gemini Vision Fallback ({g_model}) extraction success: posterType={parsed.get('posterType')}")
                                 is_p_type = str(parsed.get("posterType", "")).strip().lower()
-                                is_job = "not a job" not in is_p_type and "non-job" not in is_p_type and "graduation" not in is_p_type and "event" not in is_p_type and "ceremony" not in is_p_type
+                                is_job = (is_p_type == "job advertisement") or ("recruitment" in is_p_type and "not" not in is_p_type) or ("hiring" in is_p_type and "not" not in is_p_type)
                                 parsed["is_job_poster"] = is_job
                                 parsed["extracted_text"] = parsed.get("posterText", "")
                                 parsed["claimed_brand"] = parsed.get("companyName", "")
