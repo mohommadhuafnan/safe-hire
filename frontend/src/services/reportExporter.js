@@ -12,13 +12,18 @@ export const parseExplanationSections = (text) => {
       const emoji = m[1];
       const rawContent = m[2].trim();
 
-      let title = 'Analysis Section';
+      let title = 'SUMMARY & AUDIT';
       let body = rawContent;
 
+      const firstLineBreak = rawContent.indexOf('\n');
       const colonIdx = rawContent.indexOf(':');
-      if (colonIdx !== -1 && colonIdx < 60) {
+
+      if (colonIdx !== -1 && (firstLineBreak === -1 || colonIdx < firstLineBreak) && colonIdx < 80) {
         title = rawContent.slice(0, colonIdx).trim();
         body = rawContent.slice(colonIdx + 1).trim();
+      } else if (firstLineBreak !== -1 && firstLineBreak < 80) {
+        title = rawContent.slice(0, firstLineBreak).trim();
+        body = rawContent.slice(firstLineBreak + 1).trim();
       } else {
         if (emoji === '📋') title = 'POSTER SUMMARY';
         else if (emoji === '🎯') title = 'SCAM RISK VERDICT';

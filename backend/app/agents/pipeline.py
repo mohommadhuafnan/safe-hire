@@ -279,6 +279,26 @@ Please upload a clearer, high-resolution image of the recruitment advertisement 
             if not isinstance(breakdown_signals, list):
                 breakdown_signals = []
 
+            explanation_text = reasoning_res.get("explanation", "")
+
+            # If target language is non-English, auto-translate via Valsea AI
+            if final_lang and final_lang.lower() != "en":
+                try:
+                    from app.agents.valsea_agent import valsea_translator
+                    valsea_res = valsea_translator.translate_report_components(
+                        explanation_text,
+                        recommendations,
+                        breakdown_signals,
+                        final_lang
+                    )
+                    if valsea_res and valsea_res.get("explanation_text"):
+                        explanation_text = valsea_res.get("explanation_text")
+                        recommendations = valsea_res.get("recommendations") or recommendations
+                        breakdown_signals = valsea_res.get("breakdown_signals") or breakdown_signals
+                        logger.info(f"✅ Valsea AI auto-translated pipeline output to '{final_lang}'")
+                except Exception as valsea_err:
+                    logger.warning(f"Valsea translation in pipeline notice: {valsea_err}")
+
             return {
                 "intake_data": intake_res,
                 "linguistic_data": linguistic_res,
@@ -291,7 +311,7 @@ Please upload a clearer, high-resolution image of the recruitment advertisement 
                 "breakdown_signals": breakdown_signals,
                 "risk_level": reasoning_res.get("risk_level", "Low Risk"),
                 "language": final_lang,
-                "explanation_text": reasoning_res.get("explanation", "")
+                "explanation_text": explanation_text
             }
         except Exception as e:
             logger.error(f"Pipeline execution notice: {e}", exc_info=True)
