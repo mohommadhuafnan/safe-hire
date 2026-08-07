@@ -37,8 +37,10 @@ class Settings(BaseSettings):
     # Abstract API Email Validation Settings
     ABSTRACT_EMAIL_API_KEY: str = os.getenv("ABSTRACT_EMAIL_API_KEY", "65b5f7a51dcf4cf4b00176ac9e690531")
 
-    # Firebase Settings
-    FIREBASE_SERVICE_ACCOUNT_PATH: str = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "serviceAccountKey.json")
+    # Valsea AI Translation Settings
+    VALSEA_API_KEY: str = os.getenv("VALSEA_API_KEY", "vl_7a5a9f08a2f52681eca39db60314a5bb7ac93bd9e337086d0ce121301d1e04e8.451230e514da410b8f8e2a33346f0ecf")
+    VALSEA_API_URL: str = os.getenv("VALSEA_API_URL", "https://api.valsea.ai/v1/translations")
+    VALSEA_MODEL_NAME: str = os.getenv("VALSEA_MODEL_NAME", "valsea-translate")
 
     class Config:
         env_file = ".env"

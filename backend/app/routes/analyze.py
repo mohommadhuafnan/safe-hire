@@ -157,9 +157,25 @@ async def translate_report_endpoint(
 ):
     import json, requests
     from app.config import settings
+    from app.agents.valsea_agent import valsea_translator
     import logging
     logger = logging.getLogger("safe_hire.translate")
 
+    # --- Stage 1: Primary Valsea AI Translation ---
+    try:
+        valsea_res = valsea_translator.translate_report_components(
+            req.explanation_text,
+            req.recommendations,
+            req.breakdown_signals,
+            req.target_language
+        )
+        if valsea_res and valsea_res.get("explanation_text"):
+            logger.info(f"✅ Valsea AI Translation Endpoint Success for '{req.target_language}'")
+            return valsea_res
+    except Exception as valsea_err:
+        logger.warning(f"Valsea AI translation attempt notice: {valsea_err}")
+
+    # --- Stage 2: Secondary Gemini AI Translation ---
     lang_map = {
         "ta": "Tamil (தமிழ்)",
         "si": "Sinhala (සිංහල)",
@@ -219,7 +235,7 @@ Return ONLY a valid raw JSON object matching this structure (no markdown fences 
                             "target_language": req.target_language
                         }
     except Exception as err:
-        logger.warning(f"Translation endpoint notice: {err}")
+        logger.warning(f"Gemini translation endpoint notice: {err}")
 
     return {
         "explanation_text": req.explanation_text,
