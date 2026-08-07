@@ -75,9 +75,9 @@ class IntakeAgent:
             return image_bytes
 
     @staticmethod
-    def analyze_poster_with_huggingface_vision(image_bytes: bytes) -> dict:
+    def analyze_poster_with_huggingface_vision(image_bytes: bytes, target_language: str = None) -> dict:
         """
-        Agent 1: Hugging Face Vision Model (Qwen/Qwen2.5-VL-7B-Instruct:featherless-ai)
+        Agent 1: Hugging Face / Gemini Vision Model
         Analyzes uploaded image/poster, extracts structured JSON fields:
         posterType, companyName, jobTitle, salary, website, email, phone, address, posterText, qrCode.
         Determines whether the upload is a job advertisement.
@@ -104,9 +104,19 @@ class IntakeAgent:
         base64_img = base64.b64encode(image_bytes).decode('utf-8')
         data_url = f"data:{mime_type};base64,{base64_img}"
 
-        prompt = """
+        target_lang_name = {
+            "ta": "Tamil (தமிழ்)",
+            "si": "Sinhala (සිංහල)",
+            "hi": "Hindi (हिंदी)",
+            "bn": "Bengali (বাংলা)"
+        }.get(target_language, "English")
+
+        prompt = f"""
         You are SAFE-HIRE's Senior Multimodal Vision & Poster Intelligence Agent.
         Analyze the uploaded image or poster carefully and perform deep text, visual, and entity extraction.
+
+        OUTPUT LANGUAGE REQUIREMENT:
+        Write the "specificCategory" and "posterSummary" fields natively in {target_lang_name} ({target_language or 'en'}).
 
         OBJECTIVES:
         1. Determine whether the upload is a Job Recruitment Advertisement or NOT a job advertisement.
@@ -115,15 +125,15 @@ class IntakeAgent:
 
         2. Identify the specific category ("specificCategory") e.g. "University Graduation Announcement", "Photography Studio Portfolio", "Educational Course Flyer", "IT Recruitment Hiring Notice", "Product Promotion Ad", "Personal Event Invitation".
 
-        3. Provide an EXHAUSTIVE 3-4 sentence detailed summary ("posterSummary") explaining exactly what this image/poster is about, what organization/institution issued it, key names/dates/details shown, and explicitly state why it is or is not a job recruitment offer.
+        3. Provide an EXHAUSTIVE 3-4 sentence detailed summary ("posterSummary") in {target_lang_name} explaining exactly what this image/poster depicts, what organization/institution issued it, key names/dates/details shown, and explicitly state why it is or is not a job recruitment offer.
 
         4. Extract structured fields cleanly.
 
         Return ONLY a raw JSON object with this exact structure (no markdown formatting outside the JSON):
-        {
+        {{
           "posterType": "Not a Job Advertisement | Job Advertisement",
-          "specificCategory": "Exact classification (e.g., University Graduation Ceremony Announcement)",
-          "posterSummary": "Detailed 3-4 sentence breakdown analyzing what this specific poster depicts and why",
+          "specificCategory": "Exact classification in {target_lang_name}",
+          "posterSummary": "Detailed 3-4 sentence breakdown in {target_lang_name} analyzing what this specific poster depicts and why",
           "companyName": "Company or Institution name if present, else empty string",
           "jobTitle": "Job title or position if present, else empty string",
           "salary": "Salary or compensation if present, else empty string",
@@ -133,7 +143,7 @@ class IntakeAgent:
           "address": "Physical location or address if present, else empty string",
           "posterText": "Complete extracted text content from the poster image",
           "qrCode": "QR code URL or content if present, else empty string"
-        }
+        }}
         """
 
         models_to_try = [
@@ -569,7 +579,7 @@ class IntakeAgent:
                     is_unreadable = True
                     validation_error = "The uploaded document quality is poor or unreadable. Please upload a clearer document or file."
             else:
-                vision_res = self.analyze_poster_with_huggingface_vision(image_bytes) or {}
+                vision_res = self.analyze_poster_with_huggingface_vision(image_bytes, target_language=target_language) or {}
                 if not isinstance(vision_res, dict):
                     vision_res = {}
                 is_job_poster = vision_res.get("is_job_poster", True)

@@ -589,6 +589,105 @@ Verify job offers directly on official corporate career portals before sending d
     }
 
     /**
+     * Dynamically translate an active analysis report to target language
+     */
+    async translateReport(report, targetLanguage) {
+        if (!report || !report.explanation_text) return report;
+        const targetLang = targetLanguage || 'en';
+
+        // 1. Try backend API first
+        try {
+            const token = localStorage.getItem('token') || '';
+            const res = await fetch('/api/analyze/translate-report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    explanation_text: report.explanation_text,
+                    recommendations: report.recommendations || [],
+                    breakdown_signals: report.breakdown_signals || [],
+                    target_language: targetLang
+                })
+            });
+            if (res.ok) {
+                const translated = await res.json();
+                return {
+                    ...report,
+                    explanation_text: translated.explanation_text || report.explanation_text,
+                    recommendations: translated.recommendations || report.recommendations,
+                    breakdown_signals: translated.breakdown_signals || report.breakdown_signals,
+                    language: targetLang
+                };
+            }
+        } catch (e) {
+            console.warn('Backend translation API unavailable, using direct Gemini fallback:', e);
+        }
+
+        // 2. Direct Gemini Vision / Multimodal AI Fallback
+        if (this.apiKey) {
+            try {
+                const langMap = {
+                    ta: 'Tamil (தமிழ்)',
+                    si: 'Sinhala (සිංහල)',
+                    hi: 'Hindi (हिंदी)',
+                    bn: 'Bengali (বাংলা)',
+                    en: 'English'
+                };
+                const langName = langMap[targetLang] || 'English';
+
+                const prompt = `You are a professional security report translator.
+Translate the following security audit report components natively into ${langName} (${targetLang}).
+Keep all markdown formatting, emojis (📋, 🎯, 🔍, 💡, ✅, 🌐), headers, numbers, bullet points, and structure intact.
+
+1. explanation_text:
+${report.explanation_text}
+
+2. recommendations:
+${JSON.stringify(report.recommendations || [])}
+
+3. breakdown_signals:
+${JSON.stringify(report.breakdown_signals || [])}
+
+Return ONLY a valid JSON object matching this structure (no markdown fences outside JSON):
+{
+  "explanation_text": "<translated explanation text>",
+  "recommendations": ["<translated rec 1>", "<translated rec 2>", ...],
+  "breakdown_signals": ["<translated signal 1>", "<translated signal 2>", ...]
+}`;
+
+                const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`;
+                const res = await fetch(restUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    const cleaned = rawText.replace(/```json/gi, '').replace(/```/gi, '').trim();
+                    const parsed = JSON.parse(cleaned);
+                    if (parsed && typeof parsed === 'object') {
+                        return {
+                            ...report,
+                            explanation_text: parsed.explanation_text || report.explanation_text,
+                            recommendations: parsed.recommendations || report.recommendations,
+                            breakdown_signals: parsed.breakdown_signals || report.breakdown_signals,
+                            language: targetLang
+                        };
+                    }
+                }
+            } catch (err) {
+                console.warn('Direct Gemini translation error:', err);
+            }
+        }
+
+        return { ...report, language: targetLang };
+    }
+
+    /**
      * Cancel an active streaming request
      */
     cancelActiveStream() {

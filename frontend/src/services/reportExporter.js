@@ -4,8 +4,8 @@ export const parseExplanationSections = (text) => {
   const cleanText = text.trim();
   if (!cleanText) return [];
 
-  // Match emoji section markers: 📋, 🎯, 🔍, ✅
-  const emojiMatches = Array.from(cleanText.matchAll(/(📋|🎯|🔍|✅)\s*([^📋🎯🔍✅]+)/g));
+  // Match emoji section markers: 📋, 🎯, 🔍, 💡, ✅, 🌐
+  const emojiMatches = Array.from(cleanText.matchAll(/(📋|🎯|🔍|💡|✅|🌐)\s*([^📋🎯🔍💡✅🌐]+)/g));
 
   if (emojiMatches.length > 0) {
     return emojiMatches.map(m => {
@@ -16,13 +16,15 @@ export const parseExplanationSections = (text) => {
       let body = rawContent;
 
       const colonIdx = rawContent.indexOf(':');
-      if (colonIdx !== -1 && colonIdx < 50) {
+      if (colonIdx !== -1 && colonIdx < 60) {
         title = rawContent.slice(0, colonIdx).trim();
         body = rawContent.slice(colonIdx + 1).trim();
       } else {
         if (emoji === '📋') title = 'POSTER SUMMARY';
         else if (emoji === '🎯') title = 'SCAM RISK VERDICT';
         else if (emoji === '🔍') title = 'DETAILED EVIDENCE & RED FLAGS';
+        else if (emoji === '💡') title = 'AUDIT CONCLUSION & ADVICE';
+        else if (emoji === '🌐') title = 'TECHNICAL DOMAIN INTELLIGENCE';
         else if (emoji === '✅') title = 'SAFETY CONCLUSION';
       }
 

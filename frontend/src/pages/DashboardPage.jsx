@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import GeminiAPIClient from '../services/GeminiAPIClient';
+
 const StructuredExplanationView = ({ text }) => {
   const sections = parseExplanationSections(text);
 
@@ -106,11 +108,36 @@ const DashboardPage = () => {
   const [targetLanguage, setTargetLanguage] = useState(
     user?.preferred_language || i18n.resolvedLanguage || i18n.language?.split('-')[0] || 'en'
   );
+  const [isTranslatingReport, setIsTranslatingReport] = useState(false);
+
+  const translateActiveResult = async (lang, currentRes) => {
+    if (!currentRes || !currentRes.explanation_text) return;
+    setIsTranslatingReport(true);
+    try {
+      const client = new GeminiAPIClient();
+      const translated = await client.translateReport(currentRes, lang);
+      setResult(translated);
+    } catch (err) {
+      console.warn('Report translate notice:', err);
+    } finally {
+      setIsTranslatingReport(false);
+    }
+  };
 
   const handleLanguageChange = (lang) => {
     setTargetLanguage(lang);
     i18n.changeLanguage(lang);
+    if (result && result.language !== lang) {
+      translateActiveResult(lang, result);
+    }
   };
+
+  React.useEffect(() => {
+    const activeLang = i18n.resolvedLanguage || i18n.language?.split('-')[0] || 'en';
+    if (result && result.language !== activeLang && !isTranslatingReport) {
+      translateActiveResult(activeLang, result);
+    }
+  }, [i18n.language]);
 
   // Pipeline Execution State
   const [analyzing, setAnalyzing] = useState(false);
@@ -713,9 +740,14 @@ const DashboardPage = () => {
                     {t('dashboard.ai_audit_rationale', 'AI AUDIT RATIONALE')}
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans whitespace-pre-line bg-slate-900/90 p-4 rounded-xl border border-slate-800/80">
-                  {result.explanation_text}
-                </p>
+                {isTranslatingReport ? (
+                  <div className="flex items-center space-x-2 py-6 justify-center text-xs text-sky-400 font-semibold animate-pulse bg-slate-900/90 rounded-xl border border-slate-800/80">
+                    <Sparkles className="w-4 h-4 text-sky-400 animate-spin" />
+                    <span>Translating report to {targetLanguage.toUpperCase()}...</span>
+                  </div>
+                ) : (
+                  <StructuredExplanationView text={result.explanation_text} />
+                )}
               </div>
 
               {/* STUDENT SAFETY ACTION PLAN */}

@@ -125,18 +125,18 @@ Analyze the structured intelligence below and generate an EXHAUSTIVE, HIGHLY DET
 - Informal Contact Channels: {linguistic_data.get('matched_suspicious_terms')}
 
 [OUTPUT LANGUAGE REQUIREMENT]: {target_lang_name} ({language})
-Write the complete explanation report natively in {target_lang_name}.
+CRITICAL LANGUAGE MANDATE: Write the ENTIRE explanation report, section headings, reasons array, and recommendations array natively in {target_lang_name}. Do NOT fall back to generic English text.
 
 YOUR TASK & OUTPUT FORMAT:
 If the content is NOT a job advertisement (e.g. nature photo, graduation banner, product ad, certificate, personal media):
-Set "riskScore": "N/A", "riskLevel": "Not a Job Advertisement", "isScam": false.
+Set "riskScore": "N/A", "riskLevel": "Not a Job Advertisement", "isScam": false. Write a 100% poster-specific audit in {target_lang_name} detailing what this item is.
 
 If the content IS a job advertisement:
 Compute a scam probability risk score from 0 to 100 based on fraud signals.
 
-The "explanation" field MUST be a RICH, EXHAUSTIVE, MULTI-SECTION AUDIT REPORT following this exact structure:
+The "explanation" field MUST be a RICH, EXHAUSTIVE, MULTI-SECTION AUDIT REPORT written in {target_lang_name} following this structure:
 
-📋 EXHAUSTIVE POSTER SUMMARY & ENTITY EXTRACTION:
+📋 POSTER SUMMARY & ENTITY EXTRACTION:
 - Company/Brand: [Company Name]
 - Positions/Roles: [Positions extracted]
 - Qualifications & Requirements: [Requirements extracted]
@@ -144,13 +144,13 @@ The "explanation" field MUST be a RICH, EXHAUSTIVE, MULTI-SECTION AUDIT REPORT f
 - Contact & Application Channels: [Emails, phones, website, WhatsApp/Telegram]
 
 🎯 SCAM RISK VERDICT & RATING:
-[Full 2-3 sentence verdict explaining the exact scam risk score, why it was given this score, and the primary conclusion.]
+[Full 2-3 sentence verdict in {target_lang_name} explaining the exact scam risk score, why it was given this score, and the primary conclusion.]
 
 🔍 COMPREHENSIVE RISK FACTORS & DEEP EVIDENCE AUDIT:
-• Upfront Fee & Financial Demand Audit: [Detailed analysis of whether payment/deposits are requested]
-• Brand Identity & Email Domain Verification: [Analysis of official corporate domain vs free email accounts]
-• Technical Domain Intelligence: [Domain age, WHOIS status, SSL, Safe Browsing status]
-• Communication & Urgency Tactics: [Evaluation of official portal vs WhatsApp/Telegram and artificial pressure]
+• Upfront Fee & Financial Demand Audit: [Detailed analysis in {target_lang_name} of whether payment/deposits are requested]
+• Brand Identity & Email Domain Verification: [Analysis in {target_lang_name} of official corporate domain vs free email accounts]
+• Technical Domain Intelligence: [Domain age, WHOIS status, SSL, Safe Browsing status in {target_lang_name}]
+• Communication & Urgency Tactics: [Evaluation in {target_lang_name} of official portal vs WhatsApp/Telegram and artificial pressure]
 
 📊 SUB-SIGNAL RISK EVALUATION:
 - Financial Fee Risk: [X/100]
@@ -159,10 +159,10 @@ The "explanation" field MUST be a RICH, EXHAUSTIVE, MULTI-SECTION AUDIT REPORT f
 - Urgency Pressure Risk: [X/100]
 
 ✅ EXPERT SAFETY ACTION PLAN FOR JOB SEEKERS:
-1. [Actionable step 1]
-2. [Actionable step 2]
-3. [Actionable step 3]
-4. [Actionable step 4]
+1. [Actionable step 1 in {target_lang_name}]
+2. [Actionable step 2 in {target_lang_name}]
+3. [Actionable step 3 in {target_lang_name}]
+4. [Actionable step 4 in {target_lang_name}]
 
 Return ONLY a raw JSON object (no markdown fences outside JSON):
 {{

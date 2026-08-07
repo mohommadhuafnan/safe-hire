@@ -86,27 +86,124 @@ Please upload a clearer, high-resolution image of the recruitment advertisement 
                 whois_status = whois_info.get("whois_status") or "Verified Domain Record"
                 safe_status = (verification_res.get("safe_browsing") or {}).get("status") or "Verified Safe"
 
-                formatted_explanation = f"""📋 POSTER CLASSIFICATION & SUMMARY:
-• Classification: {specific_category}
-• Precision Confidence: 100%
-• Scam Risk Score: N/A (Non-Recruitment Content)
+                lang_code = final_lang if final_lang in ["ta", "si", "hi", "bn"] else "en"
+                loc = {
+                    "ta": {
+                        "header_summary": "📋 போஸ்டர் வகைப்பாடு மற்றும் சுருக்கம்:",
+                        "lbl_class": "• வகைப்பாடு:",
+                        "lbl_conf": "• துல்லியமான நம்பிக்கை: 100%",
+                        "lbl_score": "• மோசடி ஆபத்து மதிப்பெண்: N/A (வேலைவாய்ப்பு அற்ற உள்ளடக்கம்)",
+                        "header_audit": "🔍 விரிவான படம் & உள்ளடக்கத் தணிக்கை:",
+                        "header_conclusion": "💡 தணிக்கை முடிவு & ஆலோசனை:",
+                        "body_conclusion": "இந்த ஆவணம்/ஊடகம் SAFE-HIRE AI ஆல் முழுமையாக பகுப்பாய்வு செய்யப்பட்டுள்ளது. இதில் எந்த வேலைவாய்ப்பு விளம்பரங்கள், திறந்த பணியிடங்கள், சம்பள சலுகைகள் அல்லது வேலை பதிவு கட்டண கோரிக்கைகள் இல்லை. வேலைவாய்ப்பு இல்லாத ஊடகத்திற்கு மோசடி நிகழ்தகவு பகுப்பாய்வு பொருந்தாது.",
+                        "header_domain": "🌐 தொழில்நுட்ப டொமைன் உளவுத்துறை:",
+                        "lbl_target_domain": "• இலக்கு டொமைன்:",
+                        "lbl_domain_age": "• டொமைன் வயது:",
+                        "lbl_registrar": "• பதிவாளர்:",
+                        "lbl_safe_browsing": "• கூகிள் பாதுகாப்பான உலாவுதல் நிலை:",
+                        "rec_upload_genuine": "மோசடி நிகழ்தகவு தணிக்கையைப் பெற உண்மையான வேலைவாய்ப்பு விளம்பரம் அல்லது வேலை வாய்ப்பு URL ஐப் பதிவேற்றவும்.",
+                        "rec_official_portal": "அதிகாரப்பூர்வ நிறுவனத்தின் போர்ட்டலில் தகவல்களை நேரடியாகச் சரிபார்க்கவும்.",
+                        "signal_category": "வகைப்பாடு:",
+                        "signal_score": "மோசடி நிகழ்தகவு: N/A (வேலைவாய்ப்பு அற்ற உள்ளடக்கம்)",
+                        "signal_audit": "பட உள்ளடக்க தணிக்கை:"
+                    },
+                    "si": {
+                        "header_summary": "📋 පෝස්ටර් වර්ගීකරණය සහ සාරාංශය:",
+                        "lbl_class": "• වර්ගීකරණය:",
+                        "lbl_conf": "• නිරවද්‍යතා විශ්වාසය: 100%",
+                        "lbl_score": "• වංචා අවදානම් ලකුණ: N/A (රැකියා නොවන අන්තර්ගතය)",
+                        "header_audit": "🔍 විස්තරාත්මක පින්තූර සහ අන්තර්ගත විගණනය:",
+                        "header_conclusion": "💡 විගණන නිගමනය සහ උපදෙස්:",
+                        "body_conclusion": "මෙම ලේඛනය/මාධ්‍යය SAFE-HIRE AI විසින් පූර්ණ පරීක්ෂාවට ලක් කර ඇත. මෙහි රැකියා ඇබෑර්තු, වැටුප් දීමනා, හෝ ලියාපදිංචි ගාස්තු ඉල්ලීම් නොමැත. රැකියා නොවන මාධ්‍ය සඳහා වංචා සම්භාවිතා විශ්ලේෂණය අදාළ නොවේ.",
+                        "header_domain": "🌐 තාක්ෂණික ඩොමේන් තොරතුරු:",
+                        "lbl_target_domain": "• ඉලක්කගත ඩොමේනය:",
+                        "lbl_domain_age": "• ඩොමේන් ආයු කාලය:",
+                        "lbl_registrar": "• ලියාපදිංචිකරු:",
+                        "lbl_safe_browsing": "• Google Safe Browsing තත්ත්වය:",
+                        "rec_upload_genuine": "සම්පූර්ණ වංචා අවදානම් විගණනයක් ලබා ගැනීමට කරුණාකර සැබෑ රැකියා දැන්වීමක් හෝ URL එකක් එක් කරන්න.",
+                        "rec_official_portal": "නියමිත ආයතනයේ නිල වෙබ් අඩවිය හරහා තොරතුරු පරීක්ෂා කරන්න.",
+                        "signal_category": "වර්ගීකරණය:",
+                        "signal_score": "වංචා සම්භාවිතාව: N/A (රැකියා නොවන අන්තර්ගතය)",
+                        "signal_audit": "රූප අන්තර්ගත විගණනය:"
+                    },
+                    "hi": {
+                        "header_summary": "📋 पोस्टर वर्गीकरण और सारांश:",
+                        "lbl_class": "• वर्गीकरण:",
+                        "lbl_conf": "• सटीकता विश्वास: 100%",
+                        "lbl_score": "• घोटाले का जोखिम स्कोर: N/A (गैर-भर्ती सामग्री)",
+                        "header_audit": "🔍 विस्तृत छवि एवं सामग्री ऑडिट:",
+                        "header_conclusion": "💡 ऑडिट निष्कर्ष एवं सलाह:",
+                        "body_conclusion": "इस दस्तावेज़/मीडिया का SAFE-HIRE AI द्वारा पूरी तरह से विश्लेषण किया गया है। इसमें कोई नौकरी विज्ञापन, रिक्तियां, वेतन प्रस्ताव या पंजीकरण शुल्क की मांग नहीं है। गैर-भर्ती मीडिया के लिए घोटाला संभावना विश्लेषण लागू नहीं होता है।",
+                        "header_domain": "🌐 तकनीकी डोमेन इंटेलिजेंस:",
+                        "lbl_target_domain": "• लक्षित डोमेन:",
+                        "lbl_domain_age": "• डोमेन आयु:",
+                        "lbl_registrar": "• रजिस्ट्रार:",
+                        "lbl_safe_browsing": "• गूगल सेफ ब्राउज़िंग स्थिति:",
+                        "rec_upload_genuine": "पूर्ण घोटाला संभावना ऑडिट प्राप्त करने के लिए कृपया एक वास्तविक भर्ती विज्ञापन या नौकरी URL अपलोड करें।",
+                        "rec_official_portal": "आधिकारिक कॉर्पोरेट करियर पोर्टल पर सीधे रिक्ति की जांच करें।",
+                        "signal_category": "वर्गीकरण:",
+                        "signal_score": "घोटाला संभावना: N/A (गैर-भर्ती सामग्री)",
+                        "signal_audit": "छवि सामग्री ऑडिट:"
+                    },
+                    "bn": {
+                        "header_summary": "📋 পোস্টার শ্রেণিবিন্যাস এবং সারাংশ:",
+                        "lbl_class": "• শ্রেণিবিন্যাস:",
+                        "lbl_conf": "• নির্ভুলতা আত্মবিশ্বাস: 100%",
+                        "lbl_score": "• স্ক্যাম ঝুঁকির স্কোর: N/A (অ-নিয়োগ সামগ্রী)",
+                        "header_audit": "🔍 বিস্তারিত ছবি ও বিষয়বস্তু অডিট:",
+                        "header_conclusion": "💡 অডিট সিদ্ধান্ত ও পরামর্শ:",
+                        "body_conclusion": "এই নথিটি/মিডিয়াটি SAFE-HIRE AI দ্বারা পুঙ্খানুপুঙ্খভাবে বিশ্লেষণ করা হয়েছে। এতে কোনো চাকরির নিয়োগের তালিকা, খোলা পদের শূন্যপদ, বেতনের প্রস্তাব বা কর্মসংস্থান নিবন্ধন ফি দাবির নির্দেশ নেই।",
+                        "header_domain": "🌐 প্রযুক্তিগত ডোমেইন বুদ্ধিমত্তা:",
+                        "lbl_target_domain": "• টার্গেট ডোমেইন:",
+                        "lbl_domain_age": "• ডোমেইন বয়স:",
+                        "lbl_registrar": "• রেজিস্ট্রার:",
+                        "lbl_safe_browsing": "• গুগল সেফ ব্রাউজিং স্ট্যাটাস:",
+                        "rec_upload_genuine": "একটি সম্পূর্ণ স্ক্যাম সম্ভাব্যতা অডিট পেতে সঠিক নিয়োগের বিজ্ঞাপন বা চাকরির বিজ্ঞপ্তি URL আপলোড করুন।",
+                        "rec_official_portal": "অফিসিয়াল কর্পোরেট ক্যারিয়ার পোর্টালে সরাসরি তথ্য যাচাই করুন।",
+                        "signal_category": "শ্রেণিবিন্যাস:",
+                        "signal_score": "স্ক্যাম সম্ভাব্যতা: N/A (অ-নিয়োগ সামগ্রী)",
+                        "signal_audit": "ছবি বিষয়বস্তু অডিট:"
+                    },
+                    "en": {
+                        "header_summary": "📋 POSTER CLASSIFICATION & SUMMARY:",
+                        "lbl_class": "• Classification:",
+                        "lbl_conf": "• Precision Confidence: 100%",
+                        "lbl_score": "• Scam Risk Score: N/A (Non-Recruitment Content)",
+                        "header_audit": "🔍 DETAILED IMAGE & CONTENT AUDIT:",
+                        "header_conclusion": "💡 AUDIT CONCLUSION & ADVICE:",
+                        "body_conclusion": "This document/media has been thoroughly analyzed by SAFE-HIRE AI. It contains no job recruitment listings, open hiring vacancies, salary offers, or employment registration fee demands. Scam probability analysis is not applicable to non-recruitment media.",
+                        "header_domain": "🌐 TECHNICAL DOMAIN INTELLIGENCE:",
+                        "lbl_target_domain": "• Target Domain:",
+                        "lbl_domain_age": "• Domain Age:",
+                        "lbl_registrar": "• Registrar:",
+                        "lbl_safe_browsing": "• Google Safe Browsing:",
+                        "rec_upload_genuine": "Please upload a genuine recruitment flyer or job vacancy URL to receive a full scam probability audit.",
+                        "rec_official_portal": "Verify any institution details directly on their official website or career portal.",
+                        "signal_category": "Category:",
+                        "signal_score": "Scam Probability: N/A (Non-Recruitment Content)",
+                        "signal_audit": "Image Content Audit:"
+                    }
+                }[lang_code]
 
-🔍 DETAILED IMAGE & CONTENT AUDIT:
+                formatted_explanation = f"""{loc['header_summary']}
+{loc['lbl_class']} {specific_category}
+{loc['lbl_conf']}
+{loc['lbl_score']}
+
+{loc['header_audit']}
 {poster_summary}
 
-💡 AUDIT CONCLUSION & ADVICE:
-This document/media has been thoroughly analyzed by SAFE-HIRE AI. It contains no job recruitment listings, open hiring vacancies, salary offers, or employment registration fee demands. Scam probability analysis is not applicable to non-recruitment media."""
+{loc['header_conclusion']}
+{loc['body_conclusion']}"""
 
                 if domain:
                     formatted_explanation += f"""
 
-🌐 TECHNICAL DOMAIN INTELLIGENCE:
-• Target Domain: {domain}
-• Domain Age: {reg_days if reg_days is not None else 'Verified'} Days ({whois_status})
-• Registrar: {registrar}
-• Google Safe Browsing: {safe_status}"""
-
-                recommendation_text = f"Analyzed '{specific_category}' content. Upload a genuine recruitment flyer or job vacancy URL to receive a full scam probability audit."
+{loc['header_domain']}
+{loc['lbl_target_domain']} {domain}
+{loc['lbl_domain_age']} {reg_days if reg_days is not None else 'Verified'} Days ({whois_status})
+{loc['lbl_registrar']} {registrar}
+{loc['lbl_safe_browsing']} {safe_status}"""
 
                 return {
                     "posterType": "Not a Job Advertisement",
@@ -114,7 +211,7 @@ This document/media has been thoroughly analyzed by SAFE-HIRE AI. It contains no
                     "scamProbability": None,
                     "analysisPerformed": False,
                     "summary": poster_summary,
-                    "recommendation": "Please upload a recruitment or job advertisement (PNG, JPG, JPEG, WEBP, PDF, DOC, or DOCX) for scam analysis.",
+                    "recommendation": loc["rec_upload_genuine"],
                     "intake_data": intake_res,
                     "linguistic_data": {},
                     "verification_data": verification_res,
@@ -125,7 +222,8 @@ This document/media has been thoroughly analyzed by SAFE-HIRE AI. It contains no
                         "explanation": formatted_explanation
                     },
                     "recommendations": [
-                        "Please upload a recruitment or job advertisement (PNG, JPG, JPEG, WEBP, PDF, DOC, or DOCX) for scam analysis."
+                        loc["rec_upload_genuine"],
+                        loc["rec_official_portal"]
                     ],
                     "scam_score": "N/A",
                     "confidence_score": 100,
@@ -136,9 +234,9 @@ This document/media has been thoroughly analyzed by SAFE-HIRE AI. It contains no
                         "urgency_pressure_risk": 0
                     },
                     "breakdown_signals": [
-                        f"Category: {specific_category}",
-                        "Scam Probability: N/A (Non-Recruitment Content)",
-                        f"Image Content Audit: {poster_summary}",
+                        f"{loc['signal_category']} {specific_category}",
+                        loc["signal_score"],
+                        f"{loc['signal_audit']} {poster_summary}",
                         f"Domain Target: {domain or 'N/A'}"
                     ],
                     "risk_level": "Not a Job Advertisement",
