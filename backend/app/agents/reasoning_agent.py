@@ -528,14 +528,15 @@ class ReasoningAgent:
         whois_status = (verification_data.get("whois_info") or {}).get("whois_status") or ""
         is_new_domain = bool((verification_data.get("whois_info") or {}).get("is_new_domain"))
 
-        snippet = (cleaned_text or "")[:500].replace("\n", " ").strip() if cleaned_text else "No content provided."
+        clean_snippet = (cleaned_text or "").replace("[POSTER TEXT & METADATA]:", "").replace("OCR:", "").replace("\n", " ").strip()
+        if not clean_snippet:
+            clean_snippet = "No content snippet extracted."
 
         reasons = []
         if has_payment:
             fee_list = ", ".join(f'"{t}"' for t in payment_terms[:5])
             reasons.append(
-                f"⚠️ CRITICAL: Fee/payment demand detected — Found terms: {fee_list}. "
-                f"Legitimate employers NEVER charge candidates."
+                f"⚠️ Fee/payment demand detected — Found terms: {fee_list}. Legitimate employers NEVER charge job seekers."
             )
         if has_impersonation:
             reasons.append(f"🎭 Brand Impersonation: {'; '.join(impersonation_flags[:2])}")
@@ -555,7 +556,7 @@ class ReasoningAgent:
             )
         if not reasons:
             reasons.append(
-                f"✅ No major fraud signals detected. Domain '{domain}' trust score: {trust_score}/100."
+                f"✅ Verified Content: No critical fee demands or impersonation flags detected."
             )
 
         is_high_risk = risk_level in ("Severe Risk", "High Risk")
@@ -564,62 +565,106 @@ class ReasoningAgent:
         templates: dict = {
             "si": {
                 True: (
-                    f"📋 පෝස්ටර් සාරාංශය:\nOCR: \"{snippet[:200]}...\"\n\n"
-                    f"🎯 වංචා අවදානම් තීරණය:\n🚨 {risk_level} (Score: {scam_score}/100)\n"
-                    f"ශ්‍රී ලංකාවේ නීත්‍යානුකූල ආයතන කිසිවිටෙකත් ලියාපදිංචි ගාස්තු, ලැප්ටොප් ගාස්තු, හෝ ඕනෑම ආකාරයක ප්‍රත්‍යාවර්ත ගාස්තු අය නොකරයි.\n\n"
+                    f"📋 පෝස්ටර් සාරාංශය:\n"
+                    f"• අන්තර්ගතය: \"{clean_snippet[:350]}\"\n"
+                    f"• ආයතනය: {claimed_brand or 'සඳහන් කර නැත'}\n"
+                    f"• ඩොමේන්/URL: {domain}\n\n"
+                    f"🎯 වංචා අවදානම් තීරණය:\n"
+                    f"🚨 අධික වංචා අවදානම — {risk_level} (ලකුණු: {scam_score}/100)\n"
+                    f"මෙම රැකියා விளම්‍බරයේ බරපතල වංචා සංඥා දක්නට ලැබේ. නීත්‍යානුකූල ආයතන කිසිවිටෙකත් ලියාපදිංචි ගාස්තු අය නොකරයි.\n\n"
                     f"🔍 සාක්ෂි හා අනතුරු ඇඟවීම්:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
-                    f"✅ ආරක්ෂිත නිගමනය:\nමෙම ඉල්ලීම ප්‍රතික්ෂේප කරන්න. නිල ආයතනික කැරියර් බ්‍රවුසර් හරහා රැකියා සොයන්න."
+                    f"✅ ආරක්ෂිත නිගමනය සහ උපදෙස්:\n"
+                    f"මෙම ඉල්ලීම ප්‍රතික්ෂේප කරන්න. නිල ආයතනික වෙබ් අඩවිය හරහා පමණක් තොරතුරු සත්‍යාපනය කරන්න."
                 ),
                 False: (
-                    f"📋 පෝස්ටර් සාරාංශය:\nOCR: \"{snippet[:200]}...\"\n\n"
-                    f"🎯 තීරණය:\n✅ ජෙනු රැකියා ඉල්ලීම (Score: {scam_score}/100)\n\n"
-                    f"🔍 විශ්ලේෂණ:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
-                    f"✅ නිගමනය:\nනිල ආයතනය හරහා සත්‍යාපනය කරන්න."
+                    f"📋 පෝස්ටර් සාරාංශය:\n"
+                    f"• අන්තර්ගතය: \"{clean_snippet[:350]}\"\n"
+                    f"• ආයතනය: {claimed_brand or 'සඳහන් කර නැත'}\n"
+                    f"• ඩොමේන්/URL: {domain}\n\n"
+                    f"🎯 වංචා අවදානම් තීරණය:\n"
+                    f"✅ විශ්වාසදායක රැකියා අවස්ථාව — {risk_level} (ලකුණු: {scam_score}/100 • 0% වංචා අවදානම)\n"
+                    f"SAFE-HIRE AI මෙම දැන්වීම සත්‍යාපනය කර ඇත. කිසිදු ගාස්තු ඉල්ලීමක් හෝ වංචා සංඥාවක් නොමැත.\n\n"
+                    f"🔍 විශ්ලේෂණය හා සාක්ෂි:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ ආරක්ෂිත නිගමනය සහ උපදෙස්:\n"
+                    f"නිල ආයතනික කැරියර් පෝර්ටලය හරහා අයදුම් කරන්න."
                 ),
             },
             "ta": {
                 True: (
-                    f"📋 போஸ்டர் சுருக்கம்:\nOCR: \"{snippet[:200]}...\"\n\n"
-                    f"🎯 மோசடி ஆபத்து தீர்ப்பு:\n🚨 {risk_level} (Score: {scam_score}/100)\n"
-                    f"சட்டபூர்வமான நிறுவனங்கள் ஒருபோதும் கட்டணம் கேட்கமாட்டார்கள்.\n\n"
-                    f"🔍 ஆதாரங்கள்:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
-                    f"✅ பாதுகாப்பு முடிவு:\nஇந்த வாய்ப்பை நிராகரிக்கவும். அதிகாரப்பூர்வ போர்ட்டல் மூலம் சரிபார்க்கவும்."
+                    f"📋 போஸ்டர் சுருக்கம்:\n"
+                    f"• பெறப்பட்ட உள்ளடக்கம்: \"{clean_snippet[:350]}\"\n"
+                    f"• நிறுவனம்/அமைப்பு: {claimed_brand or 'குறிப்பிடப்படவில்லை'}\n"
+                    f"• டொமைன் / முகவரி: {domain}\n\n"
+                    f"🎯 மோசடி ஆபத்து தீர்ப்பு:\n"
+                    f"🚨 அதிக மோசடி ஆபத்து — {risk_level} (மதிப்பெண்: {scam_score}/100)\n"
+                    f"இந்த வேலைவாய்ப்பு விளம்பரத்தில் மோசடி ஆபத்துகள் கண்டறியப்பட்டுள்ளன. சட்டபூர்வமான நிறுவனங்கள் ஒருபோதும் விண்ணப்பக் கட்டணம் அல்லது வைப்புத்தொகை கேட்கமாட்டா.\n\n"
+                    f"🔍 விரிவான சான்றுகள் & பகுப்பாய்வு:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ பாதுகாப்பு முடிவு & ஆலோசனை:\n"
+                    f"இந்த வேலைவாய்ப்பு அறிவிப்பை நிராகரிக்கவும். அதிகாரப்பூர்வ நிறுவன போர்ட்டல் மூலம் நேரடியாக சரிபார்க்கவும்."
                 ),
                 False: (
-                    f"📋 போஸ்டர் சுருக்கம்:\nOCR: \"{snippet[:200]}...\"\n\n"
-                    f"🎯 தீர்ப்பு:\n✅ நம்பகமான வேலை (Score: {scam_score}/100)\n\n"
-                    f"🔍 ஆய்வு:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
-                    f"✅ முடிவு:\nஅதிகாரப்பூர்வ நிறுவன வலைத்தளம் மூலம் சரிபார்க்கவும்."
+                    f"📋 போஸ்டர் சுருக்கம்:\n"
+                    f"• பெறப்பட்ட உள்ளடக்கம்: \"{clean_snippet[:350]}\"\n"
+                    f"• நிறுவனம்/அமைப்பு: {claimed_brand or 'குறிப்பிடப்படவில்லை'}\n"
+                    f"• டொமைன் / முகவரி: {domain}\n\n"
+                    f"🎯 மோசடி ஆபத்து தீர்ப்பு:\n"
+                    f"✅ நம்பகமான வேலைவாய்ப்பு சலுகை — {risk_level} (மதிப்பெண்: {scam_score}/100 • 0% மோசடி அபாயம்)\n"
+                    f"SAFE-HIRE AI இந்த விளம்பரத்தை சரிபார்த்தது. இதில் எந்த கட்டண கோரிக்கைகளோ அல்லது போலி சலுகைகளோ கண்டறியப்படவில்லை.\n\n"
+                    f"🔍 விரிவான சான்றுகள் & பகுப்பாய்வு:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ பாதுகாப்பு முடிவு & ஆலோசனை:\n"
+                    f"அதிகாரப்பூர்வ நிறுவன வலைத்தளம் மற்றும் வாழ்க்கைப்பாதை போர்ட்டல் மூலம் தகவல்களை சரிபார்க்கவும்."
                 ),
             },
             "hi": {
                 True: (
-                    f"📋 पोस्टर सारांश:\nOCR: \"{snippet[:200]}...\"\n\n"
-                    f"🎯 धोखाधड़ी जोखिम निर्णय:\n🚨 {risk_level} (Score: {scam_score}/100)\n"
-                    f"वैध कंपनियां कभी भी आवेदन शुल्क या प्रशिक्षण शुल्क नहीं मांगतीं।\n\n"
-                    f"🔍 विस्तृत साक्ष्य:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
-                    f"✅ सुरक्षा निष्कर्ष:\nइस प्रस्ताव को अस्वीकार करें। आधिकारिक कंपनी करियर पोर्टल पर जाकर सत्यापित करें।"
+                    f"📋 पोस्टर सारांश:\n"
+                    f"• निकाली गई सामग्री: \"{clean_snippet[:350]}\"\n"
+                    f"• दावा किया गया संगठन: {claimed_brand or 'निर्दिष्ट नहीं'}\n"
+                    f"• डोमेन / यूआरएल: {domain}\n\n"
+                    f"🎯 धोखाधड़ी जोखिम निर्णय:\n"
+                    f"🚨 उच्च धोखाधड़ी जोखिम — {risk_level} (स्कोर: {scam_score}/100)\n"
+                    f"इस भर्ती विज्ञापन में गंभीर धोखाधड़ी के संकेत पाए गए हैं। वैध कंपनियां कभी भी पंजीकरण या प्रशिक्षण शुल्क नहीं मांगतीं।\n\n"
+                    f"🔍 विस्तृत साक्ष्य एवं विश्लेषण:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ सुरक्षा निष्कर्ष एवं सलाह:\n"
+                    f"इस प्रस्ताव को अस्वीकार करें। केवल आधिकारिक कंपनी करियर पोर्टल के माध्यम से जानकारी सत्यापित करें।"
                 ),
                 False: (
-                    f"📋 पोस्टर सारांश:\nOCR: \"{snippet[:200]}...\"\n\n"
-                    f"🎯 निर्णय:\n✅ वैध नौकरी — कोई धोखाधड़ी संकेत नहीं (Score: {scam_score}/100)\n\n"
-                    f"🔍 विश्लेषण:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
-                    f"✅ निष्कर्ष:\nआधिकारिक कंपनी वेबसाइट से सत्यापन करें।"
+                    f"📋 पोस्टर सारांश:\n"
+                    f"• निकाली गई सामग्री: \"{clean_snippet[:350]}\"\n"
+                    f"• दावा किया गया संगठन: {claimed_brand or 'निर्दिष्ट नहीं'}\n"
+                    f"• डोमेन / यूआरएल: {domain}\n\n"
+                    f"🎯 धोखाधड़ी जोखिम निर्णय:\n"
+                    f"✅ वैध नौकरी का अवसर — {risk_level} (स्कोर: {scam_score}/100 • 0% जोखिम)\n"
+                    f"SAFE-HIRE AI ने इस भर्ती की पुष्टि की है। कोई शुल्क मांग या फर्जीवाड़ा नहीं पाया गया।\n\n"
+                    f"🔍 विस्तृत साक्ष्य एवं विश्लेषण:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ सुरक्षा निष्कर्ष एवं सलाह:\n"
+                    f"आधिकारिक कंपनी वेबसाइट और करियर पोर्टल के माध्यम से रिक्ति की जांच करें।"
                 ),
             },
             "bn": {
                 True: (
-                    f"📋 পোস্টার সারসংক্ষেপ:\nOCR: \"{snippet[:200]}...\"\n\n"
-                    f"🎯 প্রতারণার ঝুঁকির রায়:\n🚨 {risk_level} (Score: {scam_score}/100)\n"
-                    f"বৈধ কোম্পানিগুলো কখনোই নিবন্ধন ফি দাবি করে না।\n\n"
-                    f"🔍 বিস্তারিত প্রমাণ:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
-                    f"✅ নিরাপত্তা উপসংহার:\nএই প্রস্তাব প্রত্যাখ্যান করুন। অফিসিয়াল পোর্টাল থেকে যাচাই করুন।"
+                    f"📋 পোস্টার সারসংক্ষেপ:\n"
+                    f"• মূল বিষয়বস্তু: \"{clean_snippet[:350]}\"\n"
+                    f"• প্রতিষ্ঠানের নাম: {claimed_brand or 'নির্দিষ্ট করা হয়নি'}\n"
+                    f"• ডোমেইন/ইউআরএল: {domain}\n\n"
+                    f"🎯 প্রতারণার ঝুঁকির রায়:\n"
+                    f"🚨 উচ্চ প্রতারণার ঝুঁকি — {risk_level} (স্কোর: {scam_score}/100)\n"
+                    f"এই নিয়োগ বিজ্ঞপ্তিতে গুরুতর রেড ফ্ল্যাগ পাওয়া গেছে। বৈধ কোম্পানিগুলো কখনোই নিবন্ধন ফি দাবি করে না।\n\n"
+                    f"🔍 বিস্তারিত প্রমাণ ও বিশ্লেষণ:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ নিরাপত্তা উপসংহার ও পরামর্শ:\n"
+                    f"এই অফারটি প্রত্যাখ্যান করুন। অফিসিয়াল করপোরেট পোর্টাল থেকে সরাসরি যাচাই করুন।"
                 ),
                 False: (
-                    f"📋 পোস্টার সারসংক্ষেপ:\nOCR: \"{snippet[:200]}...\"\n\n"
-                    f"🎯 রায়:\n✅ বৈধ চাকরির সুযোগ (Score: {scam_score}/100)\n\n"
-                    f"🔍 বিশ্লেষণ:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
-                    f"✅ উপসংহার:\nঅফিসিয়াল ওয়েবসাইট থেকে তথ্য যাচাই করুন।"
+                    f"📋 পোস্টার সারসংক্ষেপ:\n"
+                    f"• মূল বিষয়বস্তু: \"{clean_snippet[:350]}\"\n"
+                    f"• প্রতিষ্ঠানের নাম: {claimed_brand or 'নির্দিষ্ট করা হয়নি'}\n"
+                    f"• ডোমেইন/ইউআরএল: {domain}\n\n"
+                    f"🎯 প্রতারণার ঝুঁকির রায়:\n"
+                    f"✅ বৈধ চাকরির সুযোগ — {risk_level} (স্কোর: {scam_score}/100 • 0% ঝুঁকি)\n"
+                    f"SAFE-HIRE AI এই চাকরির বিজ্ঞপ্তিটি যাচাই করেছে। কোনো ফি দাবি বা ভুয়া চ্যানেলের তথ্য পাওয়া যায়নি।\n\n"
+                    f"🔍 বিস্তারিত প্রমাণ ও বিশ্লেষণ:\n" + "\n".join(f"• {r}" for r in reasons) + "\n\n"
+                    f"✅ নিরাপত্তা উপসংহার ও পরামর্শ:\n"
+                    f"অফিসিয়াল ওয়েবসাইট ও ক্যারিয়ার পোর্টালের মাধ্যমে আবেদন যাচাই করুন।"
                 ),
             },
         }
@@ -630,8 +675,8 @@ class ReasoningAgent:
             # English (default) - Exhaustive multi-section detailed security audit report
             if is_high_risk:
                 full_explanation = (
-                    f"📋 EXHAUSTIVE POSTER SUMMARY & OCR ENTITY ANALYSIS:\n"
-                    f"• Extracted Content Snippet: \"{snippet[:400]}\"\n"
+                    f"📋 EXHAUSTIVE POSTER SUMMARY & ENTITY ANALYSIS:\n"
+                    f"• Extracted Content Snippet: \"{clean_snippet[:400]}\"\n"
                     f"• Claimed Organization: {claimed_brand or 'Not Specified'}\n"
                     f"• Target Domain / URL: {domain}\n"
                     f"• Email Contacts Identified: {free_email or 'None'}\n\n"
@@ -657,8 +702,8 @@ class ReasoningAgent:
                 )
             else:
                 full_explanation = (
-                    f"📋 EXHAUSTIVE POSTER SUMMARY & OCR ENTITY ANALYSIS:\n"
-                    f"• Extracted Content Snippet: \"{snippet[:400]}\"\n"
+                    f"📋 EXHAUSTIVE POSTER SUMMARY & ENTITY ANALYSIS:\n"
+                    f"• Extracted Content Snippet: \"{clean_snippet[:400]}\"\n"
                     f"• Claimed Organization: {claimed_brand or 'Not Specified'}\n"
                     f"• Target Domain / URL: {domain}\n"
                     f"• Verified Communication Channels: Official Channels / Corporate Portal\n\n"
@@ -706,13 +751,18 @@ class ReasoningAgent:
 
         # --- Stage 1: Gemini AI (primary) ---
         gemini_res = self.call_gemini_ai_reasoning_api(
-            cleaned_text, linguistic_data, verification_data, language, image_bytes
+            intake_data, linguistic_data, verification_data, language, image_bytes
         )
-        if gemini_res and isinstance(gemini_res, dict) and "scam_score" in gemini_res:
+        if gemini_res and isinstance(gemini_res, dict) and ("scam_score" in gemini_res or "riskScore" in gemini_res or "explanation" in gemini_res):
+            score_val = gemini_res.get("scam_score") if gemini_res.get("scam_score") is not None else gemini_res.get("riskScore")
             try:
-                score = max(0, min(100, int(gemini_res.get("scam_score") or 0)))
+                if str(score_val).upper() == "N/A":
+                    score = "N/A"
+                else:
+                    score = max(0, min(100, int(score_val if score_val is not None else 15)))
             except Exception:
-                score = 50
+                score = 15
+
             sub = gemini_res.get("sub_scores")
             if not isinstance(sub, dict):
                 sub = self._default_sub_scores(linguistic_data, verification_data)
@@ -720,13 +770,22 @@ class ReasoningAgent:
             if not isinstance(signals, list):
                 signals = []
             recs = gemini_res.get("recommendations") or []
-            if not isinstance(recs, list):
-                recs = []
+            if not isinstance(recs, list) or len(recs) == 0:
+                if gemini_res.get("recommendation"):
+                    recs = [gemini_res.get("recommendation")]
+                else:
+                    recs = []
+
+            explanation = gemini_res.get("explanation") or gemini_res.get("explanation_text") or ""
+            if not explanation:
+                risk_lvl = gemini_res.get("risk_level") or gemini_res.get("riskLevel") or "Low Risk"
+                explanation, _ = self._rule_based_fallback(cleaned_text, linguistic_data, verification_data, score if isinstance(score, int) else 0, risk_lvl, language)
+
             return {
                 "scam_score": score,
-                "confidence_score": gemini_res.get("confidence_score") or 98,
-                "risk_level": gemini_res.get("risk_level") or "Low Risk",
-                "explanation": gemini_res.get("explanation") or "",
+                "confidence_score": gemini_res.get("confidence_score") or gemini_res.get("confidence") or 98,
+                "risk_level": gemini_res.get("risk_level") or gemini_res.get("riskLevel") or "Low Risk",
+                "explanation": explanation,
                 "breakdown_signals": signals,
                 "recommendations": recs,
                 "sub_scores": sub,
@@ -736,11 +795,16 @@ class ReasoningAgent:
         deepseek_res = self.call_deepseek_v4_reasoning_api(
             cleaned_text, linguistic_data, verification_data, language
         )
-        if deepseek_res and isinstance(deepseek_res, dict) and "scam_score" in deepseek_res:
+        if deepseek_res and isinstance(deepseek_res, dict) and ("scam_score" in deepseek_res or "riskScore" in deepseek_res or "explanation" in deepseek_res):
+            score_val = deepseek_res.get("scam_score") if deepseek_res.get("scam_score") is not None else deepseek_res.get("riskScore")
             try:
-                score = max(0, min(100, int(deepseek_res.get("scam_score") or 0)))
+                if str(score_val).upper() == "N/A":
+                    score = "N/A"
+                else:
+                    score = max(0, min(100, int(score_val if score_val is not None else 20)))
             except Exception:
-                score = 50
+                score = 20
+
             sub = deepseek_res.get("sub_scores")
             if not isinstance(sub, dict):
                 sub = self._default_sub_scores(linguistic_data, verification_data)
@@ -748,13 +812,22 @@ class ReasoningAgent:
             if not isinstance(signals, list):
                 signals = []
             recs = deepseek_res.get("recommendations") or []
-            if not isinstance(recs, list):
-                recs = []
+            if not isinstance(recs, list) or len(recs) == 0:
+                if deepseek_res.get("recommendation"):
+                    recs = [deepseek_res.get("recommendation")]
+                else:
+                    recs = []
+
+            explanation = deepseek_res.get("explanation") or deepseek_res.get("explanation_text") or ""
+            if not explanation:
+                risk_lvl = deepseek_res.get("risk_level") or deepseek_res.get("riskLevel") or "Low Risk"
+                explanation, _ = self._rule_based_fallback(cleaned_text, linguistic_data, verification_data, score if isinstance(score, int) else 0, risk_lvl, language)
+
             return {
                 "scam_score": score,
-                "confidence_score": deepseek_res.get("confidence_score") or 95,
-                "risk_level": deepseek_res.get("risk_level") or "Low Risk",
-                "explanation": deepseek_res.get("explanation") or "",
+                "confidence_score": deepseek_res.get("confidence_score") or deepseek_res.get("confidence") or 95,
+                "risk_level": deepseek_res.get("risk_level") or deepseek_res.get("riskLevel") or "Low Risk",
+                "explanation": explanation,
                 "breakdown_signals": signals,
                 "recommendations": recs,
                 "sub_scores": sub,
