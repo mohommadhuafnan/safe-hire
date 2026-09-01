@@ -614,24 +614,26 @@ const DashboardPage = () => {
                 </div>
               </div>
 
-              {/* NOT A JOB ADVERTISEMENT OR 100% GENUINE OFFER NOTIFICATION BANNERS */}
-              {(result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A') ? (
+              {/* NOT A JOB ADVERTISEMENT OR LOW RISK EVIDENCE BANNERS */}
+              {(result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A' || result.risk_level === 'Unable to Determine') ? (
                 <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/30 flex items-start space-x-3 text-sky-300">
                   <AlertCircle className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-bold text-sky-200 text-xs sm:text-sm uppercase tracking-wider">⚠️ NOT A JOB ADVERTISEMENT DETECTED (100% PRECISION)</h4>
+                    <h4 className="font-bold text-sky-200 text-xs sm:text-sm uppercase tracking-wider">
+                      {result.risk_level === 'Unable to Determine' ? '⚠️ UNREADABLE / INSUFFICIENT EVIDENCE' : '⚠️ NOT A JOB ADVERTISEMENT'}
+                    </h4>
                     <p className="text-xs text-sky-300/90 mt-1 leading-relaxed">
-                      The SAFE-HIRE 5-Agent AI pipeline analyzed your uploaded media and confirmed with 100% precision that it contains no job recruitment vacancies, salary listings, or employment offers. Scam probability scoring is not applicable to non-recruitment media.
+                      {result.intake_data?.poster_summary || 'The SAFE-HIRE 5-Agent AI pipeline determined that this content does not appear to contain an active recruitment vacancy. A standard recruitment scam score cannot be meaningfully calculated for non-job media.'}
                     </p>
                   </div>
                 </div>
-              ) : (Number(result.scam_score) === 0 || (typeof result.scam_score === 'number' && result.scam_score <= 20)) && (
+              ) : (typeof result.scam_score === 'number' && result.scam_score <= 20) && (
                 <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start space-x-3 text-emerald-300">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-bold text-emerald-200 text-xs sm:text-sm uppercase tracking-wider">✅ 100% GENUINE RECRUITMENT OFFER (0% SCAM RISK)</h4>
+                    <h4 className="font-bold text-emerald-200 text-xs sm:text-sm uppercase tracking-wider">✅ LOW APPARENT RISK RECRUITMENT CONTENT</h4>
                     <p className="text-xs text-emerald-300/90 mt-1 leading-relaxed">
-                      SAFE-HIRE AI verified this job poster. No upfront fee demands, company impersonation, or fake Telegram/WhatsApp channels were detected. A score of 0/100 indicates <strong>0% Scam Probability (100% Safe & Authentic Job Vacancy)</strong>.
+                      No critical upfront fee demands, company impersonation flags, or known scam signals were detected based on available evidence. Always verify offers directly on official corporate career channels.
                     </p>
                   </div>
                 </div>
@@ -642,7 +644,7 @@ const DashboardPage = () => {
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('dashboard.risk_level', 'Risk Level Verdict')}</span>
                   <span className={`text-sm font-extrabold block ${
-                    result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A'
+                    result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A' || result.risk_level === 'Unable to Determine'
                       ? 'text-sky-400'
                       : Number(result.scam_score) >= 81
                       ? 'text-rose-400'
@@ -654,23 +656,25 @@ const DashboardPage = () => {
                       ? 'text-yellow-400'
                       : 'text-emerald-400'
                   }`}>
-                    {result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A' 
-                      ? 'NOT A JOB ADVERTISEMENT' 
-                      : (Number(result.scam_score) === 0 ? '100% GENUINE OFFER (0% SCAM RISK)' : getRiskLevelLabel(result.risk_level))}
+                    {result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A'
+                      ? 'NOT A JOB ADVERTISEMENT'
+                      : result.risk_level === 'Unable to Determine'
+                      ? 'UNABLE TO DETERMINE'
+                      : getRiskLevelLabel(result.risk_level)}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('dashboard.scam_score', 'Scam Risk Score')}</span>
                   <span className="text-sm font-extrabold text-slate-100 font-mono block">
-                    {result.scam_score === 'N/A' || typeof result.scam_score === 'string' ? result.scam_score : `${result.scam_score} / 100 (${result.scam_score === 0 ? '0% Scam Risk' : 'Scam Probability'})`}
+                    {result.scam_score === 'N/A' || typeof result.scam_score === 'string' ? `${result.scam_score} (N/A)` : `${result.scam_score} / 100`}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('dashboard.select_lang', 'Language')} & Pipeline</span>
                   <span className="text-xs font-bold text-sky-400 uppercase block">
-                    {result.language || 'EN'} • 5-Agent Engine
+                    {result.language || 'EN'} • 5-Agent Pipeline
                   </span>
                 </div>
               </div>

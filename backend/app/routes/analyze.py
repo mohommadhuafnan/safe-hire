@@ -130,6 +130,8 @@ async def analyze_submission(
             breakdown_signals=breakdown_signals if isinstance(breakdown_signals, list) else [],
             intake_data=intake_data if isinstance(intake_data, dict) else {},
             sub_scores=sub_scores if isinstance(sub_scores, dict) else {},
+            verified_facts=pipeline_res.get("verified_facts") or [],
+            ai_inferences=pipeline_res.get("ai_inferences") or [],
             created_at=now
         )
     except HTTPException:

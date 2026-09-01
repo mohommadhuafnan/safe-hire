@@ -15,20 +15,20 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
     # Gemini AI Settings
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "") if os.getenv("GEMINI_API_KEY", "").startswith("AIzaSy") else os.getenv("GOOGLE_SAFE_BROWSING_API_KEY", "AIzaSyC6BIN5Bl3vIsLZVb7_5EiJqwQc6oik2x4")
-    GEMINI_MODEL_PRIMARY: str = os.getenv("GEMINI_MODEL_PRIMARY", "gemini-2.5-flash")
-    GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "60"))
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_SAFE_BROWSING_API_KEY", "")
+    GEMINI_MODEL_PRIMARY: str = os.getenv("GEMINI_MODEL_PRIMARY", "gemini-3.6-flash")
+    GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "45"))
 
     # Hugging Face AI Settings
     HF_TOKEN: str = os.getenv("HF_TOKEN", os.getenv("DEEPSEEK_V4_API_KEY", ""))
-    HF_MODEL_NAME: str = os.getenv("HF_MODEL_NAME", "Qwen/Qwen2.5-VL-7B-Instruct:featherless-ai")
+    HF_MODEL_NAME: str = os.getenv("HF_MODEL_NAME", "Qwen/Qwen2.5-VL-7B-Instruct")
     HF_API_BASE_URL: str = os.getenv("HF_API_BASE_URL", "https://router.huggingface.co/v1")
 
-    # DeepSeek V4 AI Settings (Hugging Face Router)
-    DEEPSEEK_V4_API_KEY: str = os.getenv("DEEPSEEK_V4_API_KEY", "")
+    # DeepSeek AI Settings (Hugging Face Router)
+    DEEPSEEK_V4_API_KEY: str = os.getenv("DEEPSEEK_V4_API_KEY", os.getenv("HF_TOKEN", ""))
     DEEPSEEK_API_BASE_URL: str = os.getenv("DEEPSEEK_API_BASE_URL", "https://router.huggingface.co/v1")
     DEEPSEEK_MODEL_NAME: str = os.getenv("DEEPSEEK_MODEL_NAME", "deepseek-ai/DeepSeek-V4-Flash")
-    GOOGLE_SAFE_BROWSING_API_KEY: str = os.getenv("GOOGLE_SAFE_BROWSING_API_KEY", "AIzaSyC6BIN5Bl3vIsLZVb7_5EiJqwQc6oik2x4")
+    GOOGLE_SAFE_BROWSING_API_KEY: str = os.getenv("GOOGLE_SAFE_BROWSING_API_KEY", "")
 
     # APILayer & WHOIS API Settings
     APILAYER_KEY: str = os.getenv("APILAYER_KEY", "nIvPeI99eWBDMSArYAf2YcrshDCOVvJ3")

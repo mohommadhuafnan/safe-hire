@@ -19,7 +19,6 @@ const CyberParticlesBackground = () => {
 
     window.addEventListener('resize', handleResize);
 
-    // Mouse tracking for interactive 3D particle push & glow
     const mouse = { x: width / 2, y: height / 2, radius: 140 };
 
     const handleMouseMove = (e) => {
@@ -29,7 +28,7 @@ const CyberParticlesBackground = () => {
 
     window.addEventListener('mousemove', handleMouseMove);
 
-    // Create 3D floating cyber particles
+  
     const particles = Array.from({ length: 65 }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
