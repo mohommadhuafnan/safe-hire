@@ -125,6 +125,10 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
       console.error("Google sign in notice:", err);
       if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         setError(t('auth.google_cancelled'));
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('Domain not authorized. Please add this domain to Firebase Console > Authentication > Settings > Authorized domains.');
+      } else if (err.code === 'auth/invalid-credential' || (err.message && err.message.includes('auth/invalid-credential'))) {
+        setError('Google sign-in was interrupted or failed. Please check that Google Auth is enabled and configured in your Firebase and Google Cloud Console, or try again.');
       } else {
         const msg = (err.response && err.response.data && err.response.data.detail) || err.message || t('auth.google_cancelled');
         setError(msg);
