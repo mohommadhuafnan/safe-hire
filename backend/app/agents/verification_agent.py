@@ -11,9 +11,14 @@ class VerificationAgent:
 
     SUSPICIOUS_TLDS = [".xyz", ".top", ".site", ".tk", ".ga", ".cf", ".ml", ".rf.gd", ".icu", ".online", ".work", ".click", ".buzz", ".monster", ".fit"]
     HIGH_TRUST_TLDS = [".com", ".org", ".edu", ".gov", ".ac.lk", ".edu.lk", ".ac.in", ".edu.in", ".ac.bd", ".gov.lk", ".gov.in", ".gov.bd", ".co.uk", ".io", ".net"]
+    FREE_EMAIL_DOMAINS = {
+        "gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.in", "yahoo.co.uk",
+        "hotmail.com", "outlook.com", "live.com", "msn.com", "icloud.com",
+        "aol.com", "zoho.com", "mail.com", "proton.me", "protonmail.com", "yandex.com"
+    }
 
     def extract_clean_domain(self, input_str: str) -> str:
-        """Sanitizes raw URL or domain text into clean domain string (e.g. example.com)."""
+        """Sanitizes raw URL or domain text into clean domain string (e.g. example.com). Filters out public webmail providers."""
         if not input_str or str(input_str).strip().lower() in ["n/a", "not specified", "none", "null", ""]:
             return ""
 
@@ -22,6 +27,11 @@ class VerificationAgent:
         clean = clean.split('/')[0].split('?')[0].split('#')[0].split(':')[0]
         if clean.startswith("www."):
             clean = clean[4:]
+
+        # Free webmail providers are email services, NOT an employer's company website domain!
+        if clean in self.FREE_EMAIL_DOMAINS:
+            return ""
+
         return clean
 
     def query_apilayer_whois(self, domain: str) -> Optional[Dict[str, Any]]:
@@ -357,7 +367,15 @@ class VerificationAgent:
             "api_verified": False
         }
 
-    def verify(self, text: str = "", domain: str = "", claimed_brand: str = None, emails: list = None) -> Dict[str, Any]:
+    def verify(
+        self, 
+        text: str = "", 
+        domain: str = "", 
+        claimed_brand: str = None, 
+        emails: list = None,
+        phones: list = None,
+        invalid_phones: list = None
+    ) -> Dict[str, Any]:
         target_domain = self.extract_clean_domain(domain)
         if not target_domain and text:
             urls = re.findall(r'https?://[^\s]+', text)
@@ -412,6 +430,32 @@ class VerificationAgent:
                     "evidence": f"Contact email '{email_validation_res.get('email')}' is a temporary/disposable address"
                 })
 
+        # Phone evidence
+        phone_val_result = None
+        if invalid_phones:
+            trust_rating -= 15
+            evidence_items.append({
+                "category": "contact_verification",
+                "indicator": "invalid_phone_number",
+                "severity": "medium",
+                "evidence": f"Contact telephone number '{invalid_phones[0]}' is malformed, invalid, or an artificial sequence."
+            })
+            phone_val_result = {
+                "has_phone": True,
+                "is_valid": False,
+                "phone_number": invalid_phones[0],
+                "status": "INVALID_FORMAT",
+                "summary": f"Suspicious or malformed phone number format ({invalid_phones[0]})"
+            }
+        elif phones:
+            phone_val_result = {
+                "has_phone": True,
+                "is_valid": True,
+                "phone_number": phones[0],
+                "status": "VALID_FORMAT",
+                "summary": f"Standard phone number format ({phones[0]})"
+            }
+
         # Corporate brand mismatch
         if claimed_brand and not target_domain:
             trust_rating -= 15
@@ -425,11 +469,12 @@ class VerificationAgent:
         trust_rating = max(5, min(95, trust_rating))
 
         return {
-            "domain": target_domain or "Not Specified",
+            "domain": target_domain or "",
             "whois_info": whois_res,
             "safe_browsing": safe_browsing_res,
             "email_validation": email_validation_res,
+            "phone_validation": phone_val_result,
             "verification_trust_score": trust_rating,
             "evidence_items": evidence_items,
-            "is_verified_corporate_domain": bool(trust_rating > 70 and not whois_res.get("is_new_domain"))
+            "is_verified_corporate_domain": bool(target_domain and trust_rating > 70 and not whois_res.get("is_new_domain"))
         }

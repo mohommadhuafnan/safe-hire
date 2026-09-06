@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     VALSEA_API_URL: str = os.getenv("VALSEA_API_URL", "https://api.valsea.ai/v1/translations")
     VALSEA_MODEL_NAME: str = os.getenv("VALSEA_MODEL_NAME", "valsea-translate")
 
+    # Firebase Settings
+    FIREBASE_SERVICE_ACCOUNT_PATH: str = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "serviceAccountKey.json")
+
     class Config:
         env_file = ".env"
         extra = "ignore"

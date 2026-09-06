@@ -187,6 +187,7 @@ Analyze the structured intelligence below and produce a rigorous, evidence-based
 - WHOIS Domain Registry Status: {whois_info.get('whois_status', 'Check unavailable')} (Status: {whois_info.get('status', 'unavailable')})
 - Safe Browsing Status: {safe_browsing.get('status', 'unavailable')} (Flagged: {safe_browsing.get('flagged', False)})
 - Email Deliverability & Verification: {email_val.get('analysis_summary', 'Check unavailable')}
+- Contact Phone Verification: {(verification_data.get('phone_validation') or {}).get('summary', 'No phone provided')}
 - Corporate Trust Rating: {verification_data.get('verification_trust_score', 70)}/100
 
 [DETECTED EVIDENCE & RED FLAGS]:
@@ -213,9 +214,12 @@ CRITICAL INSTRUCTIONS & RULES:
    - If there is brand impersonation with generic free email, set scam_score >= 65 ("High Risk").
    - If evidence is missing (e.g. unverified company), explicitly state "Not verified" and assign moderate uncertainty.
 
-4. SEPARATE VERIFIED FACTS FROM AI INFERENCES:
+4. SEPARATE OBSERVED FACTS FROM AI INFERENCES & STRICT ACCURACY ON CONTACTS:
    - "verified_facts": Things directly observable in the submission or confirmed by verification services.
    - "ai_inferences": Deductions or risk interpretations made by the model.
+   - NEVER state that an email, website domain, or phone number is "verified" or "authentic" if none was provided in the input, or if it failed formatting checks.
+   - Free email providers (@gmail.com, @yahoo.com) are NEVER company website domains. Emphasize that reputable large corporations use corporate domain email addresses.
+   - If a phone number is malformed, too short, or a fake/dummy sequence, explicitly cite it as a warning or scam red flag.
 
 5. FORMAT THE "explanation" FIELD AS A RICH MULTI-SECTION AUDIT IN {target_lang_name}:
 📋 POSTER SUMMARY:

@@ -58,15 +58,19 @@ class AgentPipeline:
         linguistic_res = self.linguistic_agent.analyze(cleaned_text, final_lang) or {}
         logger.info(f"[{request_id}] Stage 2 COMPLETE: linguistic_score={linguistic_res.get('linguistic_score')}, has_payment={linguistic_res.get('has_payment_demand')}")
 
-        # --- STAGE 3: Verification Agent (WHOIS, Safe Browsing, Email) ---
+        # --- STAGE 3: Verification Agent (WHOIS, Safe Browsing, Email & Phone Validation) ---
         logger.info(f"[{request_id}] Stage 3: Verification Agent executing...")
         claimed_brand = linguistic_res.get("claimed_brand") or intake_res.get("claimed_brand")
         extracted_emails = (intake_res.get("metadata_extracted") or {}).get("emails", [])
+        extracted_phones = (intake_res.get("metadata_extracted") or {}).get("phone_numbers", [])
+        extracted_invalid_phones = (intake_res.get("metadata_extracted") or {}).get("invalid_phones", [])
         verification_res = self.verification_agent.verify(
             text=cleaned_text,
             domain=domain,
             claimed_brand=claimed_brand,
-            emails=extracted_emails
+            emails=extracted_emails,
+            phones=extracted_phones,
+            invalid_phones=extracted_invalid_phones
         ) or {}
         logger.info(f"[{request_id}] Stage 3 COMPLETE: domain={verification_res.get('domain')}, trust_score={verification_res.get('verification_trust_score')}")
 

@@ -14,7 +14,7 @@ def init_firebase():
         _firebase_initialized = True
         return True
 
-    key_path = settings.FIREBASE_SERVICE_ACCOUNT_PATH
+    key_path = getattr(settings, 'FIREBASE_SERVICE_ACCOUNT_PATH', 'serviceAccountKey.json') or 'serviceAccountKey.json'
     if not os.path.isabs(key_path):
         # Resolve relative path against backend root or current directory
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

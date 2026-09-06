@@ -12,7 +12,9 @@ import {
   XCircle,
   BarChart3,
   Layers,
-  Sparkles
+  Sparkles,
+  Info,
+  Phone
 } from 'lucide-react';
 import { parseExplanationSections } from '../services/reportExporter';
 
@@ -30,6 +32,30 @@ const AgentBreakdown = ({ result }) => {
   const verificationData = result.verification_data || {};
   const intakeData = result.intake_data || {};
   const breakdownSignals = result.breakdown_signals || [];
+
+  // Contact entity checks (avoiding hardcoded or false positive verification)
+  const extractedEmail = verificationData.email_validation?.email || 
+    intakeData.metadata_extracted?.emails?.[0] || 
+    intakeData.email || 
+    '';
+  const hasEmail = Boolean(extractedEmail && extractedEmail.includes('@'));
+
+  const rawDomain = verificationData.domain || intakeData.domain || '';
+  const hasRealDomain = Boolean(
+    rawDomain && 
+    !['not specified', 'n/a', 'none', 'null', 'verified url', ''].includes(rawDomain.trim().toLowerCase()) &&
+    rawDomain.includes('.') &&
+    !['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'].includes(rawDomain.trim().toLowerCase())
+  );
+
+  const phoneData = verificationData.phone_validation || {};
+  const extractedPhone = phoneData.phone_number || 
+    intakeData.metadata_extracted?.phone_numbers?.[0] || 
+    intakeData.metadata_extracted?.invalid_phones?.[0] ||
+    intakeData.phone_number || 
+    '';
+  const hasPhone = Boolean(extractedPhone);
+  const isPhoneInvalid = phoneData.is_valid === false || Boolean(intakeData.metadata_extracted?.invalid_phones?.length);
 
   // Sub-scores map
   const subScores = result.sub_scores || {
@@ -119,11 +145,15 @@ const AgentBreakdown = ({ result }) => {
             <span className="text-slate-300 font-medium">{t('agents.email_mismatch', 'Corporate Email Mismatch')}:</span>
             {riskFactors.has_impersonation_risk ? (
               <span className="flex items-center text-rose-400 font-bold">
-                <XCircle className="w-4 h-4 mr-1" /> {t('agents.free_email_domain', 'Free Email Domain')} (@{riskFactors.free_email})
+                <XCircle className="w-4 h-4 mr-1" /> {t('agents.free_email_domain', 'Free Public Email')} (@{riskFactors.free_email || 'webmail'})
+              </span>
+            ) : hasEmail ? (
+              <span className="flex items-center text-emerald-400 font-semibold">
+                <CheckCircle2 className="w-4 h-4 mr-1" /> {t('agents.verified_domain_email', 'Verified Corporate Email')}
               </span>
             ) : (
-              <span className="flex items-center text-emerald-400 font-semibold">
-                <CheckCircle2 className="w-4 h-4 mr-1" /> {t('agents.verified_domain_email', 'Verified Domain Email')}
+              <span className="flex items-center text-slate-400 font-medium">
+                <Info className="w-4 h-4 mr-1 text-slate-400" /> {t('agents.no_email_provided', 'No Contact Email Provided')}
               </span>
             )}
           </div>
@@ -135,12 +165,32 @@ const AgentBreakdown = ({ result }) => {
               <span className="flex items-center text-amber-400 font-bold">
                 <AlertTriangle className="w-4 h-4 mr-1" /> {t('agents.informal_channels_detected', 'Informal Channels Detected')}
               </span>
-            ) : (
+            ) : hasRealDomain ? (
               <span className="flex items-center text-emerald-400 font-semibold">
                 <CheckCircle2 className="w-4 h-4 mr-1" /> {t('agents.official_channels_used', 'Official Channels Used')}
               </span>
+            ) : (
+              <span className="flex items-center text-slate-400 font-medium">
+                <Info className="w-4 h-4 mr-1 text-slate-400" /> {t('agents.no_channels_provided', 'No Direct Channel Provided')}
+              </span>
             )}
           </div>
+
+          {/* Contact Phone Validation */}
+          {hasPhone && (
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+              <span className="text-slate-300 font-medium">{t('agents.phone_validation_status', 'Contact Phone Validation')}:</span>
+              {isPhoneInvalid ? (
+                <span className="flex items-center text-rose-400 font-bold">
+                  <XCircle className="w-4 h-4 mr-1" /> {t('agents.invalid_phone_format', 'Suspicious / Malformed Phone')} ({extractedPhone})
+                </span>
+              ) : (
+                <span className="flex items-center text-sky-400 font-semibold">
+                  <Phone className="w-4 h-4 mr-1" /> {t('agents.valid_phone_format', 'Valid Phone Format (E.164)')} ({extractedPhone})
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Matched Keywords list */}
           {riskFactors.matched_payment?.length > 0 && (
@@ -174,52 +224,70 @@ const AgentBreakdown = ({ result }) => {
       number: '3',
       title: t('agents.agent_3_title', 'Verification Agent (WHOIS & Safe Browsing)'),
       icon: Globe,
-      summary: `${t('agents.domain_trust', 'Domain Trust Rating')}: ${verificationData.verification_trust_score || 80}/100`,
-      badge: verificationData.verification_trust_score > 60 ? t('agents.agent_3_badge_trusted', 'Trusted Domain') : t('agents.agent_3_badge_suspicious', 'Suspicious Web Record'),
+      summary: hasRealDomain
+        ? `${t('agents.domain_trust', 'Domain Trust Rating')}: ${verificationData.verification_trust_score || 80}/100`
+        : t('agents.no_domain_provided', 'No Website Domain Provided'),
+      badge: hasRealDomain
+        ? (verificationData.verification_trust_score > 60 ? t('agents.agent_3_badge_trusted', 'Trusted Domain') : t('agents.agent_3_badge_suspicious', 'Suspicious Web Record'))
+        : 'N/A',
       content: (
         <div className="space-y-3 text-xs">
-          <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">{t('agents.target_domain', 'Target Domain')}:</span>
-            <span className="font-mono text-sky-400 font-bold">{verificationData.domain || 'Not Specified'}</span>
-          </div>
+          {hasRealDomain ? (
+            <>
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                <span className="text-slate-300 font-medium">{t('agents.target_domain', 'Target Domain')}:</span>
+                <span className="font-mono text-sky-400 font-bold">{rawDomain}</span>
+              </div>
 
-          <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">{t('agents.domain_age', 'Domain Age')}:</span>
-            <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
-              {verificationData.whois_info?.domain_years ? `${verificationData.whois_info.domain_years} Years (${verificationData.whois_info.registered_days} Days Old)` : (verificationData.whois_info?.registered_days ? `${verificationData.whois_info.registered_days} Days Old` : 'Verified Registry Standard')}
-            </span>
-          </div>
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                <span className="text-slate-300 font-medium">{t('agents.domain_age', 'Domain Age')}:</span>
+                <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {verificationData.whois_info?.domain_years ? `${verificationData.whois_info.domain_years} Years (${verificationData.whois_info.registered_days} Days Old)` : (verificationData.whois_info?.registered_days ? `${verificationData.whois_info.registered_days} Days Old` : (verificationData.whois_info?.status === 'verified' ? 'Established Record' : 'Record Check Unavailable'))}
+                </span>
+              </div>
 
-          {verificationData.whois_info?.creation_date && (
-            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-              <span className="text-slate-300 font-medium">{t('agents.domain_registration_date', 'Domain Registration Date')}:</span>
-              <span className="font-mono text-slate-200">{new Date(verificationData.whois_info.creation_date).toLocaleDateString()}</span>
+              {verificationData.whois_info?.creation_date && (
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                  <span className="text-slate-300 font-medium">{t('agents.domain_registration_date', 'Domain Registration Date')}:</span>
+                  <span className="font-mono text-slate-200">{new Date(verificationData.whois_info.creation_date).toLocaleDateString()}</span>
+                </div>
+              )}
+
+              {verificationData.whois_info?.registrar && (
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                  <span className="text-slate-300 font-medium">{t('agents.domain_registrar', 'Domain Registrar')}:</span>
+                  <span className="font-semibold text-slate-300">{verificationData.whois_info.registrar}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                <span className="text-slate-300 font-medium">{t('agents.whois_security_status', 'WHOIS Domain Security Status')}:</span>
+                <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {verificationData.whois_info?.whois_status || 'Domain Record Evaluated'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                <span className="text-slate-300 font-medium">{t('agents.safe_browsing_api', 'Google Safe Browsing API')}:</span>
+                <span className={`font-semibold ${verificationData.safe_browsing?.flagged ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {verificationData.safe_browsing?.status || 'Clean'}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-1">
+              <div className="flex items-center space-x-2 text-slate-300 font-semibold">
+                <Info className="w-4 h-4 text-sky-400" />
+                <span>{t('agents.no_domain_provided', 'No Website Domain Provided')}</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                {t('agents.no_domain_desc', 'No employer website URL was detected in the submitted job listing. Domain WHOIS registry and Safe Browsing audits apply only when an employer website URL is provided.')}
+              </p>
             </div>
           )}
-
-          {verificationData.whois_info?.registrar && (
-            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-              <span className="text-slate-300 font-medium">{t('agents.domain_registrar', 'Domain Registrar')}:</span>
-              <span className="font-semibold text-slate-300">{verificationData.whois_info.registrar}</span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">{t('agents.whois_security_status', 'WHOIS Domain Security Status')}:</span>
-            <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
-              {verificationData.whois_info?.whois_status || 'Domain Registry Standard'}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-            <span className="text-slate-300 font-medium">{t('agents.safe_browsing_api', 'Google Safe Browsing API')}:</span>
-            <span className={`font-semibold ${verificationData.safe_browsing?.flagged ? 'text-rose-400' : 'text-emerald-400'}`}>
-              {verificationData.safe_browsing?.status || 'SAFE'}
-            </span>
-          </div>
 
           {/* Abstract API Email Validation Card */}
-          {verificationData.email_validation && (
+          {verificationData.email_validation && verificationData.email_validation.email && (
             <div className={`p-3 rounded-lg border space-y-2 ${
               verificationData.email_validation.is_high_risk 
                 ? 'bg-rose-500/10 border-rose-500/30' 

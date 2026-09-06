@@ -49,6 +49,32 @@ class IntakeAgent:
         "gemini-flash-lite-latest",
     ]
 
+    FREE_EMAIL_SERVICES = {
+        "gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.in", "yahoo.co.uk",
+        "hotmail.com", "outlook.com", "live.com", "msn.com", "icloud.com",
+        "aol.com", "zoho.com", "mail.com", "proton.me", "protonmail.com", "yandex.com"
+    }
+
+    def validate_phone_candidate(self, phone_str: str) -> Dict[str, Any]:
+        """Validates standard E.164 phone length (7-15 digits) and filters dummy/repetitive numbers."""
+        if not phone_str:
+            return {"is_valid": False, "reason": "empty"}
+        clean = phone_str.strip()
+        digits = re.sub(r'\D', '', clean)
+        # 4-digit years like 2024, 2025, 2026 are not phone numbers
+        if len(digits) == 4 and (digits.startswith("19") or digits.startswith("20")):
+            return {"is_valid": False, "reason": "year", "digits": digits}
+        if len(digits) < 7:
+            return {"is_valid": False, "reason": "too_short", "digits": digits}
+        if len(digits) > 15:
+            return {"is_valid": False, "reason": "too_long", "digits": digits}
+        # Check repetitive / dummy numbers like 0000000, 1111111, 9999999999
+        if len(set(digits)) <= 2:
+            return {"is_valid": False, "reason": "repetitive_digits", "digits": digits}
+        if digits in "01234567890123456789" or digits in "98765432109876543210":
+            return {"is_valid": False, "reason": "sequential_digits", "digits": digits}
+        return {"is_valid": True, "reason": "valid", "digits": digits}
+
     @staticmethod
     def detect_language(text: str) -> str:
         """Detect language based on Unicode script block character ranges."""
@@ -557,17 +583,32 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
         emails_found = list(set(re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', combined_text)))
         urls_found = list(set(re.findall(r'https?://[^\s]+', combined_text)))
         telegram_handles = list(set(re.findall(r'@[A-Za-z0-9_]{4,}', combined_text)))
-        phone_numbers = list(set(re.findall(r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}', combined_text)))
+        
+        # Phone extraction and validation (filtering dummy/repetitive numbers & short fragments)
+        raw_phone_candidates = list(set(re.findall(r'(?:\+?\d{1,4}[-.\s]?)?(?:\(?\d{2,4}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{3,5}', combined_text)))
+        if isinstance(vision_res, dict) and vision_res.get("phone"):
+            raw_phone_candidates.append(vision_res.get("phone"))
+
+        valid_phones = []
+        invalid_phones = []
+        for cand in raw_phone_candidates:
+            v_res = self.validate_phone_candidate(cand)
+            if v_res["is_valid"]:
+                if cand not in valid_phones:
+                    valid_phones.append(cand)
+            elif v_res["reason"] in ["too_short", "repetitive_digits", "sequential_digits", "too_long"] and len(v_res.get("digits", "")) >= 4:
+                if cand not in invalid_phones:
+                    invalid_phones.append(cand)
+
+        phone_numbers = valid_phones
 
         if isinstance(vision_res, dict):
             if vision_res.get("email") and vision_res.get("email") not in emails_found:
                 emails_found.append(vision_res.get("email"))
             if vision_res.get("website") and vision_res.get("website") not in urls_found:
                 urls_found.append(vision_res.get("website"))
-            if vision_res.get("phone") and vision_res.get("phone") not in phone_numbers:
-                phone_numbers.append(vision_res.get("phone"))
 
-        # Domain extraction
+        # Domain extraction (strictly from genuine website URLs, excluding free webmail services)
         if not extracted_domain and urls_found:
             try:
                 from urllib.parse import urlparse
@@ -575,13 +616,10 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                 u_domain = parsed_u.netloc.split(':')[0] if parsed_u.netloc else parsed_u.path.split('/')[0]
                 if u_domain.startswith("www."):
                     u_domain = u_domain[4:]
-                if u_domain and "." in u_domain:
+                if u_domain and "." in u_domain and u_domain.lower() not in self.FREE_EMAIL_SERVICES:
                     extracted_domain = u_domain
             except Exception:
                 pass
-
-        if not extracted_domain and emails_found:
-            extracted_domain = emails_found[0].split('@')[-1]
 
         detected_lang = self.detect_language(combined_text)
         final_lang = target_language if (target_language and target_language in ["en", "si", "ta", "hi", "bn"]) else detected_lang
@@ -625,16 +663,18 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                 is_job_poster = True
                 poster_type = "Job Advertisement"
 
-        # Structured verified facts vs raw fields
+        # Structured observed facts vs raw fields (strictly factual observation, never false claim of verification)
         verified_facts = []
         if emails_found:
-            verified_facts.append(f"Contains email address: {emails_found[0]}")
+            verified_facts.append(f"Observed contact email: {emails_found[0]}")
         if urls_found:
-            verified_facts.append(f"Contains web link: {urls_found[0]}")
+            verified_facts.append(f"Observed web link: {urls_found[0]}")
         if extracted_domain:
-            verified_facts.append(f"Associated domain: {extracted_domain}")
-        if phone_numbers:
-            verified_facts.append(f"Contains contact phone: {phone_numbers[0]}")
+            verified_facts.append(f"Associated company domain: {extracted_domain}")
+        if valid_phones:
+            verified_facts.append(f"Observed contact telephone: {valid_phones[0]}")
+        elif invalid_phones:
+            verified_facts.append(f"Detected invalid/suspicious contact number: {invalid_phones[0]}")
 
         return {
             "content_type": content_type,
@@ -658,6 +698,7 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                 "emails": emails_found,
                 "urls": urls_found,
                 "telegram_handles": telegram_handles,
-                "phone_numbers": phone_numbers[:3]
+                "phone_numbers": valid_phones[:3],
+                "invalid_phones": invalid_phones[:3]
             }
         }

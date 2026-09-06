@@ -275,6 +275,9 @@ class GeminiAPIClient {
             } catch (e) {
                 domain = url.replace(/^https?:\/\//, "").split('/')[0];
             }
+            if (domain && ["gmail.com", "googlemail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com", "aol.com"].includes(domain.toLowerCase())) {
+                domain = "";
+            }
         }
 
         // 1. DIRECT GEMINI VISION & MULTIMODAL AI ANALYSIS (when API key is present)

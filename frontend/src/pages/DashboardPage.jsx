@@ -730,58 +730,72 @@ const DashboardPage = () => {
               </div>
 
               {/* LIVE URL & WHOIS DOMAIN SECURITY AUDIT CARD */}
-              {(result.verification_data?.domain || result.intake_data?.domain || result.input_url) && (
-                <div className="p-5 rounded-2xl bg-slate-950/90 border border-indigo-500/30 space-y-4 shadow-lg">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center space-x-2">
-                      <Globe className="w-4 h-4 text-sky-400" />
-                      <span>{t('dashboard.domain_security_title', 'Live URL & WHOIS Domain Security Audit')}</span>
-                    </h4>
-                    <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800">
-                      {t('dashboard.whois_live_audit', 'WHOIS LIVE AUDIT')}
-                    </span>
+              {/* LIVE URL & WHOIS DOMAIN SECURITY AUDIT CARD */}
+              {(() => {
+                const targetDomain = result.verification_data?.domain || result.intake_data?.domain || result.input_url || '';
+                const cleanDom = targetDomain.trim().toLowerCase();
+                const isRealDomain = Boolean(
+                  cleanDom && 
+                  !['not specified', 'n/a', 'none', 'null', 'verified url', ''].includes(cleanDom) && 
+                  cleanDom.includes('.') && 
+                  !cleanDom.endsWith('@gmail.com') && 
+                  !['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'].includes(cleanDom)
+                );
+                if (!isRealDomain) return null;
+
+                return (
+                  <div className="p-5 rounded-2xl bg-slate-950/90 border border-indigo-500/30 space-y-4 shadow-lg">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center space-x-2">
+                        <Globe className="w-4 h-4 text-sky-400" />
+                        <span>{t('dashboard.domain_security_title', 'Live URL & WHOIS Domain Security Audit')}</span>
+                      </h4>
+                      <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800">
+                        {t('dashboard.whois_live_audit', 'WHOIS LIVE AUDIT')}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.target_domain', 'Target Domain / URL')}</span>
+                        <span className="font-semibold text-slate-200 text-xs truncate block">
+                          {targetDomain}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.domain_age', 'Domain Age')}</span>
+                        <span className={`font-semibold text-xs block ${result.verification_data?.whois_info?.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
+                          {result.verification_data?.whois_info?.registered_days !== undefined && result.verification_data?.whois_info?.registered_days !== null
+                            ? `${result.verification_data.whois_info.registered_days} ${t('dashboard.registered_days_suffix', 'Days (Registered)')}` 
+                            : (result.verification_data?.whois_info?.status === 'verified' ? 'Established Record' : 'Record Check Unavailable')}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registrar', 'Registrar')}</span>
+                        <span className="font-semibold text-slate-200 text-xs truncate block">
+                          {result.verification_data?.whois_info?.registrar || 'Registrar Info Not Public'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.safe_browsing', 'Safe Browsing')}</span>
+                        <span className={`font-semibold text-xs truncate block ${result.verification_data?.safe_browsing?.flagged ? 'text-rose-400' : 'text-emerald-400'}`}>
+                          {result.verification_data?.safe_browsing?.status || 'Clean / Unflagged'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 sm:col-span-2">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.whois_security_status', 'WHOIS Domain Security Status')}</span>
+                        <span className={`font-semibold text-xs block ${result.verification_data?.whois_info?.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
+                          {result.verification_data?.whois_info?.whois_status || 'Domain Record Evaluated'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.target_domain', 'Target Domain / URL')}</span>
-                      <span className="font-semibold text-slate-200 text-xs truncate block">
-                        {result.verification_data?.domain || result.intake_data?.domain || result.input_url || 'Verified URL'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.domain_age', 'Domain Age')}</span>
-                      <span className={`font-semibold text-xs block ${result.verification_data?.whois_info?.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
-                        {result.verification_data?.whois_info?.registered_days !== undefined && result.verification_data?.whois_info?.registered_days !== null
-                          ? `${result.verification_data.whois_info.registered_days} ${t('dashboard.registered_days_suffix', 'Days (Registered)')}` 
-                          : 'Verified Registry Standard'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registrar', 'Registrar')}</span>
-                      <span className="font-semibold text-slate-200 text-xs truncate block">
-                        {result.verification_data?.whois_info?.registrar || 'ICANN Accredited Registrar'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.safe_browsing', 'Safe Browsing')}</span>
-                      <span className="font-semibold text-emerald-400 text-xs truncate block">
-                        {result.verification_data?.safe_browsing?.status || 'Verified Safe'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 sm:col-span-2">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.whois_security_status', 'WHOIS Domain Security Status')}</span>
-                      <span className={`font-semibold text-xs block ${result.verification_data?.whois_info?.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
-                        {result.verification_data?.whois_info?.whois_status || 'Domain Registry Standard'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* REASONING EXPLANATION CARD (LEFT SIDE PANEL) */}
               <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-3">
