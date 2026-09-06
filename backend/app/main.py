@@ -29,6 +29,8 @@ async def on_startup():
     await init_db()
 
 @app.get("/")
+@app.get("/api")
+@app.get("/api/")
 def read_root():
     return {
         "status": "online",
