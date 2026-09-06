@@ -470,7 +470,7 @@ Return ONLY a valid JSON object matching this exact key structure (no markdown f
         ];
 
         // If file is provided or text contains job indicators, treat as potential job poster
-        const isJobPoster = (inputType === "image" && file) ? true : recruitmentTerms.some(term => combinedText.includes(term));
+        const isJobPoster = (inputType === "image" || Boolean(file)) ? true : (recruitmentTerms.some(term => combinedText.includes(term)) || combinedText.length > 20);
 
         if (!isJobPoster) {
             const posterType = "Not a Job Advertisement";
@@ -492,6 +492,7 @@ Recommendation:
 Please analyze a genuine recruitment posting or job vacancy URL to receive a complete scam analysis.`;
 
             return {
+                id: 'report_' + Date.now().toString(36),
                 scam_score: "N/A",
                 confidence_score: 100,
                 risk_level: "Not a Job Advertisement",
@@ -620,6 +621,7 @@ Verify job offers directly on official corporate career portals before sending d
         }
 
         return {
+            id: 'report_' + Date.now().toString(36),
             scam_score: score,
             confidence_score: 95,
             risk_level: riskLevel,

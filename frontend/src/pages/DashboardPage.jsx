@@ -268,8 +268,13 @@ const DashboardPage = () => {
           file: activeTab === 'image' ? selectedFile : null,
           language: targetLanguage
         });
-        setCurrentStep(5);
-        setResult(fallbackRes);
+        if (fallbackRes) {
+          if (!fallbackRes.id) {
+            fallbackRes.id = 'report_' + Date.now().toString(36);
+          }
+          setCurrentStep(5);
+          setResult(fallbackRes);
+        }
       } catch (fallbackErr) {
         setError(err.response?.data?.detail || 'Failed to complete scam analysis. Please check network connection.');
       }
@@ -651,7 +656,7 @@ const DashboardPage = () => {
 
                   <button
                     onClick={() => openAIModal({
-                      title: `Gemini 3.6 Flash Deep AI Audit (Report #${result.id.slice(-6)})`,
+                      title: `Gemini 3.6 Flash Deep AI Audit (Report #${(result.id || 'REPORT').slice(-6)})`,
                       initialPrompt: `Provide an in-depth security breakdown and safety advice for this job verification report:\nScam Score: ${result.scam_score}/100\nRisk Level: ${result.risk_level}\nExplanation: "${result.explanation_text}"`,
                       category: 'full_report_audit',
                       contextData: result
@@ -843,7 +848,7 @@ const DashboardPage = () => {
                   <span>{t('dashboard.verified_by_engine', 'Verified by SAFE-HIRE Agentic AI Engine')}</span>
                 </div>
                 <div className="flex items-center space-x-2 font-mono text-[10px] text-slate-500">
-                  <span>{t('dashboard.report_hash', 'Report Hash')}: {result.id}</span>
+                  <span>{t('dashboard.report_hash', 'Report Hash')}: {result.id || 'CERT-SECURE'}</span>
                 </div>
               </div>
 
@@ -859,7 +864,7 @@ const DashboardPage = () => {
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <h2 className="text-lg font-bold text-slate-100">{t('dashboard.results_title')}</h2>
                 <span className="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-sky-400">
-                  ID: #{result.id.slice(-6)}
+                  ID: #{(result.id || 'REPORT').slice(-6)}
                 </span>
               </div>
 

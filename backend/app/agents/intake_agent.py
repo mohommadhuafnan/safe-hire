@@ -43,9 +43,9 @@ class IntakeAgent:
     """Agent 1 & Agent 2: Ingests text, image OCR, and URL; extracts metadata, contacts, language, and performs multimodal vision content classification."""
 
     GEMINI_VISION_MODELS = [
+        "gemini-flash-latest",
         "gemini-3.6-flash",
         "gemini-3.5-flash",
-        "gemini-flash-latest",
         "gemini-flash-lite-latest",
     ]
 
@@ -289,7 +289,8 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                         ],
                         "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1500}
                     }
-                    res = requests.post(url, json=payload, timeout=25)
+                    headers = {"Content-Type": "application/json", "X-goog-api-key": gemini_key}
+                    res = requests.post(url, json=payload, headers=headers, timeout=12)
                     if res.status_code == 200:
                         data = res.json()
                         candidates = data.get("candidates") or []
@@ -554,10 +555,14 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                 specific_category = vision_res.get("specificCategory") or vision_res.get("specific_category") or poster_type
                 poster_summary = vision_res.get("posterSummary") or vision_res.get("poster_summary") or ""
                 
-                # Step 2: OCR Text Extraction
-                ocr_text, o_status = IntakeAgent.extract_text_from_image(image_bytes)
-                ocr_status = o_status
-                ocr_extracted_text = vision_res.get("posterText") or ocr_text or ""
+                # Step 2: OCR Text Extraction (only if Vision AI did not already extract text)
+                if vision_res and vision_res.get("posterText") and len(vision_res["posterText"].strip()) > 5:
+                    ocr_extracted_text = vision_res.get("posterText").strip()
+                    ocr_status = "SUCCESS"
+                else:
+                    ocr_text, o_status = IntakeAgent.extract_text_from_image(image_bytes)
+                    ocr_status = o_status
+                    ocr_extracted_text = ocr_text or ""
                 if not ocr_extracted_text and ocr_status == "FAILED":
                     if content_type == "unclear":
                         is_unreadable = True
