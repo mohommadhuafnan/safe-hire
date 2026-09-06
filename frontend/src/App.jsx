@@ -14,6 +14,8 @@ import DashboardPage from './pages/DashboardPage';
 import HistoryPage from './pages/HistoryPage';
 import './i18n';
 
+import { useTranslation } from 'react-i18next';
+
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -47,6 +49,14 @@ const PublicAuthRoute = ({ children }) => {
 };
 
 function AppRoutes() {
+  const { i18n } = useTranslation();
+
+  React.useEffect(() => {
+    const currentLang = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0].toLowerCase();
+    document.documentElement.setAttribute('data-language', currentLang);
+    document.documentElement.setAttribute('lang', currentLang);
+  }, [i18n.language]);
+
   return (
     <div className="min-h-screen relative overflow-hidden flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
       <CyberParticlesBackground />

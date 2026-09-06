@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   ShieldCheck, 
   Mail, 
@@ -19,6 +20,7 @@ import {
 import { signInWithGoogle } from '../firebase';
 
 const AnimatedAuth = ({ initialMode = 'login' }) => {
+  const { t, i18n } = useTranslation();
   const [isSignUp, setIsSignUp] = useState(initialMode === 'signup');
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -27,7 +29,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [institution, setInstitution] = useState('University Student');
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(i18n.language || 'en');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,6 +41,12 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
     setIsSignUp(initialMode === 'signup');
     setError('');
   }, [initialMode]);
+
+  useEffect(() => {
+    if (i18n.language) {
+      setLanguage(i18n.language);
+    }
+  }, [i18n.language]);
 
   // Track cursor for dynamic light effect
   const handleMouseMove = (e) => {
@@ -52,13 +60,23 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setError(t('auth.invalid_email'));
+      return;
+    }
+    if (!password || password.length < 6) {
+      setError(t('auth.password_too_short'));
+      return;
+    }
     setLoading(true);
     try {
-      await login(email, password);
+      await login(cleanEmail, password);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      console.warn("Login fallback navigation:", err);
-      navigate('/dashboard', { replace: true });
+      console.error("Login failed:", err);
+      const msg = (err.response && err.response.data && err.response.data.detail) || err.message || t('auth.login_failed');
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -67,13 +85,27 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setError(t('auth.invalid_email'));
+      return;
+    }
+    if (!password || password.length < 6) {
+      setError(t('auth.password_too_short'));
+      return;
+    }
+    if (!fullName || fullName.trim().length < 2) {
+      setError(t('auth.name_required'));
+      return;
+    }
     setLoading(true);
     try {
-      await register(email, password, fullName, institution, language);
+      await register(cleanEmail, password, fullName.trim(), institution, language);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      console.warn("Register fallback navigation:", err);
-      navigate('/dashboard', { replace: true });
+      console.error("Register failed:", err);
+      const msg = (err.response && err.response.data && err.response.data.detail) || err.message || t('auth.registration_failed');
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -83,21 +115,20 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
     setError('');
     setLoading(true);
     try {
-      let googleRes = null;
-      try {
-        googleRes = await signInWithGoogle();
-      } catch (gErr) {
-        console.warn("Google popup notice, switching to instant student session:", gErr);
+      const googleRes = await signInWithGoogle();
+      if (!googleRes || !googleRes.email) {
+        throw new Error(t('auth.google_cancelled'));
       }
-      const targetEmail = (googleRes && googleRes.email) || (email && email.includes('@') ? email : "student_google@university.edu");
-      const targetName = (googleRes && googleRes.fullName) || fullName || targetEmail.split('@')[0].toUpperCase();
-      const targetToken = (googleRes && googleRes.idToken) || "DIRECT_GOOGLE_OAUTH_TOKEN";
-
-      await firebaseLogin(targetToken, targetEmail, targetName);
+      await firebaseLogin(googleRes.idToken, googleRes.email, googleRes.fullName);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      console.warn("Google auth direct login:", err);
-      navigate('/dashboard', { replace: true });
+      console.error("Google sign in notice:", err);
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        setError(t('auth.google_cancelled'));
+      } else {
+        const msg = (err.response && err.response.data && err.response.data.detail) || err.message || t('auth.google_cancelled');
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -175,7 +206,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Sign In
+            {t('auth.sign_in')}
           </button>
           <button
             type="button"
@@ -186,7 +217,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Create Account
+            {t('auth.create_account')}
           </button>
         </div>
 
@@ -205,8 +236,8 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
               <div className="inline-flex p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">Welcome Back</h2>
-              <p className="text-xs text-slate-400">Sign in to access your scam detector dashboard</p>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">{t('auth.welcome_back')}</h2>
+              <p className="text-xs text-slate-400">{t('auth.sign_in_subtitle')}</p>
             </motion.div>
 
             {/* Alert Error */}
@@ -220,7 +251,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
             {/* Login Form */}
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <motion.div variants={itemVariants}>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Email Address</label>
+                <label className="block text-xs font-medium text-slate-300 mb-1">{t('auth.email_address')}</label>
                 <div className="relative group">
                   <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5 group-focus-within:text-indigo-400 transition-colors" />
                   <input
@@ -235,7 +266,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
               </motion.div>
 
               <motion.div variants={itemVariants}>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Password</label>
+                <label className="block text-xs font-medium text-slate-300 mb-1">{t('auth.password')}</label>
                 <div className="relative group">
                   <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5 group-focus-within:text-indigo-400 transition-colors" />
                   <input
@@ -261,7 +292,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
                   <Sparkles className="w-4 h-4 animate-spin text-sky-200" />
                 ) : (
                   <>
-                    <span>Sign In to Dashboard</span>
+                    <span>{t('auth.sign_in_btn')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -271,7 +302,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
             <motion.div variants={itemVariants} className="pt-2">
               <div className="relative mb-3 flex items-center justify-center">
                 <div className="border-t border-slate-800 w-full" />
-                <span className="bg-[rgb(15,23,42)] px-2.5 text-[10px] text-slate-400 font-semibold uppercase tracking-wider absolute">OR</span>
+                <span className="bg-[rgb(15,23,42)] px-2.5 text-[10px] text-slate-400 font-semibold uppercase tracking-wider absolute">{t('auth.or')}</span>
               </div>
 
               <button
@@ -286,16 +317,16 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                 </svg>
-                <span>Continue with Google</span>
+                <span>{t('auth.google_signin')}</span>
               </button>
             </motion.div>
           </motion.div>
 
           {/* Mobile Switch Link */}
           <div className="md:hidden mt-6 text-center text-xs text-slate-400 pb-2">
-            Don't have an account?{' '}
+            {t('auth.no_account')}{' '}
             <button onClick={() => { setError(''); setIsSignUp(true); }} className="text-indigo-400 font-bold underline">
-              Create Account
+              {t('auth.create_account')}
             </button>
           </div>
         </div>
@@ -315,8 +346,8 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
               <div className="inline-flex p-2.5 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 mb-1">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">Create Account</h2>
-              <p className="text-xs text-slate-400">Join SAFE-HIRE 5-Agent AI Protection</p>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">{t('auth.create_account')}</h2>
+              <p className="text-xs text-slate-400">{t('auth.join_subtitle')}</p>
             </motion.div>
 
             {/* Alert Error */}
@@ -330,7 +361,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
             {/* Signup Form */}
             <form onSubmit={handleRegisterSubmit} className="space-y-3">
               <motion.div variants={itemVariants}>
-                <label className="block text-[11px] font-medium text-slate-300 mb-1">Full Name</label>
+                <label className="block text-[11px] font-medium text-slate-300 mb-1">{t('auth.full_name')}</label>
                 <div className="relative group">
                   <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3 group-focus-within:text-sky-400 transition-colors" />
                   <input
@@ -345,7 +376,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
               </motion.div>
 
               <motion.div variants={itemVariants}>
-                <label className="block text-[11px] font-medium text-slate-300 mb-1">Email Address</label>
+                <label className="block text-[11px] font-medium text-slate-300 mb-1">{t('auth.email_address')}</label>
                 <div className="relative group">
                   <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3 group-focus-within:text-sky-400 transition-colors" />
                   <input
@@ -360,7 +391,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
               </motion.div>
 
               <motion.div variants={itemVariants}>
-                <label className="block text-[11px] font-medium text-slate-300 mb-1">Password</label>
+                <label className="block text-[11px] font-medium text-slate-300 mb-1">{t('auth.password')}</label>
                 <div className="relative group">
                   <LockKeyhole className="w-4 h-4 text-slate-500 absolute left-3.5 top-3 group-focus-within:text-sky-400 transition-colors" />
                   <input
@@ -376,20 +407,20 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
 
               <div className="grid grid-cols-2 gap-2">
                 <motion.div variants={itemVariants}>
-                  <label className="block text-[11px] font-medium text-slate-300 mb-1">Status</label>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">{t('auth.status')}</label>
                   <select
                     value={institution}
                     onChange={(e) => setInstitution(e.target.value)}
                     className="w-full bg-slate-900/80 border border-slate-800 focus:border-sky-500 rounded-xl px-2.5 py-2.5 text-xs text-slate-100 outline-none transition cursor-pointer"
                   >
-                    <option value="University Student">Student</option>
-                    <option value="Recent Graduate">Graduate</option>
-                    <option value="Job Seeker">Job Seeker</option>
+                    <option value="University Student">{t('auth.student')}</option>
+                    <option value="Recent Graduate">{t('auth.graduate')}</option>
+                    <option value="Job Seeker">{t('auth.job_seeker')}</option>
                   </select>
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                  <label className="block text-[11px] font-medium text-slate-300 mb-1">Language</label>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">{t('auth.language')}</label>
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
@@ -416,7 +447,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
                   <Sparkles className="w-4 h-4 animate-spin text-sky-200" />
                 ) : (
                   <>
-                    <span>Create Free Account</span>
+                    <span>{t('auth.create_account_btn')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -426,7 +457,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
             <motion.div variants={itemVariants} className="pt-2">
               <div className="relative mb-3 flex items-center justify-center">
                 <div className="border-t border-slate-800 w-full" />
-                <span className="bg-[rgb(15,23,42)] px-2.5 text-[10px] text-slate-400 font-semibold uppercase tracking-wider absolute">OR</span>
+                <span className="bg-[rgb(15,23,42)] px-2.5 text-[10px] text-slate-400 font-semibold uppercase tracking-wider absolute">{t('auth.or')}</span>
               </div>
 
               <button
@@ -441,16 +472,16 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                 </svg>
-                <span>Sign up with Google</span>
+                <span>{t('auth.google_signup')}</span>
               </button>
             </motion.div>
           </motion.div>
 
           {/* Mobile Switch Link */}
           <div className="md:hidden mt-4 text-center text-xs text-slate-400 pb-2">
-            Already have an account?{' '}
+            {t('auth.already_account')}{' '}
             <button onClick={() => { setError(''); setIsSignUp(false); }} className="text-sky-400 font-bold underline">
-              Sign In
+              {t('auth.sign_in')}
             </button>
           </div>
         </div>
@@ -501,24 +532,24 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
                 className="relative z-10 space-y-4"
               >
                 <h3 className="text-2xl font-extrabold text-slate-100 leading-snug">
-                  New to SAFE-HIRE?
+                  {t('auth.new_to_safehire')}
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Verify job offers, internship ads, emails, WhatsApp messages, and URLs with our 5-Agent AI pipeline in 5 languages.
+                  {t('auth.new_desc')}
                 </p>
 
                 <ul className="space-y-2 text-xs text-slate-300 pt-2">
                   <li className="flex items-center space-x-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Instant Scam Probability Score (0-100)</span>
+                    <span>{t('auth.benefit_1')}</span>
                   </li>
                   <li className="flex items-center space-x-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>WHOIS & Safe Browsing Domain Checks</span>
+                    <span>{t('auth.benefit_2')}</span>
                   </li>
                   <li className="flex items-center space-x-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Native English, Sinhala, Tamil, Hindi, Bengali</span>
+                    <span>{t('auth.benefit_3')}</span>
                   </li>
                 </ul>
 
@@ -531,7 +562,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
                   }}
                   className="mt-4 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs shadow-lg backdrop-blur-md transition flex items-center space-x-2"
                 >
-                  <span>Create Free Account</span>
+                  <span>{t('auth.create_account_btn')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </motion.button>
               </motion.div>
@@ -545,10 +576,10 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
                 className="relative z-10 space-y-4"
               >
                 <h3 className="text-2xl font-extrabold text-slate-100 leading-snug">
-                  Already Registered?
+                  {t('auth.already_registered')}
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Sign in to access your personalized dashboard, view past scam verifications, and run 5-agent AI checks.
+                  {t('auth.already_desc')}
                 </p>
 
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 text-xs text-slate-300">
@@ -567,7 +598,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
                   }}
                   className="mt-4 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs shadow-lg backdrop-blur-md transition flex items-center space-x-2"
                 >
-                  <span>Sign In to Account</span>
+                  <span>{t('auth.sign_in_btn')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </motion.button>
               </motion.div>

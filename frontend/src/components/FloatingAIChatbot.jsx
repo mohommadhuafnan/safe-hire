@@ -22,7 +22,7 @@ const FloatingAIChatbot = () => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: `Hello! 👋 I'm your **SAFE-HIRE AI Assistant**.\n\nI can help you verify job offers, analyze recruiter messages, explain scam red flags, and guide you on staying safe while job hunting. How can I help you today?`
+      content: t('chatbot.welcome_message', "Hello! 👋 I'm your **SAFE-HIRE AI Assistant**.\n\nI can help you verify job offers, analyze recruiter messages, explain scam red flags, and guide you on staying safe while job hunting. How can I help you today?")
     }
   ]);
   const [inputPrompt, setInputPrompt] = useState('');
@@ -33,10 +33,10 @@ const FloatingAIChatbot = () => {
   const messagesEndRef = useRef(null);
 
   const quickPrompts = [
-    "🔍 How do I spot a job scam?",
-    "💰 Are registration fees normal?",
-    "📧 Verify recruiter email",
-    "🛡️ How does SAFE-HIRE work?"
+    t('chatbot.quick_prompt_1', "🔍 How do I spot a job scam?"),
+    t('chatbot.quick_prompt_2', "💰 Are registration fees normal?"),
+    t('chatbot.quick_prompt_3', "📧 Verify recruiter email"),
+    t('chatbot.quick_prompt_4', "🛡️ How does SAFE-HIRE work?")
   ];
 
   useEffect(() => {
@@ -132,7 +132,7 @@ Language preference: ${i18n.language || 'en'}.`
         {!isOpen && (
           <div className="hidden sm:flex items-center px-3 py-1.5 rounded-full bg-slate-900/90 border border-indigo-500/40 text-[11px] font-bold text-slate-200 shadow-xl backdrop-blur-md animate-bounce">
             <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-400" />
-            <span>Need Help? Ask AI!</span>
+            <span>{t('chatbot.need_help', 'Need Help? Ask AI!')}</span>
           </div>
         )}
 
@@ -271,7 +271,7 @@ Language preference: ${i18n.language || 'en'}.`
                 type="text"
                 value={inputPrompt}
                 onChange={(e) => setInputPrompt(e.target.value)}
-                placeholder="Ask SAFE-HIRE AI Assistant..."
+                placeholder={t('chatbot.input_placeholder', 'Ask anything about job scams, emails, or verification...')}
                 className="flex-1 bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-xs text-slate-100 placeholder-slate-500 outline-none transition"
               />
               <button

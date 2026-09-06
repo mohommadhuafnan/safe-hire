@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeHire — 5-Agent AI Architecture Diagram (Viva Presentation)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0b0f19;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --accent-blue: #2563eb;
+      --accent-cyan: #0284c7;
+      --accent-amber: #d97706;
+      --accent-indigo: #4f46e5;
+      --accent-purple: #7c3aed;
+      --accent-emerald: #059669;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+    }
+
+    /* Top Action Bar */
+    .action-bar {
+      width: 100%;
+      max-width: 1920px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 24px;
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+
+    .title-text h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .title-text p {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn-secondary:hover {
+      background: #475569;
+      color: white;
+    }
+
+    .btn-emerald {
+      background: #059669;
+      color: white;
+    }
+    .btn-emerald:hover {
+      background: #047857;
+    }
+
+    /* Diagram Canvas Container (16:9 Aspect Ratio) */
+    .canvas-wrapper {
+      width: 100%;
+      max-width: 1920px;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      position: relative;
+    }
+
+    .diagram-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      aspect-ratio: 16 / 9;
+    }
+
+    /* Viva Notes Section */
+    .viva-notes-section {
+      width: 100%;
+      max-width: 1920px;
+      margin-top: 30px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 28px;
+    }
+
+    .viva-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 14px;
+    }
+
+    .viva-header h2 {
+      font-size: 20px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .viva-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 18px;
+    }
+
+    .viva-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 18px;
+    }
+
+    .viva-card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .viva-card p {
+      font-size: 12.5px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .viva-card ul {
+      margin-left: 18px;
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .badge-num {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .badge-agent1 { background: rgba(2, 132, 199, 0.2); color: #38bdf8; border: 1px solid #0284c7; }
+    .badge-agent2 { background: rgba(217, 119, 6, 0.2); color: #fbbf24; border: 1px solid #d97706; }
+    .badge-agent3 { background: rgba(79, 70, 229, 0.2); color: #818cf8; border: 1px solid #4f46e5; }
+    .badge-agent4 { background: rgba(124, 58, 237, 0.2); color: #c084fc; border: 1px solid #7c3aed; }
+    .badge-agent5 { background: rgba(5, 150, 105, 0.2); color: #34d399; border: 1px solid #059669; }
+
+    /* Print styling */
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .action-bar, .viva-notes-section {
+        display: none !important;
+      }
+      .canvas-wrapper {
+        border: none;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Action Bar -->
+  <div class="action-bar">
+    <div class="brand-title">
+      <div class="brand-badge">SAFEHIRE ARCHITECTURE</div>
+      <div class="title-text">
+        <h1>5-Agent Autonomous AI Sequential Workflow</h1>
+        <p>Production Multi-Agent Architecture for University Viva Presentation &amp; Defense</p>
+      </div>
+    </div>
+    <div class="button-group">
+      <button class="btn btn-secondary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+      <button class="btn btn-secondary" onclick="downloadSVG()">📥 Download SVG Vector</button>
+      <button class="btn btn-emerald" onclick="downloadPNG()">🖼️ Export High-Res PNG (16:9)</button>
+      <button class="btn btn-primary" onclick="toggleFullScreen()">⛶ Fullscreen Presentation</button>
+    </div>
+  </div>
+
+  <!-- Main 16:9 Canvas Wrapper containing the exact SVG -->
+  <div class="canvas-wrapper" id="canvasContainer">
+    <img id="diagramImage" src="safehire_5agent_architecture_diagram.svg" class="diagram-svg" alt="SafeHire 5-Agent Architecture Diagram" />
+  </div>
+
+  <!-- Viva Defense Cheat Sheet & Q&A Preparation Section -->
+  <div class="viva-notes-section">
+    <div class="viva-header">
+      <h2>🎓 Viva Defense Cheat Sheet — 5-Agent Technical Justification</h2>
+      <span style="font-size: 13px; color: #94a3b8;">Use these exact bullet points to answer questions from professors during the examination</span>
+    </div>
+
+    <div class="viva-grid">
+      <!-- Card 1 -->
+      <div class="viva-card">
+        <h3>
+          <span>1. Intake Agent</span>
+          <span class="badge-num badge-agent1">AGENT 1</span>
+        </h3>
+        <p><strong>Code:</strong> <code>/backend/app/agents/intake_agent.py</code></p>
+        <p><strong>Why separate?</strong> Unstructured job data arrives in multiple formats (images, URLs, text, WhatsApp screenshots). A dedicated intake agent decouples dirty parsing logic from risk assessment.</p>
+        <ul>
+          <li><strong>OCR Engine:</strong> Pytesseract extracts text from noisy flyers.</li>
+          <li><strong>Scraper:</strong> BeautifulSoup pulls live recruitment site content.</li>
+          <li><strong>Language ID:</strong> Unicode script-block analysis (EN, SI, TA, HI, BN).</li>
+          <li><strong>Output:</strong> Normalized JSON with extracted emails, phones &amp; URLs.</li>
+        </ul>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="viva-card">
+        <h3>
+          <span>2. Linguistic Risk Agent</span>
+          <span class="badge-num badge-agent2">AGENT 2</span>
+        </h3>
+        <p><strong>Code:</strong> <code>/backend/app/agents/linguistic_risk_agent.py</code></p>
+        <p><strong>Why separate?</strong> Psychological manipulation (urgency, upfront money demands) is distinct from website hosting technicalities. It isolates text-level semantics.</p>
+        <ul>
+          <li><strong>EMSCAD Benchmark:</strong> Trained on 17,880 verified job postings.</li>
+          <li><strong>Payment Flags:</strong> Registration fee, laptop deposit, processing fee.</li>
+          <li><strong>Urgency Tactics:</strong> "Offer expires in 2 hours", "Instant spot selection".</li>
+          <li><strong>Domain Mismatch:</strong> Flagging claims of Google using free @gmail.com.</li>
+        </ul>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="viva-card">
+        <h3>
+          <span>3. Verification Agent</span>
+          <span class="badge-num badge-agent3">AGENT 3</span>
+        </h3>
+        <p><strong>Code:</strong> <code>/backend/app/agents/verification_agent.py</code></p>
+        <p><strong>Why separate?</strong> Grounding truth in reality. LLMs hallucinate, but live internet registry infrastructure data provides zero-hallucination deterministic truth.</p>
+        <ul>
+          <li><strong>WHOIS Lookup:</strong> APILayer API checks creation age (&lt;90d = High Risk).</li>
+          <li><strong>Google Safe Browsing:</strong> Queries live threat lists for phishing/malware.</li>
+          <li><strong>TLD Screening:</strong> Flags shady disposable domains (.xyz, .top, .site).</li>
+          <li><strong>Output:</strong> Verification Trust Score &amp; Infrastructure Audit.</li>
+        </ul>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="viva-card">
+        <h3>
+          <span>4. Reasoning Agent</span>
+          <span class="badge-num badge-agent4">AGENT 4</span>
+        </h3>
+        <p><strong>Code:</strong> <code>/backend/app/agents/reasoning_agent.py</code></p>
+        <p><strong>Why separate?</strong> Core brain. Synthesizes conflicting multi-agent telemetry (e.g. good grammar from Agent 2, but brand-new fraudulent domain from Agent 3).</p>
+        <ul>
+          <li><strong>XAI (Explainable AI):</strong> Transparent rationale instead of black-box.</li>
+          <li><strong>Score:</strong> 0–100 Scam Probability Score &amp; Confidence calculation.</li>
+          <li><strong>Dimensional Sub-scores:</strong> Finance, Impersonation, Domain, Urgency.</li>
+          <li><strong>Fact Isolation:</strong> Explicitly separates verified facts from inferences.</li>
+        </ul>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="viva-card">
+        <h3>
+          <span>5. Recommendation Agent</span>
+          <span class="badge-num badge-agent5">AGENT 5</span>
+        </h3>
+        <p><strong>Code:</strong> <code>/backend/app/agents/recommendation_agent.py</code></p>
+        <p><strong>Why separate?</strong> Detection alone does not protect students. Concrete, defensive countermeasures convert passive alerts into active student protection.</p>
+        <ul>
+          <li><strong>Contextual Advice:</strong> Targets exact detected risks (e.g., fee name).</li>
+          <li><strong>Identity Defense:</strong> Warns against sharing National ID (NIC) / bank info.</li>
+          <li><strong>Escalation:</strong> Contacts for University Career Units &amp; Cyber Helplines.</li>
+          <li><strong>Localization:</strong> Delivers guidance in 5 native regional languages.</li>
+        </ul>
+      </div>
+
+      <!-- Summary Card -->
+      <div class="viva-card" style="border-color: #2563eb;">
+        <h3 style="color: #60a5fa;">
+          <span>Viva Core Pitch (60 Seconds)</span>
+          <span class="badge-num" style="background:#2563eb; color:white;">KEY SUMMARY</span>
+        </h3>
+        <p style="color: #e2e8f0; font-size: 13px;">
+          <em>"SafeHire does not rely on a single prompt or black-box classifier. Instead, it utilizes an autonomous 5-Agent sequential pipeline where each agent enriches the payload: from multi-modal OCR ingestion (Agent 1), through linguistic scam mining (Agent 2), deterministic WHOIS and Google Safe Browsing infrastructure verification (Agent 3), explainable AI score synthesis (Agent 4), to actionable student protective advice (Agent 5). This architecture eliminates hallucinations, guarantees traceability, and provides defensible evidence for every decision."</em>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleFullScreen() {
+      const elem = document.getElementById("canvasContainer");
+      if (!document.fullscreenElement) {
+        elem.requestFullscreen().catch(err => {
+          alert(`Error attempting to enable full-screen mode: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    function downloadSVG() {
+      const link = document.createElement('a');
+      link.href = 'safehire_5agent_architecture_diagram.svg';
+      link.download = 'safehire_5agent_architecture_diagram.svg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function downloadPNG() {
+      fetch('safehire_5agent_architecture_diagram.svg')
+        .then(res => res.text())
+        .then(svgData => {
+          const img = new Image();
+          const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+          const URL = window.URL || window.webkitURL || window;
+          const blobURL = URL.createObjectURL(svgBlob);
+
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            // 16:9 Landscape 1920x1080
+            canvas.width = 1920;
+            canvas.height = 1080;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#F8FAFC';
+            ctx.fillRect(0, 0, 1920, 1080);
+            ctx.drawImage(img, 0, 0, 1920, 1080);
+
+            const pngURL = canvas.toDataURL('image/png');
+            const downloadLink = document.createElement('a');
+            downloadLink.href = pngURL;
+            downloadLink.download = 'safehire_5agent_architecture_16x9.png';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(blobURL);
+          };
+          img.src = blobURL;
+        })
+        .catch(err => {
+          alert('Could not export PNG automatically. Please right-click the diagram and choose Save Image.');
+        });
+    }
+  </script>
+</body>
+</html>

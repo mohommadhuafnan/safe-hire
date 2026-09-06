@@ -283,7 +283,7 @@ class GeminiAPIClient {
                 let base64Image = null;
                 let mimeType = "image/png";
 
-                if (file && file.type && (file.type.startsWith("image/") || file.type.includes("pdf"))) {
+                if (inputType === "image" && file && file.type && (file.type.startsWith("image/") || file.type.includes("pdf"))) {
                     base64Image = await GeminiAPIClient.fileToBase64(file);
                     mimeType = file.type || "image/png";
                 }
@@ -451,7 +451,7 @@ Return ONLY a valid JSON object matching this exact key structure (no markdown f
         }
 
         // 2. HEURISTIC RULE ENGINE FALLBACK (if Gemini API key is unprovided or network drops)
-        const combinedText = `${text} ${url} ${file ? file.name : ""}`.toLowerCase();
+        const combinedText = `${text} ${url} ${inputType === "image" && file ? file.name : ""}`.toLowerCase();
         const recruitmentTerms = [
             "we are hiring", "is hiring", "hiring for", "job vacancy", "job vacancies",
             "recruitment notice", "career opportunity", "career opportunities", "position available",
@@ -467,7 +467,7 @@ Return ONLY a valid JSON object matching this exact key structure (no markdown f
         ];
 
         // If file is provided or text contains job indicators, treat as potential job poster
-        const isJobPoster = file ? true : recruitmentTerms.some(term => combinedText.includes(term));
+        const isJobPoster = (inputType === "image" && file) ? true : recruitmentTerms.some(term => combinedText.includes(term));
 
         if (!isJobPoster) {
             const posterType = "Not a Job Advertisement";

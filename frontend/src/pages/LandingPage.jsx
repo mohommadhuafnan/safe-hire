@@ -101,91 +101,91 @@ const LandingPage = () => {
     {
       id: 1,
       type: 'scam',
-      title: 'Data Entry Assistant Scam',
+      title: t('landing.poster_1_title', 'Data Entry Assistant Scam'),
       score: '95/100',
-      riskLevel: 'HIGH RISK SCAM',
+      riskLevel: t('risk_levels.high_risk', 'HIGH RISK SCAM'),
       badgeClass: 'bg-rose-500/20 border-rose-500/40 text-rose-300',
       borderClass: 'border-rose-500/40 hover:border-rose-400',
       dotClass: 'bg-rose-500',
       image: '/images/scam_job_poster.png',
-      extractedText: '"Registration fee of $30 required for laptop shipment kit. Contact recruiter on Telegram @job_recruiter_fast"',
+      extractedText: t('landing.poster_1_text', '"Registration fee of $30 required for laptop shipment kit. Contact recruiter on Telegram @job_recruiter_fast"'),
       metrics: [
-        { label: 'Payment Demand', val: '$30 Upfront Fee', color: 'text-rose-300' },
-        { label: 'Contact Channel', val: 'Telegram @job_fast', color: 'text-rose-300' },
-        { label: 'Domain WHOIS', val: '3 Days Old / Disposable', color: 'text-rose-300' },
-        { label: 'Safe Browsing', val: 'Google Threat Flagged', color: 'text-rose-300' }
+        { label: t('landing.metric_payment_demand', 'Payment Demand'), val: '$30 Upfront Fee', color: 'text-rose-300' },
+        { label: t('landing.metric_contact_channel', 'Contact Channel'), val: 'Telegram @job_fast', color: 'text-rose-300' },
+        { label: t('landing.metric_domain_whois', 'Domain WHOIS'), val: '3 Days Old / Disposable', color: 'text-rose-300' },
+        { label: t('landing.metric_safe_browsing', 'Safe Browsing'), val: 'Google Threat Flagged', color: 'text-rose-300' }
       ]
     },
     {
       id: 2,
       type: 'legit',
-      title: 'TechCorp Software Intern',
+      title: t('landing.poster_2_title', 'TechCorp Software Intern'),
       score: '5/100',
-      riskLevel: 'VERIFIED LEGITIMATE',
+      riskLevel: t('risk_levels.very_low_risk', 'VERIFIED LEGITIMATE'),
       badgeClass: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300',
       borderClass: 'border-emerald-500/40 hover:border-emerald-400',
       dotClass: 'bg-emerald-400',
       image: '/images/genuine_job_poster.png',
-      extractedText: '"Apply via official career portal: www.techcorp.com/careers. No application or equipment fees."',
+      extractedText: t('landing.poster_2_text', '"Apply via official career portal: www.techcorp.com/careers. No application or equipment fees."'),
       metrics: [
-        { label: 'Application Fee', val: '100% Free ($0)', color: 'text-emerald-300' },
-        { label: 'Domain WHOIS', val: 'techcorp.com (12+ Yrs)', color: 'text-emerald-300' },
-        { label: 'Email Status', val: 'Corporate MX Valid', color: 'text-emerald-300' },
-        { label: 'Safe Browsing', val: 'Clean (0 Threats)', color: 'text-emerald-300' }
+        { label: t('landing.metric_application_fee', 'Application Fee'), val: '100% Free ($0)', color: 'text-emerald-300' },
+        { label: t('landing.metric_domain_whois', 'Domain WHOIS'), val: 'techcorp.com (12+ Yrs)', color: 'text-emerald-300' },
+        { label: t('landing.metric_email_status', 'Email Status'), val: 'Corporate MX Valid', color: 'text-emerald-300' },
+        { label: t('landing.metric_safe_browsing', 'Safe Browsing'), val: 'Clean (0 Threats)', color: 'text-emerald-300' }
       ]
     },
     {
       id: 3,
       type: 'scam',
-      title: 'WhatsApp Typing Task Fraud',
+      title: t('landing.poster_3_title', 'WhatsApp Typing Task Fraud'),
       score: '92/100',
-      riskLevel: 'HIGH RISK SCAM',
+      riskLevel: t('risk_levels.high_risk', 'HIGH RISK SCAM'),
       badgeClass: 'bg-rose-500/20 border-rose-500/40 text-rose-300',
       borderClass: 'border-rose-500/40 hover:border-rose-400',
       dotClass: 'bg-rose-500',
       image: '/images/whatsapp_typing_poster.png',
-      extractedText: '"Earn Rs. 15,000 weekly typing at home. Pay Rs. 2,000 refundable security deposit to start task."',
+      extractedText: t('landing.poster_3_text', '"Earn Rs. 15,000 weekly typing at home. Pay Rs. 2,000 refundable security deposit to start task."'),
       metrics: [
-        { label: 'Deposit Demand', val: 'Rs. 2,000 Upfront', color: 'text-rose-300' },
-        { label: 'Recruiter Contact', val: 'WhatsApp Only (+94)', color: 'text-rose-300' },
-        { label: 'Company Domain', val: 'No Website / Gmail', color: 'text-rose-300' },
-        { label: 'Language Risk', val: 'EMSCAD Urgency Trigger', color: 'text-rose-300' }
+        { label: t('landing.metric_deposit_demand', 'Deposit Demand'), val: 'Rs. 2,000 Upfront', color: 'text-rose-300' },
+        { label: t('landing.metric_recruiter_contact', 'Recruiter Contact'), val: 'WhatsApp Only (+94)', color: 'text-rose-300' },
+        { label: t('landing.metric_company_domain', 'Company Domain'), val: 'No Website / Gmail', color: 'text-rose-300' },
+        { label: t('landing.metric_language_risk', 'Language Risk'), val: 'EMSCAD Urgency Trigger', color: 'text-rose-300' }
       ]
     },
     {
       id: 4,
       type: 'legit',
-      title: 'NSBM Campus Ambassador',
+      title: t('landing.poster_4_title', 'NSBM Campus Ambassador'),
       score: '8/100',
-      riskLevel: 'VERIFIED LEGITIMATE',
+      riskLevel: t('risk_levels.very_low_risk', 'VERIFIED LEGITIMATE'),
       badgeClass: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300',
       borderClass: 'border-emerald-500/40 hover:border-emerald-400',
       dotClass: 'bg-emerald-400',
       image: '/images/nsbm_campus_poster.png',
-      extractedText: '"Official university student ambassador program. Register via nsbm.ac.lk student portal."',
+      extractedText: t('landing.poster_4_text', '"Official university student ambassador program. Register via nsbm.ac.lk student portal."'),
       metrics: [
-        { label: 'University Domain', val: 'nsbm.ac.lk (Verified)', color: 'text-emerald-300' },
-        { label: 'Registration Fee', val: 'FREE ($0)', color: 'text-emerald-300' },
-        { label: 'Contact Mail', val: 'careers@nsbm.ac.lk', color: 'text-emerald-300' },
-        { label: 'Safe Browsing', val: 'Clean (0 Threats)', color: 'text-emerald-300' }
+        { label: t('landing.metric_university_domain', 'University Domain'), val: 'nsbm.ac.lk (Verified)', color: 'text-emerald-300' },
+        { label: t('landing.metric_registration_fee', 'Registration Fee'), val: 'FREE ($0)', color: 'text-emerald-300' },
+        { label: t('landing.metric_contact_mail', 'Contact Mail'), val: 'careers@nsbm.ac.lk', color: 'text-emerald-300' },
+        { label: t('landing.metric_safe_browsing', 'Safe Browsing'), val: 'Clean (0 Threats)', color: 'text-emerald-300' }
       ]
     },
     {
       id: 5,
       type: 'scam',
-      title: 'Crypto Reviewer Impersonation',
+      title: t('landing.poster_5_title', 'Crypto Reviewer Impersonation'),
       score: '88/100',
-      riskLevel: 'HIGH RISK SCAM',
+      riskLevel: t('risk_levels.high_risk', 'HIGH RISK SCAM'),
       badgeClass: 'bg-rose-500/20 border-rose-500/40 text-rose-300',
       borderClass: 'border-rose-500/40 hover:border-rose-400',
       dotClass: 'bg-rose-500',
       image: '/images/crypto_reviewer_poster.png',
-      extractedText: '"Product reviewer job. Daily payout in USDT crypto. Purchase $50 initial rating package to start."',
+      extractedText: t('landing.poster_5_text', '"Product reviewer job. Daily payout in USDT crypto. Purchase $50 initial rating package to start."'),
       metrics: [
-        { label: 'Payout Method', val: 'Unregulated USDT Crypto', color: 'text-rose-300' },
-        { label: 'Package Demand', val: '$50 Rating Package', color: 'text-rose-300' },
-        { label: 'Domain Age', val: 'Created 5 Days Ago', color: 'text-rose-300' },
-        { label: 'Safe Browsing', val: 'Phishing Flagged', color: 'text-rose-300' }
+        { label: t('landing.metric_payout_method', 'Payout Method'), val: 'Unregulated USDT Crypto', color: 'text-rose-300' },
+        { label: t('landing.metric_package_demand', 'Package Demand'), val: '$50 Rating Package', color: 'text-rose-300' },
+        { label: t('landing.metric_domain_age', 'Domain Age'), val: 'Created 5 Days Ago', color: 'text-rose-300' },
+        { label: t('landing.metric_safe_browsing', 'Safe Browsing'), val: 'Phishing Flagged', color: 'text-rose-300' }
       ]
     }
   ];
@@ -466,15 +466,15 @@ const LandingPage = () => {
         <div className="text-center mb-10 space-y-3 scroll-reveal">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold shadow-lg shadow-cyan-500/10 backdrop-blur-md animate-pulse">
             <Zap className="w-4 h-4 text-cyan-400" />
-            <span>REAL-TIME AI RECRUITMENT FRAUD SCANNER</span>
+            <span>{t('landing.action_badge', 'REAL-TIME AI RECRUITMENT FRAUD SCANNER')}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
-            See <span className="gradient-text">SAFE-HIRE AI</span> in Action
+            {t('landing.action_title_1', 'See ')}<span className="gradient-text">{t('landing.action_title_brand', 'SAFE-HIRE AI')}</span>{t('landing.action_title_2', ' in Action')}
           </h2>
           
           <p className="text-slate-400 text-sm max-w-3xl mx-auto leading-relaxed">
-            Watch how our multimodal vision OCR engine extracts text, validates recruiter brand identity, and identifies scam red flags in real-time.
+            {t('landing.action_subtitle', 'Watch how our multimodal vision OCR engine extracts text, validates recruiter brand identity, and identifies scam red flags in real-time.')}
           </p>
         </div>
 
@@ -486,15 +486,15 @@ const LandingPage = () => {
             <div className="flex items-center space-x-3">
               <div className="w-3.5 h-3.5 rounded-full bg-cyan-400 animate-ping" />
               <span className="text-xs font-mono font-bold text-cyan-300 uppercase tracking-wider">
-                SAFE-HIRE Neural Vision Core v3.6 • Live Laser OCR Stream
+                {t('landing.action_hud_top', 'SAFE-HIRE NEURAL VISION CORE V3.6 • LIVE LASER OCR STREAM')}
               </span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                ● 100% SECURE
+                {t('landing.action_badge_secure', '● 100% SECURE')}
               </span>
               <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                MULTI-AI PIPELINE
+                {t('landing.action_badge_pipeline', 'MULTI-AI PIPELINE')}
               </span>
             </div>
           </div>
@@ -524,11 +524,11 @@ const LandingPage = () => {
 
               {/* Holographic Target Corners */}
               <div className="absolute top-4 left-4 text-[10px] font-mono font-bold text-cyan-300 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-cyan-500/40 backdrop-blur-md">
-                [LIVE MULTIMODAL VISION OCR]
+                {t('landing.action_vision_hud', '[LIVE MULTIMODAL VISION OCR]')}
               </div>
               <div className="absolute bottom-4 right-4 text-[10px] font-mono font-bold text-emerald-300 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-emerald-500/40 backdrop-blur-md flex items-center space-x-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
-                <span>GEMINI 3.6 FLASH REASONING</span>
+                <span>{t('landing.action_gemini_hud', 'GEMINI 3.6 FLASH REASONING')}</span>
               </div>
             </div>
 
@@ -536,10 +536,10 @@ const LandingPage = () => {
             <div className="lg:col-span-5 space-y-5">
               <div className="space-y-2">
                 <h3 className="text-xl sm:text-2xl font-extrabold text-slate-100 tracking-tight">
-                  Instant Fraud Detection in Under <span className="gradient-text">3 Seconds</span>
+                  {t('landing.action_instant_heading', 'Instant Fraud Detection in Under ')}<span className="gradient-text">{t('landing.action_instant_seconds', '3 Seconds')}</span>
                 </h3>
                 <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-                  Our system combines computer vision, natural language processing, and WHOIS cybersecurity verification to flag fraudulent job offers before you apply.
+                  {t('landing.action_instant_desc', 'Our system combines computer vision, natural language processing, and WHOIS cybersecurity verification to flag fraudulent job offers before you apply.')}
                 </p>
               </div>
 
@@ -551,8 +551,8 @@ const LandingPage = () => {
                     <BrainCircuit className="w-5 h-5 text-indigo-400" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-200">Multimodal OCR Screenshot Scanning</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Extracts text from job flyers, WhatsApp chats, and PDF posters directly.</p>
+                    <h4 className="text-xs font-bold text-slate-200">{t('landing.action_feat_1_title', 'Multimodal OCR Screenshot Scanning')}</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{t('landing.action_feat_1_desc', 'Extracts text from job flyers, WhatsApp chats, and PDF posters directly.')}</p>
                   </div>
                 </div>
 
@@ -561,8 +561,8 @@ const LandingPage = () => {
                     <Globe2 className="w-5 h-5 text-sky-400" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-200">WHOIS & Email Security Verification</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Detects brand impersonation, disposable email domains, and newly registered scam URLs.</p>
+                    <h4 className="text-xs font-bold text-slate-200">{t('landing.action_feat_2_title', 'WHOIS & Email Security Verification')}</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{t('landing.action_feat_2_desc', 'Detects brand impersonation, disposable email domains, and newly registered scam URLs.')}</p>
                   </div>
                 </div>
 
@@ -571,8 +571,8 @@ const LandingPage = () => {
                     <ShieldCheck className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-200">0% Upfront Fee Tolerance Guarantee</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Instantly flags registration fee demands, laptop deposits, and payment traps.</p>
+                    <h4 className="text-xs font-bold text-slate-200">{t('landing.action_feat_3_title', '0% Upfront Fee Tolerance Guarantee')}</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{t('landing.action_feat_3_desc', 'Instantly flags registration fee demands, laptop deposits, and payment traps.')}</p>
                   </div>
                 </div>
 
@@ -585,7 +585,7 @@ const LandingPage = () => {
                   className="w-full py-3.5 rounded-xl btn-glow-blue font-bold text-xs text-white flex items-center justify-center space-x-2 shadow-xl transition"
                 >
                   <Sparkles className="w-4 h-4 text-cyan-300 animate-spin" />
-                  <span>Start Verification Scan Now</span>
+                  <span>{t('landing.action_btn_start', 'Start Verification Scan Now')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -607,7 +607,7 @@ const LandingPage = () => {
         <div className="text-center mb-14 space-y-3 scroll-reveal">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-400/30 text-sky-300 text-xs font-bold shadow-lg shadow-sky-500/10 backdrop-blur-md animate-pulse">
             <BrainCircuit className="w-4 h-4 text-sky-400" />
-            <span>5-AGENT MULTI-AI ARCHITECTURE</span>
+            <span>{t('landing.workflow_badge', '5-AGENT MULTI-AI ARCHITECTURE')}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
@@ -625,10 +625,10 @@ const LandingPage = () => {
           {[
             {
               step: '1',
-              title: 'Intake Agent',
+              title: t('landing.agent_card_1_title', 'Intake Agent'),
               icon: FileText,
-              tag: 'Vision OCR & Ingestion',
-              desc: 'Processes text, image OCR screenshots, and URLs; auto-detects language.',
+              tag: t('landing.agent_card_1_tag', 'Vision OCR & Ingestion'),
+              desc: t('landing.agent_card_1_desc', 'Processes text, image OCR screenshots, and URLs; auto-detects language.'),
               color: 'from-blue-600 to-indigo-600',
               borderColor: 'border-blue-500/30 hover:border-blue-400',
               glowColor: 'shadow-blue-500/20',
@@ -637,10 +637,10 @@ const LandingPage = () => {
             },
             {
               step: '2',
-              title: 'Linguistic Risk',
+              title: t('landing.agent_card_2_title', 'Linguistic Risk'),
               icon: BrainCircuit,
-              tag: 'EMSCAD Signal Engine',
-              desc: 'Evaluates EMSCAD signals: urgency, payment demands, email domain anomalies.',
+              tag: t('landing.agent_card_2_tag', 'EMSCAD Signal Engine'),
+              desc: t('landing.agent_card_2_desc', 'Evaluates EMSCAD signals: urgency, payment demands, email domain anomalies.'),
               color: 'from-sky-500 to-blue-600',
               borderColor: 'border-sky-500/30 hover:border-sky-400',
               glowColor: 'shadow-sky-500/20',
@@ -649,10 +649,10 @@ const LandingPage = () => {
             },
             {
               step: '3',
-              title: 'Verification Agent',
+              title: t('landing.agent_card_3_title', 'Verification Agent'),
               icon: Globe2,
-              tag: 'WHOIS & Safe Browsing',
-              desc: 'Checks WHOIS domain age, Google Safe Browsing, Abstract Email validation, and corporate presence.',
+              tag: t('landing.agent_card_3_tag', 'WHOIS & Safe Browsing'),
+              desc: t('landing.agent_card_3_desc', 'Checks WHOIS domain age, Google Safe Browsing, Abstract Email validation, and corporate presence.'),
               color: 'from-cyan-500 to-teal-500',
               borderColor: 'border-cyan-500/30 hover:border-cyan-400',
               glowColor: 'shadow-cyan-500/20',
@@ -661,10 +661,10 @@ const LandingPage = () => {
             },
             {
               step: '4',
-              title: 'Reasoning Agent',
+              title: t('landing.agent_card_4_title', 'Reasoning Agent'),
               icon: Sparkles,
-              tag: 'Gemini 3.6 & DeepSeek',
-              desc: 'Synthesizes signals into a 0-100 score with plain language explanation.',
+              tag: t('landing.agent_card_4_tag', 'Gemini 3.6 & DeepSeek'),
+              desc: t('landing.agent_card_4_desc', 'Synthesizes signals into a 0-100 score with plain language explanation.'),
               color: 'from-teal-500 to-emerald-500',
               borderColor: 'border-teal-500/30 hover:border-teal-400',
               glowColor: 'shadow-teal-500/20',
@@ -673,10 +673,10 @@ const LandingPage = () => {
             },
             {
               step: '5',
-              title: 'Recommendation',
+              title: t('landing.agent_card_5_title', 'Recommendation'),
               icon: ShieldCheck,
-              tag: 'Poster-Specific Action',
-              desc: 'Delivers tailored safety guidance and university reporting steps.',
+              tag: t('landing.agent_card_5_tag', 'Poster-Specific Action'),
+              desc: t('landing.agent_card_5_desc', 'Delivers tailored safety guidance and university reporting steps.'),
               color: 'from-indigo-600 to-purple-600',
               borderColor: 'border-indigo-500/30 hover:border-indigo-400',
               glowColor: 'shadow-indigo-500/20',
@@ -727,7 +727,7 @@ const LandingPage = () => {
 
                 {/* Bottom Active Pulse Glow Bar */}
                 <div className="mt-4 pt-3 border-t border-slate-900/80 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                  <span>Stage {agent.step} Active</span>
+                  <span>{t('landing.agent_stage_prefix', 'Stage')} {agent.step} {t('landing.agent_stage_active', 'Active')}</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 group-hover:animate-ping" />
                 </div>
               </div>
@@ -746,23 +746,23 @@ const LandingPage = () => {
         <div className="text-center mb-10 space-y-4">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold shadow-lg shadow-rose-500/10 backdrop-blur-md animate-pulse">
             <AlertTriangle className="w-4 h-4 text-rose-400" />
-            <span>INSTAGRAM-STYLE INTERACTIVE GALLERY</span>
+            <span>{t('landing.gallery_badge', 'INSTAGRAM-STYLE INTERACTIVE GALLERY')}</span>
           </div>
           
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
-            Spot Fake Job Posters vs Genuine Ads
+            {t('landing.gallery_title', 'Spot Fake Job Posters vs Genuine Ads')}
           </h2>
           
           <p className="text-slate-400 text-sm max-w-3xl mx-auto leading-relaxed">
-            Browse real-world scam flyers vs verified corporate offers. Click or swipe through the gallery to see how 5-Agent AI extracts red flags.
+            {t('landing.gallery_desc', 'Browse real-world scam flyers vs verified corporate offers. Click or swipe through the gallery to see how 5-Agent AI extracts red flags.')}
           </p>
 
           {/* Interactive Filter Pills */}
           <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
             {[
-              { id: 'all', label: `All Posters (${galleryPosters.length})` },
-              { id: 'scam', label: `High-Risk Scams (${galleryPosters.filter(p=>p.type==='scam').length})` },
-              { id: 'legit', label: `Verified Genuine (${galleryPosters.filter(p=>p.type==='legit').length})` }
+              { id: 'all', label: `${t('landing.gallery_filter_all', 'All Posters')} (${galleryPosters.length})` },
+              { id: 'scam', label: `${t('landing.gallery_filter_scams', 'High-Risk Scams')} (${galleryPosters.filter(p=>p.type==='scam').length})` },
+              { id: 'legit', label: `${t('landing.gallery_filter_legit', 'Verified Genuine')} (${galleryPosters.filter(p=>p.type==='legit').length})` }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -786,7 +786,7 @@ const LandingPage = () => {
         <div className="flex items-center justify-between mb-6 px-2">
           <div className="text-xs font-mono text-slate-400 flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping inline-block" />
-            <span>Viewing 3 Posters Simultaneously {isAutoSlide ? '(Auto-sliding active)' : '(Paused on hover)'}</span>
+            <span>{t('landing.gallery_viewing_simultaneous', 'Viewing 3 Posters Simultaneously')} {isAutoSlide ? t('landing.gallery_auto_slide', '(Auto-sliding active)') : t('landing.gallery_paused_hover', '(Paused on hover)')}</span>
           </div>
 
           <div className="flex items-center space-x-3">
@@ -845,7 +845,7 @@ const LandingPage = () => {
                 {isCenter && (
                   <div className="absolute top-2 left-4 z-20 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 text-[9px] font-mono uppercase tracking-widest flex items-center gap-1 shadow-md">
                     <Sparkles className="w-3 h-3 text-cyan-400 animate-spin" style={{ animationDuration: '6s' }} />
-                    <span>CENTER FOCUS</span>
+                    <span>{t('landing.gallery_center_focus', 'CENTER FOCUS')}</span>
                   </div>
                 )}
 
@@ -863,7 +863,7 @@ const LandingPage = () => {
                       {item.title}
                     </h3>
                     <span className="text-[10px] text-slate-400 font-mono">
-                      Poster #{item.id} of {galleryPosters.length}
+                      {t('landing.gallery_poster_prefix', 'Poster #')}{item.id} {t('landing.gallery_poster_of', 'of')} {galleryPosters.length}
                     </span>
                   </div>
 
@@ -880,7 +880,7 @@ const LandingPage = () => {
                     <div className="absolute bottom-2 left-2 right-2 p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl shadow-lg">
                       <div className="text-[10px] font-bold text-sky-400 mb-0.5 flex items-center gap-1">
                         <Sparkles className="w-3 h-3 text-cyan-400" />
-                        <span>AI Extracted Signal:</span>
+                        <span>{t('landing.gallery_signal_extracted', 'AI Extracted Signal:')}</span>
                       </div>
                       <p className="text-[10px] text-slate-200 font-mono leading-tight line-clamp-2">
                         {item.extractedText}
@@ -915,15 +915,15 @@ const LandingPage = () => {
         <div className="text-center mb-14 space-y-3 scroll-reveal">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold shadow-lg shadow-indigo-500/10 backdrop-blur-md animate-pulse">
             <ShieldCheck className="w-4 h-4 text-indigo-400" />
-            <span>UNMATCHED RECRUITMENT PROTECTION ENGINE</span>
+            <span>{t('landing.why_choose_badge', 'UNMATCHED RECRUITMENT PROTECTION ENGINE')}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
-            Why Choose <span className="gradient-text">SAFE-HIRE</span>?
+            {t('landing.why_choose_title_1', 'Why Choose ')}<span className="gradient-text">{t('landing.why_choose_title_brand', 'SAFE-HIRE')}</span>{t('landing.why_choose_title_2', '?')}
           </h2>
           
           <p className="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">
-            The world's first agentic multi-AI platform engineered specifically to protect South Asian undergraduates and job seekers from career scams.
+            {t('landing.why_choose_subtitle', "The world's first agentic multi-AI platform engineered specifically to protect South Asian undergraduates and job seekers from career scams.")}
           </p>
         </div>
 
@@ -938,10 +938,10 @@ const LandingPage = () => {
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_1_title', '5-Agent AI Pipeline')}</h3>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">AUTOMATED</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">{t('landing.badge_automated', 'AUTOMATED')}</span>
               </div>
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
-                Multimodal OCR vision, linguistic signal analysis, WHOIS domain security, and Gemini 3.6 Flash reasoning working together in parallel.
+                {t('landing.why_choose_desc_1', 'Multimodal OCR vision, linguistic signal analysis, WHOIS domain security, and Gemini 3.6 Flash reasoning working together in parallel.')}
               </p>
             </div>
           </div>
@@ -955,10 +955,10 @@ const LandingPage = () => {
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_2_title', 'Multi-Language Support')}</h3>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-500/20 text-sky-300 border border-sky-500/30">5 LANGUAGES</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-500/20 text-sky-300 border border-sky-500/30">{t('landing.badge_5_languages', '5 LANGUAGES')}</span>
               </div>
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
-                Native explanations in English, Sinhala, Tamil, Hindi, and Bengali for localized fraud detection across South Asia.
+                {t('landing.why_choose_desc_2', 'Native explanations in English, Sinhala, Tamil, Hindi, and Bengali for localized fraud detection across South Asia.')}
               </p>
             </div>
           </div>
@@ -972,10 +972,10 @@ const LandingPage = () => {
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_3_title', 'Domain & Web Verification')}</h3>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-500/20 text-teal-300 border border-teal-500/30">WHOIS LIVE</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-500/20 text-teal-300 border border-teal-500/30">{t('landing.badge_whois_live', 'WHOIS LIVE')}</span>
               </div>
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
-                Live WHOIS age lookup, Google Safe Browsing reputation check, and Abstract API email domain validation.
+                {t('landing.why_choose_desc_3', 'Live WHOIS age lookup, Google Safe Browsing reputation check, and Abstract API email domain validation.')}
               </p>
             </div>
           </div>
@@ -989,10 +989,10 @@ const LandingPage = () => {
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <h3 className="text-lg font-bold text-slate-100">{t('landing.feature_4_title', 'Actionable Safety Advice')}</h3>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">STUDENT SAFE</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">{t('landing.badge_student_safe', 'STUDENT SAFE')}</span>
               </div>
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-sans">
-                Clear, student-friendly recommendations to protect your money, identity, and career credentials against hiring fraud.
+                {t('landing.why_choose_desc_4', 'Clear, student-friendly recommendations to protect your money, identity, and career credentials against hiring fraud.')}
               </p>
             </div>
           </div>
@@ -1007,15 +1007,15 @@ const LandingPage = () => {
         <div className="text-center mb-10 space-y-3 scroll-reveal">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold">
             <Crown className="w-4 h-4" />
-            <span>PREMIUM MEMBERSHIP PLANS</span>
+            <span>{t('landing.pricing_badge', 'PREMIUM MEMBERSHIP PLANS')}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100">
-            Choose Your <span className="gradient-text-gold">Protection Plan</span>
+            {t('landing.pricing_title_1', 'Choose Your ')}<span className="gradient-text-gold">{t('landing.pricing_title_accent', 'Protection Plan')}</span>
           </h2>
           
           <p className="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">
-            Get unlimited AI scam verifications, AI OCR screenshot scans, WHOIS domain age lookups, and downloadable PDF reports.
+            {t('landing.pricing_subtitle', 'Get unlimited AI scam verifications, AI OCR screenshot scans, WHOIS domain age lookups, and downloadable PDF reports.')}
           </p>
 
           {/* BILLING DURATION TOGGLE (1 MONTH vs 1 YEAR) */}
@@ -1030,7 +1030,7 @@ const LandingPage = () => {
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                1 Month Plan
+                {t('landing.plan_1_month', '1 Month Plan')}
               </button>
               
               <button
@@ -1042,8 +1042,8 @@ const LandingPage = () => {
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <span>1 Year Plan</span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-extrabold">SAVE 20%</span>
+                <span>{t('landing.plan_1_year', '1 Year Plan')}</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-extrabold">{t('landing.save_20', 'SAVE 20%')}</span>
               </button>
             </div>
           </div>

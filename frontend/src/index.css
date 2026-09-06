@@ -241,29 +241,150 @@ body.light .btn-secondary:hover {
   transform: translateY(-1px);
 }
 
-/* Light Mode Comprehensive Typography & Color Overrides */
+/* ==========================================================================
+   LANGUAGE-SPECIFIC TYPOGRAPHY & SIZING ADJUSTMENTS (TAMIL & SINHALA)
+   ========================================================================== */
+html[data-language="ta"],
+body[data-language="ta"],
+[data-language="ta"] {
+  font-family: 'Noto Sans Tamil', 'Mukta Malar', 'Latha', 'Tamil Sangam MN', 'Inter', system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+[data-language="ta"] h1,
+[data-language="ta"] h2,
+[data-language="ta"] h3 {
+  letter-spacing: normal;
+  line-height: 1.35;
+}
+
+[data-language="ta"] p,
+[data-language="ta"] span,
+[data-language="ta"] li,
+[data-language="ta"] button {
+  font-size: 0.95em;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+html[data-language="si"],
+body[data-language="si"],
+[data-language="si"] {
+  font-family: 'Noto Sans Sinhala', 'Iskoola Pota', 'Gemunu Libre', 'Inter', system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+[data-language="si"] h1,
+[data-language="si"] h2,
+[data-language="si"] h3 {
+  letter-spacing: normal;
+  line-height: 1.35;
+}
+
+[data-language="si"] p,
+[data-language="si"] span,
+[data-language="si"] li,
+[data-language="si"] button {
+  font-size: 0.95em;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* ==========================================================================
+   LIGHT MODE COMPREHENSIVE CONTRAST & VISIBILITY OVERRIDES
+   ========================================================================== */
 body.light text-slate-100, body.light .text-slate-100 { color: #0f172a !important; }
 body.light text-slate-200, body.light .text-slate-200 { color: #1e293b !important; }
 body.light text-slate-300, body.light .text-slate-300 { color: #334155 !important; }
 body.light text-slate-400, body.light .text-slate-400 { color: #475569 !important; }
+body.light text-slate-500, body.light .text-slate-500 { color: #64748b !important; }
 
-body.light .bg-slate-950 { background-color: #f8fafc !important; }
-body.light .bg-slate-900 { background-color: #ffffff !important; }
-body.light .bg-slate-900\/90 { background-color: rgba(255, 255, 255, 0.95) !important; }
-body.light .bg-slate-900\/80 { background-color: rgba(255, 255, 255, 0.9) !important; }
-body.light .bg-slate-900\/70 { background-color: rgba(255, 255, 255, 0.85) !important; }
-body.light .bg-slate-900\/60 { background-color: rgba(248, 250, 252, 0.9) !important; }
-body.light .bg-slate-800 { background-color: #f1f5f9 !important; }
+/* Slate Containers Flipping to Light High-Contrast */
+body.light .bg-slate-950,
+body.light .bg-slate-950\/95,
+body.light .bg-slate-950\/90,
+body.light .bg-slate-950\/85,
+body.light .bg-slate-950\/80,
+body.light .bg-slate-950\/75,
+body.light .bg-slate-950\/70,
+body.light .bg-slate-950\/60,
+body.light .bg-slate-950\/50,
+body.light .bg-slate-900,
+body.light .bg-slate-900\/95,
+body.light .bg-slate-900\/90,
+body.light .bg-slate-900\/85,
+body.light .bg-slate-900\/80,
+body.light .bg-slate-900\/70,
+body.light .bg-slate-900\/60,
+body.light .bg-slate-900\/50,
+body.light .bg-slate-800 { 
+  background-color: rgba(255, 255, 255, 0.95) !important; 
+}
 
-body.light .border-slate-800 { border-color: #cbd5e1 !important; }
-body.light .border-slate-800\/80 { border-color: #cbd5e1 !important; }
-body.light .border-slate-800\/90 { border-color: #cbd5e1 !important; }
-body.light .border-slate-700 { border-color: #94a3b8 !important; }
-body.light .border-white\/10 { border-color: rgba(0, 0, 0, 0.1) !important; }
-body.light .border-white\/15 { border-color: rgba(0, 0, 0, 0.15) !important; }
+/* Border Adaptations in Light Mode */
+body.light .border-slate-800,
+body.light .border-slate-800\/90,
+body.light .border-slate-800\/80,
+body.light .border-slate-800\/60,
+body.light .border-slate-800\/50,
+body.light .border-slate-700,
+body.light .border-slate-700\/80,
+body.light .border-white\/10,
+body.light .border-white\/15,
+body.light .border-white\/20 { 
+  border-color: #cbd5e1 !important; 
+}
 
-body.light input, body.light select, body.light textarea {
+/* Text Visibility inside Light Panels */
+body.light .glass-panel h1,
+body.light .glass-panel h2,
+body.light .glass-panel h3,
+body.light .glass-panel h4,
+body.light .glass-card h1,
+body.light .glass-card h2,
+body.light .glass-card h3,
+body.light .glass-card h4,
+body.light header nav .text-slate-200,
+body.light footer .text-slate-200,
+body.light footer .text-slate-400 {
   color: #0f172a !important;
+}
+
+body.light .glass-panel p,
+body.light .glass-card p {
+  color: #334155 !important;
+}
+
+/* Ensure solid buttons preserve white text */
+body.light .btn-primary,
+body.light .btn-primary *,
+body.light .btn-glow-blue,
+body.light .btn-glow-blue *,
+body.light .glow-btn,
+body.light .glow-btn *,
+body.light .bg-indigo-600,
+body.light .bg-indigo-600 *,
+body.light .bg-rose-600,
+body.light .bg-rose-600 *,
+body.light .bg-sky-500,
+body.light .bg-sky-500 *,
+body.light .bg-blue-600,
+body.light .bg-blue-600 * {
+  color: #ffffff !important;
+}
+
+/* Form Inputs in Light Mode */
+body.light input, 
+body.light select, 
+body.light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light input::placeholder,
+body.light textarea::placeholder {
+  color: #94a3b8 !important;
 }
 
 body.light option {

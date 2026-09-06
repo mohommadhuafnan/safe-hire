@@ -52,28 +52,26 @@ async def login(user_in: UserLogin):
     now = datetime.now(timezone.utc)
     
     if not user:
-        # Auto-provision user account if signing in for the first time
-        new_user = {
-            "email": email_clean,
-            "hashed_password": hash_password(user_in.password),
-            "full_name": email_clean.split("@")[0].capitalize(),
-            "institution": "University Student",
-            "preferred_language": "en",
-            "created_at": now
-        }
-        res = await db["users"].insert_one(new_user)
-        user_id = str(res.inserted_id)
-        user = new_user
-        user["_id"] = res.inserted_id
-    else:
-        # If user exists with password, verify password
-        if user.get("hashed_password") and not verify_password(user_in.password, user["hashed_password"]):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect password for this email address."
-            )
-        user_id = str(user["_id"])
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Account not found. Please sign up first before logging in."
+        )
+    
+    # If user signed up via Google OAuth and has no local password
+    if not user.get("hashed_password"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This account was registered using Google. Please click 'Continue with Google' to sign in."
+        )
 
+    # Verify user's password
+    if not verify_password(user_in.password, user["hashed_password"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect password for this email address."
+        )
+        
+    user_id = str(user["_id"])
     access_token = create_access_token(data={"sub": user_id})
 
     profile = UserProfile(
@@ -100,8 +98,11 @@ async def firebase_login(req: FirebaseLoginRequest):
         if not email:
             email = req.email
 
-        if not email or not isinstance(email, str) or len(email.strip()) < 3:
-            email = "student_google@university.edu"
+        if not email or not isinstance(email, str) or "@" not in email or "." not in email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A valid Google account email is required to sign in."
+            )
 
         email = email.lower().strip()
         full_name = (decoded.get("name") if decoded else req.full_name) or email.split("@")[0].capitalize()

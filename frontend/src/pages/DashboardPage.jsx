@@ -23,7 +23,9 @@ import {
   Upload,
   Crown,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -165,6 +167,25 @@ const DashboardPage = () => {
     return level;
   };
 
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl('');
+    setError('');
+  };
+
+  const handleResetScan = () => {
+    setInputText('');
+    setInputUrl('');
+    handleRemoveFile();
+    setResult(null);
+    setError('');
+    setCurrentStep(1);
+    setAnalyzing(false);
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -173,7 +194,8 @@ const DashboardPage = () => {
       if (!allowedExts.includes(fileExt)) {
         setError('Unsupported file format. The system only accepts PDF (.pdf), Microsoft Word (.doc, .docx), and Images (.png, .jpg, .jpeg, .webp).');
         setSelectedFile(null);
-        setPreviewUrl(null);
+        setPreviewUrl('');
+        e.target.value = '';
         return;
       }
       setError('');
@@ -181,9 +203,11 @@ const DashboardPage = () => {
       if (['.png', '.jpg', '.jpeg', '.webp'].includes(fileExt)) {
         setPreviewUrl(URL.createObjectURL(file));
       } else {
-        setPreviewUrl(null);
+        setPreviewUrl('');
       }
     }
+    // Allow re-selecting the same file if needed
+    e.target.value = '';
   };
 
   const handleAnalyze = async (e) => {
@@ -221,8 +245,8 @@ const DashboardPage = () => {
       formData.append('input_type', activeTab);
       formData.append('target_language', targetLanguage);
 
-      if (activeTab === 'text') formData.append('input_text', inputText);
-      if (activeTab === 'url') formData.append('input_url', inputUrl);
+      if (activeTab === 'text') formData.append('input_text', inputText.trim());
+      if (activeTab === 'url') formData.append('input_url', inputUrl.trim());
       if (activeTab === 'image' && selectedFile) formData.append('image', selectedFile);
 
       const response = await api.post('/api/analyze', formData, {
@@ -239,9 +263,9 @@ const DashboardPage = () => {
         const client = new GeminiAPIClient();
         const fallbackRes = await client.analyzeSubmission({
           inputType: activeTab,
-          text: inputText,
-          url: inputUrl,
-          file: selectedFile,
+          text: activeTab === 'text' ? inputText.trim() : '',
+          url: activeTab === 'url' ? inputUrl.trim() : '',
+          file: activeTab === 'image' ? selectedFile : null,
           language: targetLanguage
         });
         setCurrentStep(5);
@@ -396,6 +420,23 @@ const DashboardPage = () => {
                       </span>
                       <span className="text-[10px] text-slate-500 mt-1">{t('dashboard.supported_formats', 'Supported Formats: PDF (.pdf), Word (.doc, .docx), Images (.png, .jpg, .jpeg, .webp)')}</span>
                     </label>
+
+                    {selectedFile && (
+                      <div className="mt-3 flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRemoveFile();
+                          }}
+                          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-semibold transition"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>{t('dashboard.remove_file', 'Remove Selected File')}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -482,7 +523,7 @@ const DashboardPage = () => {
                   
                   {/* LEFT/TOP: LARGE HIGH-RES POSTER LASER SCANNER PREVIEW */}
                   <div className="md:col-span-7 flex justify-center">
-                    {previewUrl ? (
+                    {(activeTab === 'image' && previewUrl) ? (
                       <div className="relative w-full max-w-md rounded-2xl overflow-hidden border-2 border-indigo-500/60 bg-slate-950/90 shadow-[0_0_50px_rgba(99,102,241,0.5)]">
                         <img src={previewUrl} alt="Poster Under Scan" className="w-full max-h-[380px] sm:max-h-[420px] object-contain opacity-95 p-2 mx-auto" />
                         
@@ -590,6 +631,15 @@ const DashboardPage = () => {
                       <option value="bn" className="bg-slate-900">বাংলা (BN)</option>
                     </select>
                   </div>
+
+                  <button
+                    onClick={handleResetScan}
+                    className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition"
+                    title={t('dashboard.new_scan', 'Start New Scan')}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-sky-400" />
+                    <span>{t('dashboard.new_scan', 'New Scan')}</span>
+                  </button>
 
                   <button
                     onClick={() => exportAnalysisReport(result, user, i18n.language)}
