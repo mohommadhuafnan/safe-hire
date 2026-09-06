@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "safe_hire_db")
     
     # Auth JWT
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "safe_hire_super_secret_jwt_key_2026_safe_recruit_secure_token")
+    JWT_SECRET: str = (os.getenv("JWT_SECRET") or "safe_hire_super_secret_jwt_key_2026_safe_recruit_secure_token").strip().strip('"').strip("'")
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     

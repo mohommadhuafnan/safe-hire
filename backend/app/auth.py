@@ -30,7 +30,14 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+    # Guaranteed clean algorithm string
+    alg = str(getattr(settings, 'JWT_ALGORITHM', 'HS256') or 'HS256').strip().replace('"', '').replace("'", '').replace('\r', '').replace('\n', '').upper()
+    if not alg or alg not in ['HS256', 'HS384', 'HS512']:
+        alg = 'HS256'
+
+    secret = str(settings.JWT_SECRET or "safe_hire_super_secret_jwt_key_2026").strip().replace('\r', '').replace('\n', '')
+    encoded_jwt = jwt.encode(to_encode, secret, algorithm=alg)
     return encoded_jwt
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -42,9 +49,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     now = datetime.now(timezone.utc)
     target_id_or_email = None
 
+    alg = str(getattr(settings, 'JWT_ALGORITHM', 'HS256') or 'HS256').strip().replace('"', '').replace("'", '').replace('\r', '').replace('\n', '').upper()
+    if not alg or alg not in ['HS256', 'HS384', 'HS512']:
+        alg = 'HS256'
+    secret = str(settings.JWT_SECRET or "safe_hire_super_secret_jwt_key_2026").strip().replace('\r', '').replace('\n', '')
+
     if token and isinstance(token, str) and not token.startswith("demo_local_token_"):
         try:
-            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            payload = jwt.decode(token.strip(), secret, algorithms=[alg])
             target_id_or_email = payload.get("sub")
         except Exception as e:
             logger.warning(f"JWT decode notice: {e}")
