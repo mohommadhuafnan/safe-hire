@@ -56,10 +56,11 @@ class ReasoningAgent:
     """Agent 4: Synthesizes multi-agent signals using Google Gemini AI / DeepSeek AI into a structured, evidence-based scam analysis report."""
 
     GEMINI_MODELS = [
-        "gemini-3-flash-preview",
-        "gemini-3.7-flash",
+        "gemini-2.5-flash",
         "gemini-flash-latest",
-        "gemini-3.5-flash",
+        "gemini-2.5-pro",
+        "gemini-flash-lite-latest",
+        "gemini-3.7-flash",
     ]
 
     DEEPSEEK_MODELS = [
@@ -313,10 +314,14 @@ Return ONLY a raw JSON object with this exact structure (no markdown fences outs
         language: str
     ) -> dict:
         """Validates, sanitizes, and normalizes AI reasoning response."""
+        intake_is_job = intake_data.get("is_job_poster", True)
         content_type = ai_res.get("content_type") or intake_data.get("content_type", "job_poster")
         is_job = ai_res.get("is_job_poster")
         if is_job is None:
             is_job = (content_type == "job_poster")
+        if intake_is_job:
+            is_job = True
+            content_type = "job_poster"
 
         raw_score = ai_res.get("scam_score")
         if not is_job or content_type == "not_job_poster" or str(raw_score).upper() == "N/A":

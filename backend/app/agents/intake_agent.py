@@ -43,10 +43,11 @@ class IntakeAgent:
     """Agent 1 & Agent 2: Ingests text, image OCR, and URL; extracts metadata, contacts, language, and performs multimodal vision content classification."""
 
     GEMINI_VISION_MODELS = [
-        "gemini-3-flash-preview",
-        "gemini-3.7-flash",
+        "gemini-2.5-flash",
         "gemini-flash-latest",
-        "gemini-3.5-flash",
+        "gemini-2.5-pro",
+        "gemini-flash-lite-latest",
+        "gemini-3.7-flash",
     ]
 
     FREE_EMAIL_SERVICES = {
@@ -246,8 +247,8 @@ Carefully inspect the visual content, layout, design, logos, graphics, and text 
 
 CRITICAL INSTRUCTIONS:
 1. Determine whether this image is a genuine Recruitment / Employment / Job Advertisement (CLASS A) or NOT a job advertisement (CLASS B).
-   - CLASS A (job_poster): Job vacancy flyer, internship poster, hiring announcement, career opening, recruitment WhatsApp screenshot, appointment document, employment offer.
-   - CLASS B (not_job_poster): Food/restaurant advertisement, menu, discount promo, university graduation poster, university course/workshop flyer, hackathon banner, photography portfolio, birthday poster, political flyer, product promotion, personal photograph, meme, certificate, generic artwork/landscape, non-recruitment document.
+   - CLASS A (job_poster): Any job vacancy flyer, hiring announcement, part-time or full-time position opening, career opening, recruitment flyer for retail stores/bookshops/cafes (e.g. Sales Assistant, Cashier, Trainee, School Leavers, Clerk), internship poster, recruitment WhatsApp screenshot, appointment document, employment offer. If the image advertises ANY hiring position, it MUST be classified as CLASS A (job_poster).
+   - CLASS B (not_job_poster): Food/restaurant menu, commercial discount coupon, university graduation ceremony photo, photography portfolio, birthday invitation, music festival banner, car for sale, house for rent, meme, non-recruitment document with ZERO employment offers.
    - UNCLEAR (unclear): Extremely blurry, completely unreadable, or ambiguous media.
 
 2. Identify the specific category ("specificCategory") in {target_lang_name} (e.g. "Italian Restaurant Menu & Discount Flyer", "University Graduation Announcement", "Software Engineer Job Vacancy", "Consumer Electronics Promotion", "Personal Photo / Portrait").
@@ -372,28 +373,35 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
         ocr_lower = (ocr_text or "").lower()
 
         recruitment_keywords = [
-            "we are hiring", "is hiring", "hiring for", "job vacancy", "job vacancies",
-            "recruitment notice", "career opportunity", "career opportunities", "position available",
-            "positions available", "apply now", "urgent vacancy", "urgent hiring", "walk-in interview",
-            "full-time", "part-time", "job position", "open position", "send your cv",
-            "send resume", "qualifications required", "salary:", "experience required",
+            "we are hiring", "is hiring", "hiring for", "now hiring", "we're hiring", "hiring",
+            "job vacancy", "job vacancies", "vacancy", "vacancies",
+            "recruitment notice", "recruitment", "career opportunity", "career opportunities", "position available",
+            "positions available", "apply now", "apply today", "apply here", "urgent vacancy", "urgent hiring", "walk-in interview",
+            "full-time", "full time", "part-time", "part time", "job position", "open position",
+            "sales assistant", "sales representative", "sales executive", "assistant", "cashier", "clerk", "trainee", "intern", "internship",
+            "school leavers", "school leaver", "undergraduate", "freshers",
+            "send your cv", "send cv", "forward cv", "forward your cv", "submit cv", "submit your cv", "email your cv", "cv to",
+            "send resume", "qualifications required", "qualifications:", "qualifications", "responsibilities:", "requirements:",
+            "salary:", "salary", "experience required", "employment offer", "job ad",
             "බඳවාගැනීම්", "රැකියා", "ඇබෑර්තු", "ඉල්ලුම්", "වැටුප්", "පුරප්පාඩු", "බඳවා ගනු ලැබේ",
             "வேலை", "நியமனம்", "விண்ணப்பிக்க", "சம்பளம்", "காலியிடம்", "வேலைவாய்ப்பு",
             "भर्ती", "नौकरी", "आवेदन", "वेतन", "रिक्तियां", "रोजगार",
             "নিয়োগ", "চাকরি", "আবেদন", "বেতন", "কাজের"
         ]
         non_job_keywords = [
-            "pizza", "burger", "restaurant", "menu", "discount", "sale", "food", "cafe",
-            "graduation", "congratulations", "graduates", "university ceremony", "degree",
-            "birthday", "party", "invitation", "concert", "music festival", "festival 202",
-            "conference", "seminar", "workshop banner", "hackathon", "designathon",
-            "product promotion", "laptop discount", "car for sale", "vehicle", "real estate"
+            "restaurant menu", "food menu", "lunch menu", "dinner menu", "pizza menu",
+            "happy birthday", "wedding ceremony", "wedding invitation", "wedding photography",
+            "graduation ceremony", "congratulations graduates", "convocation ceremony", "degree conferment",
+            "music festival", "music concert", "movie poster", "film festival",
+            "car for sale", "vehicle for sale", "house for rent", "property for lease",
+            "50% off", "discount coupon", "clearance promo"
         ]
 
         has_recruitment = any(kw in ocr_lower for kw in recruitment_keywords)
         has_non_job = any(kw in ocr_lower for kw in non_job_keywords)
 
-        if has_recruitment and not has_non_job:
+        if has_recruitment:
+            # Recruitment terms strictly take precedence so no real job flyer is falsely marked as non-job
             return {
                 "content_type": "job_poster",
                 "is_job_poster": True,
@@ -569,6 +577,22 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                     if content_type == "unclear":
                         is_unreadable = True
                         validation_error = "The uploaded image quality is poor or text is unreadable. Please upload a clear image."
+
+                # Safeguard: If the extracted poster text contains recruitment terms, strictly classify as job poster
+                rec_check_terms = [
+                    "job vacancy", "job vacancies", "vacancy", "vacancies", "part-time", "part time",
+                    "full-time", "full time", "hiring", "we are hiring", "sales assistant", "assistant",
+                    "sales executive", "cashier", "clerk", "trainee", "intern", "internship",
+                    "school leavers", "school leaver", "apply now", "apply today", "send your cv",
+                    "cv to", "qualifications", "walk-in interview", "walk in"
+                ]
+                ocr_check_lower = (ocr_extracted_text or "").lower()
+                if any(term in ocr_check_lower for term in rec_check_terms):
+                    is_job_poster = True
+                    content_type = "job_poster"
+                    poster_type = "Job Advertisement"
+                    if not specific_category or "Not a Job" in specific_category:
+                        specific_category = "Job Recruitment Poster"
 
                 claimed_brand = vision_res.get("companyName") or vision_res.get("claimed_brand", "")
                 combined_text += f"\n[POSTER TEXT & METADATA]:\n{ocr_extracted_text}\n"
