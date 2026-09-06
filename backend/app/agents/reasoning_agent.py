@@ -91,8 +91,9 @@ class ReasoningAgent:
             }
 
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+            headers = {"Content-Type": "application/json", "X-goog-api-key": gemini_key}
             try:
-                res = requests.post(url, json=payload, timeout=30)
+                res = requests.post(url, json=payload, headers=headers, timeout=30)
                 if res.status_code == 200:
                     data = res.json()
                     candidates = data.get("candidates") or []

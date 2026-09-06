@@ -15,9 +15,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
     # Gemini AI Settings
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_SAFE_BROWSING_API_KEY", "")
-    GEMINI_MODEL_PRIMARY: str = os.getenv("GEMINI_MODEL_PRIMARY", "gemini-3.6-flash")
-    GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "45"))
+    GEMINI_API_KEY: str = (os.getenv("GEMINI_API_KEY") or "").strip().strip('"').strip("'")
+    GEMINI_MODEL_PRIMARY: str = os.getenv("GEMINI_MODEL_PRIMARY", "gemini-flash-latest")
+    GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "15"))
 
     # Hugging Face AI Settings
     HF_TOKEN: str = os.getenv("HF_TOKEN", os.getenv("DEEPSEEK_V4_API_KEY", ""))

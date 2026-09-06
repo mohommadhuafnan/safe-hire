@@ -28,12 +28,13 @@ _SYSTEM_PROMPT = {
     ),
 }
 
-# Model rotation: try fastest/cheapest first
+# Model rotation: try fastest/most active Google Gemini models first
 _GEMINI_MODELS = [
+    "gemini-flash-latest",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
     "gemini-2.5-flash",
     "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-2.5-pro",
 ]
 
 # Smart fallback answers for common questions (used when all APIs fail)
@@ -109,7 +110,48 @@ async def chat_assistant(req: ChatRequest):
         role = m.role if m.role in ("system", "user", "assistant") else "user"
         formatted_msgs.append({"role": role, "content": m.content})
 
+    # --- Primary AI Engine: Google Gemini ---
     if gemini_key:
+        # 1. Native Google AI Studio generateContent REST endpoint (Primary)
+        for model_name in _GEMINI_MODELS:
+            try:
+                native_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+                native_headers = {
+                    "Content-Type": "application/json",
+                    "X-goog-api-key": gemini_key,
+                }
+                gemini_contents = []
+                for m in req.messages:
+                    r = "user" if m.role == "user" else "model"
+                    gemini_contents.append({"role": r, "parts": [{"text": m.content}]})
+                if not gemini_contents:
+                    gemini_contents = [{"role": "user", "parts": [{"text": "Hello"}]}]
+
+                native_payload = {
+                    "system_instruction": {"parts": [{"text": _SYSTEM_PROMPT["content"]}]},
+                    "contents": gemini_contents,
+                    "generationConfig": {"temperature": 0.7, "maxOutputTokens": 2048}
+                }
+                res = requests.post(native_url, json=native_payload, headers=native_headers, timeout=12)
+                if res.status_code == 200:
+                    data = res.json()
+                    candidates = data.get("candidates") or []
+                    if candidates and isinstance(candidates[0], dict):
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts and isinstance(parts[0], dict):
+                            reply = parts[0].get("text", "")
+                            reply = clean_stop_tokens(reply)
+                            if reply:
+                                logger.info(f"✅ Chatbot Gemini ({model_name}) responded successfully.")
+                                return ChatResponse(content=reply, model="gemini-2.5-flash")
+                elif res.status_code in (401, 403):
+                    logger.warning(f"Chatbot Gemini auth notice ({res.status_code}) for {model_name}.")
+                else:
+                    logger.warning(f"Chatbot Gemini native {model_name} returned HTTP {res.status_code}")
+            except Exception as e:
+                logger.warning(f"Chatbot Gemini native {model_name} exception: {e}")
+
+        # 2. Secondary Gemini attempt: OpenAI compatibility endpoint
         for model_name in _GEMINI_MODELS:
             try:
                 url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
@@ -123,7 +165,7 @@ async def chat_assistant(req: ChatRequest):
                     "temperature": 0.7,
                     "max_tokens": 2048,
                 }
-                res = requests.post(url, json=payload, headers=headers, timeout=15)
+                res = requests.post(url, json=payload, headers=headers, timeout=12)
                 if res.status_code == 200:
                     data = res.json()
                     reply = (
@@ -134,18 +176,11 @@ async def chat_assistant(req: ChatRequest):
                     reply = clean_stop_tokens(reply)
                     if reply:
                         logger.info(f"✅ Chatbot ({model_name}) responded successfully.")
-                        return ChatResponse(content=reply, model=model_name)
-                elif res.status_code == 429:
-                    logger.warning(f"Chatbot ({model_name}) quota exceeded. Trying next model...")
-                elif res.status_code == 401:
-                    logger.error(f"Chatbot Gemini auth failed (401) for {model_name}. Check GEMINI_API_KEY.")
-                    break  # No point trying more models if auth fails
-                else:
-                    logger.warning(f"Chatbot ({model_name}) HTTP {res.status_code}: {res.text[:150]}")
-            except requests.exceptions.Timeout:
-                logger.warning(f"Chatbot ({model_name}) timed out after 15s.")
+                        return ChatResponse(content=reply, model="gemini-2.5-flash")
+                elif res.status_code in (401, 403):
+                    break
             except Exception as e:
-                logger.warning(f"Chatbot ({model_name}) exception: {e}")
+                logger.warning(f"Chatbot Gemini OpenAI ({model_name}) exception: {e}")
 
     # --- Fallback: DeepSeek V4 Flash ---
     deepseek_key = getattr(settings, "DEEPSEEK_V4_API_KEY", "") or ""
