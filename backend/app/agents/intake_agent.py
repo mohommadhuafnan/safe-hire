@@ -582,13 +582,15 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
         if input_url and input_url.strip():
             url_res = self.extract_text_from_url(input_url.strip())
             combined_text += f"\n{url_res['text']}\n"
-            if url_res.get("domain"):
-                extracted_domain = url_res["domain"]
+            if url_res.get("domain") and url_res["domain"].lower() not in self.FREE_EMAIL_SERVICES:
+                extracted_domain = url_res["domain"].lower()
             source = "url" if not input_text and not image_bytes else "mixed"
 
         # Regex Extraction of metadata entities
         emails_found = list(set(re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', combined_text)))
-        urls_found = list(set(re.findall(r'https?://[^\s]+', combined_text)))
+        urls_found = list(set(re.findall(r'https?://[^\s"\'<>]+', combined_text)))
+        www_found = list(set(re.findall(r'\bwww\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b', combined_text, re.IGNORECASE)))
+        urls_found.extend(www_found)
         telegram_handles = list(set(re.findall(r'@[A-Za-z0-9_]{4,}', combined_text)))
         
         # Phone extraction and validation (filtering dummy/repetitive numbers & short fragments)
@@ -615,18 +617,49 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
             if vision_res.get("website") and vision_res.get("website") not in urls_found:
                 urls_found.append(vision_res.get("website"))
 
-        # Domain extraction (strictly from genuine website URLs, excluding free webmail services)
+        # Domain extraction (exhaustively checking URLs, website fields, domain patterns, and corporate emails)
+        if not extracted_domain and isinstance(vision_res, dict) and vision_res.get("website"):
+            v_site = vision_res.get("website", "").strip().lower()
+            v_site = re.sub(r'^https?://', '', v_site).split('/')[0].split(':')[0]
+            if v_site.startswith("www."):
+                v_site = v_site[4:]
+            if "." in v_site and v_site not in self.FREE_EMAIL_SERVICES:
+                extracted_domain = v_site
+
         if not extracted_domain and urls_found:
-            try:
-                from urllib.parse import urlparse
-                parsed_u = urlparse(urls_found[0])
-                u_domain = parsed_u.netloc.split(':')[0] if parsed_u.netloc else parsed_u.path.split('/')[0]
-                if u_domain.startswith("www."):
-                    u_domain = u_domain[4:]
-                if u_domain and "." in u_domain and u_domain.lower() not in self.FREE_EMAIL_SERVICES:
-                    extracted_domain = u_domain
-            except Exception:
-                pass
+            for raw_u in urls_found:
+                try:
+                    from urllib.parse import urlparse
+                    parsed_u = urlparse(raw_u if raw_u.startswith("http") else f"https://{raw_u}")
+                    u_domain = parsed_u.netloc.split(':')[0] if parsed_u.netloc else parsed_u.path.split('/')[0]
+                    if u_domain.startswith("www."):
+                        u_domain = u_domain[4:]
+                    if u_domain and "." in u_domain and u_domain.lower() not in self.FREE_EMAIL_SERVICES:
+                        extracted_domain = u_domain.lower()
+                        break
+                except Exception:
+                    continue
+
+        if not extracted_domain:
+            # Common domain regex in text (e.g. dialog.lk, virtusa.com)
+            dom_matches = re.findall(r'\b[a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev|info|co\.uk|ac\.lk|gov\.lk|com\.lk)\b', combined_text, re.IGNORECASE)
+            ignored_exts = {'.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx', '.webp', '.gif', '.mp4'}
+            for dm in dom_matches:
+                dm_lower = dm.lower()
+                if any(dm_lower.endswith(ext) for ext in ignored_exts):
+                    continue
+                if dm_lower not in self.FREE_EMAIL_SERVICES and '.' in dm_lower:
+                    extracted_domain = dm_lower
+                    break
+
+        # Fallback to corporate email domain (strictly excluding free consumer webmail)
+        if not extracted_domain and emails_found:
+            for em in emails_found:
+                if "@" in em:
+                    e_dom = em.split('@')[-1].lower().strip()
+                    if e_dom and "." in e_dom and e_dom not in self.FREE_EMAIL_SERVICES:
+                        extracted_domain = e_dom
+                        break
 
         detected_lang = self.detect_language(combined_text)
         final_lang = target_language if (target_language and target_language in ["en", "si", "ta", "hi", "bn"]) else detected_lang

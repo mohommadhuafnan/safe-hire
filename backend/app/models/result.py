@@ -18,4 +18,5 @@ class AnalysisResultResponse(BaseModel):
     sub_scores: Optional[Dict[str, Any]] = {}
     verified_facts: Optional[List[str]] = []
     ai_inferences: Optional[List[str]] = []
+    input_url: Optional[str] = ""
     created_at: datetime

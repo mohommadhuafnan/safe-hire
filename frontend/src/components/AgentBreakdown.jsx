@@ -40,12 +40,20 @@ const AgentBreakdown = ({ result }) => {
     '';
   const hasEmail = Boolean(extractedEmail && extractedEmail.includes('@'));
 
-  const rawDomain = verificationData.domain || intakeData.domain || '';
+  const targetDomain = verificationData.domain || verificationData.whois_info?.domain || intakeData.domain || result.input_url || '';
+  const rawDomain = targetDomain
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .split('/')[0]
+    .split('?')[0]
+    .split(':')[0];
   const hasRealDomain = Boolean(
     rawDomain && 
-    !['not specified', 'n/a', 'none', 'null', 'verified url', ''].includes(rawDomain.trim().toLowerCase()) &&
+    !['not specified', 'n/a', 'none', 'null', 'verified url', ''].includes(rawDomain) &&
     rawDomain.includes('.') &&
-    !['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'].includes(rawDomain.trim().toLowerCase())
+    !['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'aol.com', 'mail.com'].includes(rawDomain)
   );
 
   const phoneData = verificationData.phone_validation || {};

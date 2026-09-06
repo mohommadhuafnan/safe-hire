@@ -150,7 +150,8 @@ class AgentPipeline:
             "language": final_lang,
             "explanation_text": explanation_text,
             "verified_facts": reasoning_res.get("verified_facts") or intake_res.get("verified_facts") or [],
-            "ai_inferences": reasoning_res.get("ai_inferences") or []
+            "ai_inferences": reasoning_res.get("ai_inferences") or [],
+            "input_url": input_url or intake_res.get("domain") or ""
         }
 
 pipeline_runner = AgentPipeline()
