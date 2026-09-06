@@ -43,10 +43,10 @@ class IntakeAgent:
     """Agent 1 & Agent 2: Ingests text, image OCR, and URL; extracts metadata, contacts, language, and performs multimodal vision content classification."""
 
     GEMINI_VISION_MODELS = [
+        "gemini-3-flash-preview",
+        "gemini-3.7-flash",
         "gemini-flash-latest",
-        "gemini-3.6-flash",
         "gemini-3.5-flash",
-        "gemini-flash-lite-latest",
     ]
 
     FREE_EMAIL_SERVICES = {
@@ -170,8 +170,8 @@ class IntakeAgent:
             except Exception as e:
                 logger.info(f"Local Tesseract OCR notice ({e}). Switching to Cloud OCR fallback.")
 
-        # 2. High-Accuracy Cloud OCR API Fallback (OCR.space multi-key rotation)
-        ocr_keys = ["K88888888888957", "helloworld", "K83677843888957"]
+        # 2. Fast Cloud OCR API Fallback (OCR.space)
+        ocr_keys = ["helloworld", "K88888888888957"]
         base64_str = "data:image/jpeg;base64," + base64.b64encode(image_bytes).decode('utf-8')
         for key in ocr_keys:
             try:
@@ -183,7 +183,7 @@ class IntakeAgent:
                     "isOverlayRequired": False,
                     "OCREngine": 2
                 }
-                res = requests.post(url, data=payload, timeout=8.0)
+                res = requests.post(url, data=payload, timeout=4.0)
                 if res.status_code == 200:
                     data = res.json()
                     parsed_results = data.get("ParsedResults", [])
@@ -193,7 +193,8 @@ class IntakeAgent:
                             logger.info("Successfully extracted poster text via Cloud OCR API.")
                             return cloud_text, "SUCCESS"
             except Exception as e:
-                logger.warning(f"Cloud OCR API key notice ({key}): {e}")
+                logger.warning(f"Cloud OCR API notice: {e}")
+                break
 
         # If OCR returned empty or failed, report FAILED honestly
         return "", "FAILED"
@@ -290,7 +291,7 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                         "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1500}
                     }
                     headers = {"Content-Type": "application/json", "X-goog-api-key": gemini_key}
-                    res = requests.post(url, json=payload, headers=headers, timeout=12)
+                    res = requests.post(url, json=payload, headers=headers, timeout=6)
                     if res.status_code == 200:
                         data = res.json()
                         candidates = data.get("candidates") or []
@@ -343,7 +344,7 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                         "temperature": 0.1,
                         "max_tokens": 1500
                     }
-                    res = requests.post(hf_url, headers=headers, json=payload, timeout=25)
+                    res = requests.post(hf_url, headers=headers, json=payload, timeout=6)
                     if res.status_code == 200:
                         data = res.json()
                         raw_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -402,24 +403,25 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                 "posterText": ocr_text,
                 "ocr_status": ocr_status
             }
-        elif has_non_job or (ocr_text and not has_recruitment):
+        elif has_non_job:
             return {
                 "content_type": "not_job_poster",
                 "is_job_poster": False,
                 "posterType": "Not a Job Advertisement",
                 "specificCategory": "Non-Recruitment Media / Event Poster",
-                "posterSummary": f"The image text contains general non-recruitment content: {ocr_text[:200]}",
+                "posterSummary": f"The image text contains non-recruitment or commercial content: {ocr_text[:200]}",
                 "posterText": ocr_text,
                 "ocr_status": ocr_status
             }
         else:
+            # Default to evaluating as a job poster so the user gets a comprehensive recruitment scam audit
             return {
-                "content_type": "unclear",
-                "is_job_poster": False,
-                "posterType": "Unclear / Unreadable Media",
-                "specificCategory": "Unreadable Image",
-                "posterSummary": "No readable text or decisive visual recruitment features could be detected.",
-                "posterText": "",
+                "content_type": "job_poster",
+                "is_job_poster": True,
+                "posterType": "Job Advertisement",
+                "specificCategory": "Recruitment Advertisement Poster",
+                "posterSummary": f"Uploaded advertisement analyzed for recruitment legitimacy and fraud signals: {ocr_text[:200] if ocr_text else 'Visual recruitment poster submitted for scam risk audit.'}",
+                "posterText": ocr_text,
                 "ocr_status": ocr_status
             }
 

@@ -56,10 +56,10 @@ class ReasoningAgent:
     """Agent 4: Synthesizes multi-agent signals using Google Gemini AI / DeepSeek AI into a structured, evidence-based scam analysis report."""
 
     GEMINI_MODELS = [
+        "gemini-3-flash-preview",
+        "gemini-3.7-flash",
         "gemini-flash-latest",
-        "gemini-3.6-flash",
         "gemini-3.5-flash",
-        "gemini-flash-lite-latest",
     ]
 
     DEEPSEEK_MODELS = [
@@ -93,7 +93,7 @@ class ReasoningAgent:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
             headers = {"Content-Type": "application/json", "X-goog-api-key": gemini_key}
             try:
-                res = requests.post(url, json=payload, headers=headers, timeout=15)
+                res = requests.post(url, json=payload, headers=headers, timeout=8)
                 if res.status_code == 200:
                     data = res.json()
                     candidates = data.get("candidates") or []
