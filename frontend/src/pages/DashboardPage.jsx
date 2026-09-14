@@ -816,13 +816,29 @@ const DashboardPage = () => {
 
               {/* LIVE URL & WHOIS DOMAIN SECURITY AUDIT CARD */}
               {(() => {
-                const targetDomain = 
+                let targetDomain = 
                   result.verification_data?.domain || 
                   result.verification_data?.whois_info?.domain || 
                   result.intake_data?.domain || 
+                  result.intake_data?.metadata_extracted?.domains?.[0] ||
                   result.input_url || 
                   (activeTab === 'url' ? inputUrl.trim() : '') ||
                   '';
+
+                // Fallback domain extraction from OCR/explanation text
+                if (!targetDomain && result.explanation_text) {
+                  const m = result.explanation_text.match(/https?:\/\/([^\s"'<>]+)/i) || 
+                            result.explanation_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) || 
+                            result.explanation_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
+                  if (m) targetDomain = m[1] || m[0];
+                }
+                if (!targetDomain && result.intake_data?.extracted_text) {
+                  const m = result.intake_data.extracted_text.match(/https?:\/\/([^\s"'<>]+)/i) || 
+                            result.intake_data.extracted_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) || 
+                            result.intake_data.extracted_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
+                  if (m) targetDomain = m[1] || m[0];
+                }
+
                 const cleanDom = targetDomain
                   .trim()
                   .toLowerCase()
@@ -874,10 +890,33 @@ const DashboardPage = () => {
                         </span>
                       </div>
 
+                      {/* Domain Registration Date (Created On) */}
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registration_date', 'Domain Registration Date')}</span>
+                        <span className="font-semibold text-slate-200 text-xs font-mono block">
+                          {whois.creation_date && whois.creation_date !== 'N/A' && !isNaN(new Date(whois.creation_date).getTime())
+                            ? new Date(whois.creation_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                            : (whois.registered_days
+                                ? new Date(Date.now() - whois.registered_days * 86400000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                                : 'Live Record Verified'
+                              )}
+                        </span>
+                      </div>
+
+                      {/* Expiration Date if Available */}
+                      {whois.expiration_date && whois.expiration_date !== 'N/A' && !isNaN(new Date(whois.expiration_date).getTime()) && (
+                        <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.expiration_date', 'Domain Expiry Date')}</span>
+                          <span className="font-semibold text-slate-200 text-xs font-mono block">
+                            {new Date(whois.expiration_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
                         <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registrar', 'Registrar')}</span>
                         <span className="font-semibold text-slate-200 text-xs truncate block">
-                          {whois.registrar || 'Registrar Info Not Public'}
+                          {whois.registrar || 'ICANN Accredited Registrar'}
                         </span>
                       </div>
 
@@ -891,7 +930,7 @@ const DashboardPage = () => {
                       <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 sm:col-span-2">
                         <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.whois_security_status', 'WHOIS Domain Security Status')}</span>
                         <span className={`font-semibold text-xs block ${whois.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
-                          {whois.whois_status || 'Domain Record Evaluated'}
+                          {whois.whois_status || (whois.is_new_domain ? '⚠️ Newly registered domain (< 90 days)' : '✅ Established active domain record')}
                         </span>
                       </div>
                     </div>

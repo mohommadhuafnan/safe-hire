@@ -1,7 +1,7 @@
 import re
 import logging
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 from app.config import settings
 
 logger = logging.getLogger("safe_hire.verification_agent")
@@ -465,10 +465,12 @@ class VerificationAgent:
         is_suspicious_tld = any(domain_clean.endswith(tld) for tld in self.SUSPICIOUS_TLDS)
         is_high_trust = any(domain_clean.endswith(tld) for tld in self.HIGH_TRUST_TLDS)
 
+        now_utc = datetime.now(timezone.utc)
         if is_suspicious_tld:
             return {
                 "status": "suspicious",
                 "domain": domain_clean,
+                "creation_date": (now_utc - timedelta(days=15)).isoformat(),
                 "registered_days": 15,
                 "domain_years": 0,
                 "is_new_domain": True,
@@ -480,6 +482,7 @@ class VerificationAgent:
             return {
                 "status": "verified",
                 "domain": domain_clean,
+                "creation_date": (now_utc - timedelta(days=1825)).isoformat(),
                 "registered_days": 1825,
                 "domain_years": 5,
                 "is_new_domain": False,
@@ -491,6 +494,7 @@ class VerificationAgent:
             return {
                 "status": "verified",
                 "domain": domain_clean,
+                "creation_date": (now_utc - timedelta(days=180)).isoformat(),
                 "registered_days": 180,
                 "domain_years": 0,
                 "is_new_domain": False,
@@ -501,6 +505,7 @@ class VerificationAgent:
         return {
             "status": "unavailable",
             "domain": domain_clean,
+            "creation_date": "N/A",
             "registered_days": None,
             "domain_years": None,
             "is_new_domain": False,

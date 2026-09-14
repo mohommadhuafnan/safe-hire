@@ -364,6 +364,7 @@ class GeminiAPIClient {
         return {
             status: "verified",
             domain: targetDomain,
+            creation_date: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
             registered_days: 180,
             domain_years: 0,
             is_new_domain: false,

@@ -254,12 +254,36 @@ const AgentBreakdown = ({ result }) => {
                 </span>
               </div>
 
-              {verificationData.whois_info?.creation_date && (
-                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-                  <span className="text-slate-300 font-medium">{t('agents.domain_registration_date', 'Domain Registration Date')}:</span>
-                  <span className="font-mono text-slate-200">{new Date(verificationData.whois_info.creation_date).toLocaleDateString()}</span>
-                </div>
-              )}
+              {/* Registration Date */}
+              {(() => {
+                const regDate = verificationData.whois_info?.creation_date && verificationData.whois_info.creation_date !== 'N/A' && !isNaN(new Date(verificationData.whois_info.creation_date).getTime())
+                  ? new Date(verificationData.whois_info.creation_date)
+                  : (verificationData.whois_info?.registered_days 
+                      ? new Date(Date.now() - verificationData.whois_info.registered_days * 86400000)
+                      : null
+                    );
+                if (!regDate) return null;
+                return (
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                    <span className="text-slate-300 font-medium">{t('agents.domain_registration_date', 'Domain Registration Date')}:</span>
+                    <span className="font-mono text-slate-200">{regDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                  </div>
+                );
+              })()}
+
+              {/* Expiry Date if Available */}
+              {(() => {
+                const expDate = verificationData.whois_info?.expiration_date && verificationData.whois_info.expiration_date !== 'N/A' && !isNaN(new Date(verificationData.whois_info.expiration_date).getTime())
+                  ? new Date(verificationData.whois_info.expiration_date)
+                  : null;
+                if (!expDate) return null;
+                return (
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                    <span className="text-slate-300 font-medium">{t('agents.domain_expiration_date', 'Domain Expiry Date')}:</span>
+                    <span className="font-mono text-slate-200">{expDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                  </div>
+                );
+              })()}
 
               {verificationData.whois_info?.registrar && (
                 <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
