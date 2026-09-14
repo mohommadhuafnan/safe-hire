@@ -572,14 +572,10 @@ const DashboardPage = () => {
           {analyzing && typeof document !== 'undefined' && createPortal(
             <div 
               style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', zIndex: 999999 }}
-              className="fixed inset-0 z-[999999] w-screen h-screen flex flex-col items-center justify-center p-3 sm:p-6 animate-fade-in overflow-y-auto bg-slate-950/60 backdrop-blur-2xl"
+              className="fixed inset-0 z-[999999] w-screen h-screen flex flex-col items-center justify-center p-3 sm:p-6 animate-fade-in overflow-y-auto bg-slate-950/40 backdrop-blur-sm"
             >
-              {/* AMBIENT FROSTED GLOW ORBS BEHIND MODAL */}
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-indigo-600/20 blur-3xl" />
-                <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-cyan-500/20 blur-3xl" />
-                <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-slate-950/50" />
-              </div>
+              {/* SUBTLE LIGHT DIM OVERLAY */}
+              <div className="absolute inset-0 bg-black/20 pointer-events-none" />
 
               {/* MODAL CARD */}
               <div className="relative z-10 w-full max-w-5xl my-auto glass-panel p-5 sm:p-8 rounded-3xl border border-indigo-500/50 shadow-[0_0_80px_rgba(99,102,241,0.4)] overflow-hidden bg-slate-900/90 backdrop-blur-2xl flex flex-col justify-between space-y-6 max-h-[92vh] overflow-y-auto">

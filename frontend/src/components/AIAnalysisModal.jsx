@@ -181,14 +181,10 @@ ${contextData ? `Additional Technical Context:\n${JSON.stringify(contextData, nu
   return createPortal(
     <div 
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', zIndex: 999999 }}
-      className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-2xl animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/40 backdrop-blur-sm animate-fade-in overflow-y-auto"
     >
-      {/* AMBIENT FROSTED GLOW ORBS */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-indigo-600/20 blur-3xl" />
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-sky-500/20 blur-3xl" />
-        <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-slate-950/50" />
-      </div>
+      {/* SUBTLE LIGHT DIM OVERLAY */}
+      <div className="absolute inset-0 bg-black/20 pointer-events-none" />
 
       <div className="relative z-10 glass-panel w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl border border-indigo-500/30 shadow-2xl overflow-hidden bg-slate-900/90 backdrop-blur-2xl">
         
