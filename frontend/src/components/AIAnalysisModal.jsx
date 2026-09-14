@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import GeminiAPIClient from '../services/GeminiAPIClient';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -175,11 +176,21 @@ ${contextData ? `Additional Technical Context:\n${JSON.stringify(contextData, nu
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-fade-in">
-      <div className="glass-panel w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl border border-indigo-500/30 shadow-2xl overflow-hidden relative">
+  return createPortal(
+    <div 
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', zIndex: 999999 }}
+      className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-2xl animate-fade-in overflow-y-auto"
+    >
+      {/* AMBIENT FROSTED GLOW ORBS */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-indigo-600/20 blur-3xl" />
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-sky-500/20 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-slate-950/50" />
+      </div>
+
+      <div className="relative z-10 glass-panel w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl border border-indigo-500/30 shadow-2xl overflow-hidden bg-slate-900/90 backdrop-blur-2xl">
         
         {/* MODAL HEADER */}
         <div className="p-4 sm:p-5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
@@ -359,7 +370,8 @@ ${contextData ? `Additional Technical Context:\n${JSON.stringify(contextData, nu
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
