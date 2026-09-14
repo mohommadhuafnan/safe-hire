@@ -687,9 +687,20 @@ class VerificationAgent:
     ) -> Dict[str, Any]:
         target_domain = self.extract_clean_domain(domain)
         if not target_domain and text:
-            urls = re.findall(r'https?://[^\s]+', text)
+            urls = re.findall(r'https?://[^\s"\'<>]+', text)
             if urls:
                 target_domain = self.extract_clean_domain(urls[0])
+            if not target_domain:
+                wwws = re.findall(r'\bwww\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b', text, re.IGNORECASE)
+                if wwws:
+                    target_domain = self.extract_clean_domain(wwws[0])
+            if not target_domain:
+                dom_candidates = re.findall(r'\b[a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev)\b', text, re.IGNORECASE)
+                for cand in dom_candidates:
+                    c_clean = self.extract_clean_domain(cand)
+                    if c_clean and c_clean not in self.FREE_EMAIL_DOMAINS:
+                        target_domain = c_clean
+                        break
 
         whois_res = self.check_whois(target_domain)
         safe_browsing_res = self.check_safe_browsing(target_domain)

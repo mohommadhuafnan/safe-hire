@@ -98,6 +98,51 @@ const StructuredExplanationView = ({ text }) => {
   );
 };
 
+const extractDomainFromResult = (res, currentActiveTab, currentInputUrl) => {
+  if (!res) return '';
+  let targetDomain = 
+    res.verification_data?.domain || 
+    res.verification_data?.whois_info?.domain || 
+    res.intake_data?.domain || 
+    res.intake_data?.metadata_extracted?.domains?.[0] ||
+    res.input_url || 
+    (currentActiveTab === 'url' ? currentInputUrl?.trim() : '') ||
+    '';
+
+  // Fallback domain extraction from OCR/explanation text
+  if (!targetDomain && res.explanation_text) {
+    const m = res.explanation_text.match(/https?:\/\/([^\s"'<>]+)/i) || 
+              res.explanation_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) || 
+              res.explanation_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
+    if (m) targetDomain = m[1] || m[0];
+  }
+  if (!targetDomain && res.intake_data?.extracted_text) {
+    const m = res.intake_data.extracted_text.match(/https?:\/\/([^\s"'<>]+)/i) || 
+              res.intake_data.extracted_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) || 
+              res.intake_data.extracted_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
+    if (m) targetDomain = m[1] || m[0];
+  }
+
+  const cleanDom = (targetDomain || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .split('/')[0]
+    .split('?')[0]
+    .split(':')[0];
+
+  const isRealDomain = Boolean(
+    cleanDom && 
+    !['not specified', 'n/a', 'none', 'null', 'verified url', ''].includes(cleanDom) && 
+    cleanDom.includes('.') && 
+    !cleanDom.endsWith('@gmail.com') && 
+    !['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'aol.com', 'mail.com'].includes(cleanDom)
+  );
+
+  return isRealDomain ? cleanDom : '';
+};
+
 const DashboardPage = () => {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
@@ -151,6 +196,40 @@ const DashboardPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+
+  const detectedDomain = React.useMemo(() => {
+    return extractDomainFromResult(result, activeTab, inputUrl);
+  }, [result, activeTab, inputUrl]);
+
+  const detectedWhois = result?.verification_data?.whois_info || {};
+
+  // Auto-enrich WHOIS domain age if domain is detected but whois creation date or days are not yet loaded
+  React.useEffect(() => {
+    if (!result || !detectedDomain) return;
+    const existingWhois = result.verification_data?.whois_info;
+    const needsWhois = !existingWhois || !existingWhois.creation_date || existingWhois.registered_days === undefined || existingWhois.registered_days === null;
+
+    if (needsWhois) {
+      GeminiAPIClient.fetchWhoisData(detectedDomain).then(liveWhois => {
+        if (liveWhois) {
+          setResult(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              verification_data: {
+                ...(prev.verification_data || {}),
+                domain: detectedDomain,
+                whois_info: {
+                  ...(prev.verification_data?.whois_info || {}),
+                  ...liveWhois
+                }
+              }
+            };
+          });
+        }
+      }).catch(err => console.warn('Asynchronous WHOIS enrichment notice:', err));
+    }
+  }, [detectedDomain, result?.id]);
 
   const pipelineSteps = [
     t('overlay.stage_1', 'Stage 1: Intake Agent (Text Ingestion, OCR & Language Detect)'),
@@ -775,7 +854,7 @@ const DashboardPage = () => {
               )}
 
               {/* VERDICT BANNER & METADATA GRID */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('dashboard.risk_level', 'Risk Level Verdict')}</span>
                   <span className={`text-sm font-extrabold block ${
@@ -806,6 +885,40 @@ const DashboardPage = () => {
                   </span>
                 </div>
 
+                {/* DOMAIN AGE & TECHNICAL AUDIT */}
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('dashboard.domain_age', 'Domain Age')}</span>
+                    {detectedDomain && (
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-950/70 text-sky-300 border border-sky-800/50 truncate max-w-[110px]" title={detectedDomain}>
+                        {detectedDomain}
+                      </span>
+                    )}
+                  </div>
+                  {detectedDomain ? (
+                    <div>
+                      <span className={`text-sm font-extrabold block ${detectedWhois?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
+                        {detectedWhois?.registered_days !== undefined && detectedWhois?.registered_days !== null
+                          ? (detectedWhois.domain_years !== undefined && detectedWhois.domain_years !== null && detectedWhois.domain_years > 0
+                              ? `${detectedWhois.domain_years}+ ${detectedWhois.domain_years === 1 ? 'Year' : 'Years'} Old (${detectedWhois.registered_days}d)`
+                              : `${detectedWhois.registered_days} Days Old`
+                            )
+                          : (detectedWhois?.status === 'verified' ? 'Established Record' : 'Checking Domain...')}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono block truncate mt-0.5">
+                        {detectedWhois?.creation_date && detectedWhois.creation_date !== 'N/A' && !isNaN(new Date(detectedWhois.creation_date).getTime())
+                          ? `Reg: ${new Date(detectedWhois.creation_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}`
+                          : (detectedWhois?.registered_days ? `Reg: ${new Date(Date.now() - detectedWhois.registered_days * 86400000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}` : 'WHOIS verified')}
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="text-xs font-semibold text-slate-400 block">No Domain In Post</span>
+                      <span className="text-[10px] text-slate-500 block">No external website URL</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('dashboard.select_lang', 'Language')} & Pipeline</span>
                   <span className="text-xs font-bold text-sky-400 uppercase block">
@@ -815,128 +928,84 @@ const DashboardPage = () => {
               </div>
 
               {/* LIVE URL & WHOIS DOMAIN SECURITY AUDIT CARD */}
-              {(() => {
-                let targetDomain = 
-                  result.verification_data?.domain || 
-                  result.verification_data?.whois_info?.domain || 
-                  result.intake_data?.domain || 
-                  result.intake_data?.metadata_extracted?.domains?.[0] ||
-                  result.input_url || 
-                  (activeTab === 'url' ? inputUrl.trim() : '') ||
-                  '';
+              {detectedDomain && (
+                <div className="p-5 rounded-2xl bg-slate-950/90 border border-indigo-500/30 space-y-4 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center space-x-2">
+                      <Globe className="w-4 h-4 text-sky-400" />
+                      <span>{t('dashboard.domain_security_title', 'Live URL & WHOIS Domain Security Audit')}</span>
+                    </h4>
+                    <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800">
+                      {t('dashboard.whois_live_audit', 'WHOIS LIVE AUDIT')}
+                    </span>
+                  </div>
 
-                // Fallback domain extraction from OCR/explanation text
-                if (!targetDomain && result.explanation_text) {
-                  const m = result.explanation_text.match(/https?:\/\/([^\s"'<>]+)/i) || 
-                            result.explanation_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) || 
-                            result.explanation_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
-                  if (m) targetDomain = m[1] || m[0];
-                }
-                if (!targetDomain && result.intake_data?.extracted_text) {
-                  const m = result.intake_data.extracted_text.match(/https?:\/\/([^\s"'<>]+)/i) || 
-                            result.intake_data.extracted_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) || 
-                            result.intake_data.extracted_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
-                  if (m) targetDomain = m[1] || m[0];
-                }
-
-                const cleanDom = targetDomain
-                  .trim()
-                  .toLowerCase()
-                  .replace(/^https?:\/\//, '')
-                  .replace(/^www\./, '')
-                  .split('/')[0]
-                  .split('?')[0]
-                  .split(':')[0];
-                const isRealDomain = Boolean(
-                  cleanDom && 
-                  !['not specified', 'n/a', 'none', 'null', 'verified url', ''].includes(cleanDom) && 
-                  cleanDom.includes('.') && 
-                  !cleanDom.endsWith('@gmail.com') && 
-                  !['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'aol.com', 'mail.com'].includes(cleanDom)
-                );
-                if (!isRealDomain) return null;
-
-                const whois = result.verification_data?.whois_info || {};
-
-                return (
-                  <div className="p-5 rounded-2xl bg-slate-950/90 border border-indigo-500/30 space-y-4 shadow-lg">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                      <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center space-x-2">
-                        <Globe className="w-4 h-4 text-sky-400" />
-                        <span>{t('dashboard.domain_security_title', 'Live URL & WHOIS Domain Security Audit')}</span>
-                      </h4>
-                      <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800">
-                        {t('dashboard.whois_live_audit', 'WHOIS LIVE AUDIT')}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.target_domain', 'Target Domain / URL')}</span>
+                      <span className="font-semibold text-slate-200 text-xs font-mono truncate block">
+                        {detectedDomain}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.target_domain', 'Target Domain / URL')}</span>
-                        <span className="font-semibold text-slate-200 text-xs font-mono truncate block">
-                          {cleanDom}
-                        </span>
-                      </div>
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.domain_age', 'Domain Age')}</span>
+                      <span className={`font-semibold text-xs block ${detectedWhois.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
+                        {detectedWhois.registered_days !== undefined && detectedWhois.registered_days !== null
+                          ? (detectedWhois.domain_years !== undefined && detectedWhois.domain_years !== null && detectedWhois.domain_years > 0
+                              ? `${detectedWhois.domain_years}+ ${detectedWhois.domain_years === 1 ? 'Year' : 'Years'} Old (${detectedWhois.registered_days} Days)`
+                              : `${detectedWhois.registered_days} ${t('dashboard.registered_days_suffix', 'Days (Registered)')}`
+                            )
+                          : (detectedWhois.status === 'verified' ? 'Established Record' : 'Checking Domain WHOIS...')}
+                      </span>
+                    </div>
 
-                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.domain_age', 'Domain Age')}</span>
-                        <span className={`font-semibold text-xs block ${whois.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
-                          {whois.registered_days !== undefined && whois.registered_days !== null
-                            ? (whois.domain_years !== undefined && whois.domain_years !== null && whois.domain_years > 0
-                                ? `${whois.domain_years}+ ${whois.domain_years === 1 ? 'Year' : 'Years'} Old (${whois.registered_days} Days)`
-                                : `${whois.registered_days} ${t('dashboard.registered_days_suffix', 'Days (Registered)')}`
-                              )
-                            : (whois.status === 'verified' ? 'Established Record' : 'Record Check Unavailable')}
-                        </span>
-                      </div>
+                    {/* Domain Registration Date (Created On) */}
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registration_date', 'Domain Registration Date')}</span>
+                      <span className="font-semibold text-slate-200 text-xs font-mono block">
+                        {detectedWhois.creation_date && detectedWhois.creation_date !== 'N/A' && !isNaN(new Date(detectedWhois.creation_date).getTime())
+                          ? new Date(detectedWhois.creation_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                          : (detectedWhois.registered_days
+                              ? new Date(Date.now() - detectedWhois.registered_days * 86400000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                              : 'Live Record Verified'
+                            )}
+                      </span>
+                    </div>
 
-                      {/* Domain Registration Date (Created On) */}
+                    {/* Expiration Date if Available */}
+                    {detectedWhois.expiration_date && detectedWhois.expiration_date !== 'N/A' && !isNaN(new Date(detectedWhois.expiration_date).getTime()) && (
                       <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registration_date', 'Domain Registration Date')}</span>
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.expiration_date', 'Domain Expiry Date')}</span>
                         <span className="font-semibold text-slate-200 text-xs font-mono block">
-                          {whois.creation_date && whois.creation_date !== 'N/A' && !isNaN(new Date(whois.creation_date).getTime())
-                            ? new Date(whois.creation_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-                            : (whois.registered_days
-                                ? new Date(Date.now() - whois.registered_days * 86400000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-                                : 'Live Record Verified'
-                              )}
+                          {new Date(detectedWhois.expiration_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                         </span>
                       </div>
+                    )}
 
-                      {/* Expiration Date if Available */}
-                      {whois.expiration_date && whois.expiration_date !== 'N/A' && !isNaN(new Date(whois.expiration_date).getTime()) && (
-                        <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.expiration_date', 'Domain Expiry Date')}</span>
-                          <span className="font-semibold text-slate-200 text-xs font-mono block">
-                            {new Date(whois.expiration_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                          </span>
-                        </div>
-                      )}
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registrar', 'Registrar')}</span>
+                      <span className="font-semibold text-slate-200 text-xs truncate block">
+                        {detectedWhois.registrar || 'ICANN Accredited Registrar'}
+                      </span>
+                    </div>
 
-                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registrar', 'Registrar')}</span>
-                        <span className="font-semibold text-slate-200 text-xs truncate block">
-                          {whois.registrar || 'ICANN Accredited Registrar'}
-                        </span>
-                      </div>
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.safe_browsing', 'Safe Browsing')}</span>
+                      <span className={`font-semibold text-xs truncate block ${result.verification_data?.safe_browsing?.flagged ? 'text-rose-400' : 'text-emerald-400'}`}>
+                        {result.verification_data?.safe_browsing?.status || 'Clean / Unflagged'}
+                      </span>
+                    </div>
 
-                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.safe_browsing', 'Safe Browsing')}</span>
-                        <span className={`font-semibold text-xs truncate block ${result.verification_data?.safe_browsing?.flagged ? 'text-rose-400' : 'text-emerald-400'}`}>
-                          {result.verification_data?.safe_browsing?.status || 'Clean / Unflagged'}
-                        </span>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 sm:col-span-2">
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.whois_security_status', 'WHOIS Domain Security Status')}</span>
-                        <span className={`font-semibold text-xs block ${whois.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
-                          {whois.whois_status || (whois.is_new_domain ? '⚠️ Newly registered domain (< 90 days)' : '✅ Established active domain record')}
-                        </span>
-                      </div>
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 sm:col-span-2">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.whois_security_status', 'WHOIS Domain Security Status')}</span>
+                      <span className={`font-semibold text-xs block ${detectedWhois.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
+                        {detectedWhois.whois_status || (detectedWhois.is_new_domain ? '⚠️ Newly registered domain (< 90 days)' : '✅ Established active domain record')}
+                      </span>
                     </div>
                   </div>
-                );
-              })()}
+                </div>
+              )}
 
               {/* REASONING EXPLANATION CARD (LEFT SIDE PANEL) */}
               <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-3">

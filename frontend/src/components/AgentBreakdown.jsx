@@ -40,8 +40,21 @@ const AgentBreakdown = ({ result }) => {
     '';
   const hasEmail = Boolean(extractedEmail && extractedEmail.includes('@'));
 
-  const targetDomain = verificationData.domain || verificationData.whois_info?.domain || intakeData.domain || result.input_url || '';
-  const rawDomain = targetDomain
+  let targetDomain = verificationData.domain || verificationData.whois_info?.domain || intakeData.domain || intakeData.metadata_extracted?.domains?.[0] || result.input_url || '';
+  if (!targetDomain && result.explanation_text) {
+    const m = result.explanation_text.match(/https?:\/\/([^\s"'<>]+)/i) || 
+              result.explanation_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) || 
+              result.explanation_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
+    if (m) targetDomain = m[1] || m[0];
+  }
+  if (!targetDomain && intakeData.extracted_text) {
+    const m = intakeData.extracted_text.match(/https?:\/\/([^\s"'<>]+)/i) || 
+              intakeData.extracted_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) || 
+              intakeData.extracted_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
+    if (m) targetDomain = m[1] || m[0];
+  }
+
+  const rawDomain = (targetDomain || '')
     .trim()
     .toLowerCase()
     .replace(/^https?:\/\//, '')

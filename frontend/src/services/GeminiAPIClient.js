@@ -495,6 +495,7 @@ Return ONLY a valid JSON object matching this exact key structure (no markdown f
                         });
 
                         if (res.ok) {
+                            const data = await res.json();
                             const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
                             const cleanedJson = rawText.replace(/```json/gi, "").replace(/```/gi, "").trim();
                             const parsed = JSON.parse(cleanedJson);

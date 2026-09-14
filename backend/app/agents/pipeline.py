@@ -49,9 +49,20 @@ class AgentPipeline:
         ocr_status = intake_res.get("ocr_status", "NOT_APPLICABLE")
         final_lang = intake_res.get("final_language", "en")
         cleaned_text = intake_res.get("cleaned_text", "")
-        domain = intake_res.get("domain", "")
+        domain = (
+            intake_res.get("domain") or 
+            (intake_res.get("vision_res") or {}).get("website") or 
+            (intake_res.get("vision_res") or {}).get("domain") or 
+            input_url or 
+            ""
+        )
+        if not domain and cleaned_text:
+            import re
+            m = re.search(r'https?://[^\s"\'<>]+', cleaned_text) or re.search(r'\bwww\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b', cleaned_text, re.IGNORECASE) or re.search(r'\b[a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev)\b', cleaned_text, re.IGNORECASE)
+            if m:
+                domain = m.group(0)
 
-        logger.info(f"[{request_id}] Stage 1 COMPLETE: content_type={content_type}, is_job={is_job_poster}, ocr_status={ocr_status}, lang={final_lang}")
+        logger.info(f"[{request_id}] Stage 1 COMPLETE: content_type={content_type}, is_job={is_job_poster}, domain={domain}, ocr_status={ocr_status}, lang={final_lang}")
 
         # --- STAGE 2: Linguistic Risk Agent ---
         logger.info(f"[{request_id}] Stage 2: Linguistic Risk Agent executing...")

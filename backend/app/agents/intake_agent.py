@@ -316,6 +316,8 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                             parsed["job_title"] = parsed.get("jobTitle", "")
                             parsed["contact_email"] = parsed.get("email", "")
                             parsed["phone_number"] = parsed.get("phone", "")
+                            parsed["website"] = parsed.get("website", "")
+                            parsed["domain"] = parsed.get("website") or parsed.get("company_website") or ""
                             parsed["specific_category"] = parsed.get("specificCategory") or parsed.get("posterType") or "Image Media"
                             parsed["poster_summary"] = parsed.get("posterSummary") or f"Analyzed image depicting {parsed.get('specificCategory', 'Media')}."
                             return parsed
@@ -363,6 +365,8 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                             parsed["job_title"] = parsed.get("jobTitle", "")
                             parsed["contact_email"] = parsed.get("email", "")
                             parsed["phone_number"] = parsed.get("phone", "")
+                            parsed["website"] = parsed.get("website", "")
+                            parsed["domain"] = parsed.get("website") or parsed.get("company_website") or ""
                             parsed["specific_category"] = parsed.get("specificCategory") or "Image Media"
                             parsed["poster_summary"] = parsed.get("posterSummary") or "Analyzed media."
                             return parsed
