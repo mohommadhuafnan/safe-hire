@@ -218,13 +218,13 @@ const LandingPage = () => {
     ? [...filteredPosters, ...filteredPosters, ...filteredPosters] 
     : [];
 
-  // Auto-play slider every 5.5 seconds with smooth slow-motion glide
+  // Auto-play slider with snappy speed transition
   useEffect(() => {
     if (!isAutoSlide || filteredPosters.length <= 1) return;
     const interval = setInterval(() => {
       setIsTransitioning(true);
       setActiveSlide(prev => prev + 1);
-    }, 5500);
+    }, 2600);
     return () => clearInterval(interval);
   }, [isAutoSlide, filteredPosters.length]);
 
@@ -822,7 +822,7 @@ const LandingPage = () => {
         <div className="flex items-center justify-between mb-6 px-2">
           <div className="text-xs font-mono text-slate-400 flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping inline-block" />
-            <span>{t('landing.gallery_viewing_simultaneous', 'Viewing 3 Posters Simultaneously')} {isAutoSlide ? t('landing.gallery_auto_slide', '(Slow-motion auto-slide)') : t('landing.gallery_paused_hover', '(Paused on hover)')}</span>
+            <span>{t('landing.gallery_viewing_simultaneous', 'Viewing 3 Posters Simultaneously')} {isAutoSlide ? t('landing.gallery_auto_slide', '(Auto-sliding active)') : t('landing.gallery_paused_hover', '(Paused on hover)')}</span>
           </div>
 
           <div className="flex items-center space-x-3">
@@ -832,7 +832,7 @@ const LandingPage = () => {
                 <button
                   key={i}
                   onClick={() => handleDotClick(i)}
-                  className={`h-2 rounded-full transition-all duration-500 ${
+                  className={`h-2 rounded-full transition-all duration-300 ${
                     ((activeSlide % posterCount) + posterCount) % posterCount === i 
                       ? 'w-7 bg-cyan-400 shadow-lg shadow-cyan-500/50' 
                       : 'w-2 bg-slate-700 hover:bg-slate-500'
@@ -845,14 +845,14 @@ const LandingPage = () => {
             {/* Navigation Arrows */}
             <button
               onClick={prevPosterSlide}
-              className="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 hover:border-cyan-400 flex items-center justify-center text-slate-200 hover:text-cyan-300 transition duration-300 shadow-lg hover:scale-105 active:scale-95"
+              className="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 hover:border-cyan-400 flex items-center justify-center text-slate-200 hover:text-cyan-300 transition duration-200 shadow-lg hover:scale-105 active:scale-95"
               aria-label="Previous Poster"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={nextPosterSlide}
-              className="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 hover:border-cyan-400 flex items-center justify-center text-slate-200 hover:text-cyan-300 transition duration-300 shadow-lg hover:scale-105 active:scale-95"
+              className="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 hover:border-cyan-400 flex items-center justify-center text-slate-200 hover:text-cyan-300 transition duration-200 shadow-lg hover:scale-105 active:scale-95"
               aria-label="Next Poster"
             >
               <ChevronRight className="w-5 h-5" />
@@ -860,7 +860,7 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* VISIBLE 3-POSTER GALLERY SLIDING TRACK WITH SLOW-MOTION 3D CENTER FOCUS */}
+        {/* VISIBLE 3-POSTER GALLERY SLIDING TRACK WITH FAST RESPONSIVE 3D CENTER FOCUS */}
         <div 
           onMouseEnter={() => setIsAutoSlide(false)}
           onMouseLeave={() => setIsAutoSlide(true)}
@@ -874,7 +874,7 @@ const LandingPage = () => {
                 ? `translateX(-${activeSlide * 100}%)` 
                 : `translateX(-${(activeSlide - 1) * (100 / 3)}%)`,
               transition: isTransitioning 
-                ? 'transform 1000ms cubic-bezier(0.22, 1, 0.36, 1)' 
+                ? 'transform 450ms cubic-bezier(0.25, 1, 0.5, 1)' 
                 : 'none',
               willChange: 'transform'
             }}
@@ -892,7 +892,7 @@ const LandingPage = () => {
                       isCenter 
                         ? 'border-cyan-400/90 shadow-2xl shadow-cyan-500/25 scale-[1.02] z-20 bg-slate-950 ring-1 ring-cyan-400/30' 
                         : `${item.borderClass} bg-slate-950/80 scale-[0.98] opacity-85 hover:opacity-100 hover:scale-100`
-                    } backdrop-blur-2xl relative overflow-hidden group flex flex-col justify-between transition-all duration-700 ease-out h-full`}
+                    } backdrop-blur-2xl relative overflow-hidden group flex flex-col justify-between transition-all duration-300 ease-out h-full`}
                   >
                     {/* Center Focus Badge Indicator */}
                     {isCenter && (

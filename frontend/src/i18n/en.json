@@ -277,7 +277,20 @@
     "awaiting_input_title": "Awaiting Job Offer Input",
     "awaiting_input_desc": "Submit job offer text, a screenshot image, or a URL to trigger the 5-Agent AI pipeline.",
     "clear_file": "Remove Selected File",
-    "new_scan_btn": "Start New Verification Scan"
+    "new_scan_btn": "Start New Verification Scan",
+    "security_center_title": "AI Security Center",
+    "security_center_subtitle": "Your job offer is safe with our 5 AI agents",
+    "ready_to_analyze": "Ready to Analyze",
+    "check_content_title": "Content Analysis",
+    "check_content_desc": "Detects suspicious language and patterns",
+    "check_pattern_title": "Scam Pattern Detection",
+    "check_pattern_desc": "Finds known scam indicators",
+    "check_company_title": "Company Verification",
+    "check_company_desc": "Checks company legitimacy",
+    "check_url_title": "URL Security Check",
+    "check_url_desc": "Analyzes links and domains",
+    "check_risk_title": "Risk Assessment",
+    "check_risk_desc": "Calculates overall risk score"
   },
   "overlay": {
     "scanner_active_title": "SAFE-HIRE AI 5-Agent Multimodal Scanner Active",

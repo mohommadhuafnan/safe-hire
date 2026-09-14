@@ -19,6 +19,8 @@ import {
   BrainCircuit,
   History,
   ShieldCheck,
+  Shield,
+  Check,
   Building2,
   Upload,
   Crown,
@@ -904,14 +906,101 @@ const DashboardPage = () => {
 
             </div>
           ) : (
-            <div className="glass-card p-10 rounded-3xl border border-slate-800 text-center flex flex-col items-center justify-center min-h-[420px]">
-              <div className="p-4 rounded-2xl bg-indigo-500/10 text-indigo-400 mb-4 border border-indigo-500/20">
-                <BrainCircuit className="w-10 h-10" />
+            <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-sky-500/30 shadow-2xl relative overflow-hidden bg-slate-950/85 backdrop-blur-2xl animate-fade-in">
+              {/* Background ambient glow */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+
+              {/* Card Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-5">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-sky-500/15 border border-sky-400/35 flex items-center justify-center shadow-lg shadow-sky-500/15">
+                    <Shield className="w-5 h-5 text-cyan-400 fill-cyan-400/20" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-extrabold text-white tracking-tight">
+                      {t('dashboard.security_center_title', 'AI Security Center')}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {t('dashboard.security_center_subtitle', 'Your job offer is safe with our 5 AI agents')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="self-start sm:self-center inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-xs font-semibold shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{t('dashboard.ready_to_analyze', 'Ready to Analyze')}</span>
+                </div>
               </div>
-              <h3 className="text-base font-bold text-slate-200 mb-1">{t('dashboard.awaiting_input_title', 'Awaiting Job Offer Input')}</h3>
-              <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-                {t('dashboard.awaiting_input_desc', 'Submit job offer text, a screenshot image, or a URL to trigger the 5-Agent AI pipeline.')}
-              </p>
+
+              {/* Card Body: Radar Shield Graphic + 5 Security Checks */}
+              <div className="pt-6 grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
+                
+                {/* Concentric Cybernetic Radar Shield */}
+                <div className="sm:col-span-5 flex justify-center py-2">
+                  <div className="relative w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
+                    {/* Ambient outer glow */}
+                    <div className="absolute inset-0 rounded-full bg-cyan-500/10 blur-xl pointer-events-none" />
+                    
+                    {/* Outermost ring */}
+                    <div className="absolute inset-0 rounded-full border border-sky-500/30 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-sky-400/70 absolute top-2 right-6 animate-ping" style={{ animationDuration: '3s' }} />
+                    </div>
+
+                    {/* Middle ring */}
+                    <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border border-sky-400/40 bg-sky-950/30 flex items-center justify-center shadow-[inset_0_0_15px_rgba(56,189,248,0.2)]">
+                      {/* Inner glowing core */}
+                      <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full border border-cyan-400/60 bg-gradient-to-tr from-cyan-950/60 via-sky-900/40 to-emerald-950/60 flex items-center justify-center shadow-[0_0_25px_rgba(56,189,248,0.4)]">
+                        <div className="relative flex items-center justify-center">
+                          <Shield className="w-10 h-10 sm:w-11 sm:h-11 text-cyan-400 fill-cyan-400/25 filter drop-shadow-[0_0_10px_rgba(56,189,248,0.9)]" />
+                          <Check className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300 stroke-[3.5] absolute" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5 Security Agent Checks List */}
+                <div className="sm:col-span-7 space-y-3.5">
+                  {[
+                    {
+                      title: t('dashboard.check_content_title', 'Content Analysis'),
+                      desc: t('dashboard.check_content_desc', 'Detects suspicious language and patterns')
+                    },
+                    {
+                      title: t('dashboard.check_pattern_title', 'Scam Pattern Detection'),
+                      desc: t('dashboard.check_pattern_desc', 'Finds known scam indicators')
+                    },
+                    {
+                      title: t('dashboard.check_company_title', 'Company Verification'),
+                      desc: t('dashboard.check_company_desc', 'Checks company legitimacy')
+                    },
+                    {
+                      title: t('dashboard.check_url_title', 'URL Security Check'),
+                      desc: t('dashboard.check_url_desc', 'Analyzes links and domains')
+                    },
+                    {
+                      title: t('dashboard.check_risk_title', 'Risk Assessment'),
+                      desc: t('dashboard.check_risk_desc', 'Calculates overall risk score')
+                    }
+                  ].map((check, idx) => (
+                    <div key={idx} className="flex items-start space-x-3 group">
+                      <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-400/50 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm shadow-emerald-500/25 group-hover:scale-110 group-hover:bg-emerald-500/30 transition-all duration-300">
+                        <Check className="w-3.5 h-3.5 text-emerald-300 stroke-[3]" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-100 group-hover:text-cyan-300 transition-colors leading-tight">
+                          {check.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-400 leading-tight mt-0.5">
+                          {check.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
             </div>
           )}
         </div>
