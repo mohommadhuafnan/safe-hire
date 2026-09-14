@@ -327,11 +327,11 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
         
         {/* INPUT FORM CONTAINER (7 COLS) */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="glass-panel p-5 sm:p-7 rounded-3xl border border-slate-800 space-y-6">
+        <div className="lg:col-span-7 flex flex-col space-y-6">
+          <div className="glass-panel p-5 sm:p-7 rounded-3xl border border-slate-800 space-y-6 h-full flex flex-col justify-between">
             
             {/* Header: Submit Job Offer */}
             <div className="flex items-center space-x-3 pb-1 border-b border-slate-800/60">
@@ -941,7 +941,7 @@ const DashboardPage = () => {
         </div>
 
         {/* RESULTS CARD DISPLAY (5 COLS) */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-5 flex flex-col space-y-6">
           {result ? (
             <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 animate-fade-in">
               
@@ -971,13 +971,13 @@ const DashboardPage = () => {
 
             </div>
           ) : (
-            <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-sky-500/30 shadow-2xl relative overflow-hidden bg-slate-950/85 backdrop-blur-2xl animate-fade-in">
+            <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-sky-500/30 shadow-2xl relative overflow-hidden bg-slate-950/85 backdrop-blur-2xl animate-fade-in h-full flex flex-col justify-between">
               {/* Background ambient glow */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
               {/* Card Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-5 flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 rounded-2xl bg-sky-500/15 border border-sky-400/35 flex items-center justify-center shadow-lg shadow-sky-500/15">
                     <Shield className="w-5 h-5 text-cyan-400 fill-cyan-400/20" />
@@ -998,26 +998,43 @@ const DashboardPage = () => {
                 </div>
               </div>
 
-              {/* Card Body: Radar Shield Graphic + 5 Security Checks */}
-              <div className="pt-6 grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
+              {/* Card Body: Futuristic Cyber Radar Graphic + 5 Security Checks */}
+              <div className="pt-6 grid grid-cols-1 sm:grid-cols-12 gap-6 items-center flex-1 my-auto">
                 
-                {/* Concentric Cybernetic Radar Shield */}
+                {/* Concentric Cybernetic Radar Shield with Modern Animations */}
                 <div className="sm:col-span-5 flex justify-center py-2">
-                  <div className="relative w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
-                    {/* Ambient outer glow */}
-                    <div className="absolute inset-0 rounded-full bg-cyan-500/10 blur-xl pointer-events-none" />
+                  <div className="relative w-40 h-40 sm:w-44 sm:h-44 flex items-center justify-center">
+                    {/* Ambient pulsing outer glow */}
+                    <div className="absolute inset-0 rounded-full bg-cyan-500/15 blur-2xl animate-pulse pointer-events-none" />
                     
-                    {/* Outermost ring */}
-                    <div className="absolute inset-0 rounded-full border border-sky-500/30 flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-sky-400/70 absolute top-2 right-6 animate-ping" style={{ animationDuration: '3s' }} />
+                    {/* Expanding Sonar Waves (expanding ripples) */}
+                    <div className="absolute inset-0 rounded-full border border-cyan-400/40 animate-sonar-ring pointer-events-none" />
+                    <div className="absolute inset-2 rounded-full border border-sky-400/30 animate-sonar-ring pointer-events-none" style={{ animationDelay: '1.2s' }} />
+
+                    {/* Outermost Ring */}
+                    <div className="absolute inset-0 rounded-full border border-sky-500/35 flex items-center justify-center">
+                      {/* Sweeping Radar Scanner Line */}
+                      <div className="absolute inset-0 rounded-full animate-radar-sweep pointer-events-none overflow-hidden">
+                        <div className="w-1/2 h-1/2 absolute top-0 right-0 bg-gradient-to-bl from-cyan-400/30 via-sky-500/10 to-transparent origin-bottom-left" />
+                        <div className="w-1/2 h-[2px] absolute top-1/2 right-0 bg-gradient-to-r from-transparent via-cyan-300 to-cyan-400 origin-left shadow-[0_0_8px_#38bdf8]" />
+                      </div>
+                      
+                      {/* Orbiting Satellite Particle on Outer Ring */}
+                      <div className="absolute inset-0 animate-radar-sweep pointer-events-none">
+                        <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 absolute -top-1.5 left-1/2 -translate-x-1/2 shadow-[0_0_10px_#38bdf8] animate-pulse" />
+                      </div>
                     </div>
 
-                    {/* Middle ring */}
-                    <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border border-sky-400/40 bg-sky-950/30 flex items-center justify-center shadow-[inset_0_0_15px_rgba(56,189,248,0.2)]">
-                      {/* Inner glowing core */}
-                      <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full border border-cyan-400/60 bg-gradient-to-tr from-cyan-950/60 via-sky-900/40 to-emerald-950/60 flex items-center justify-center shadow-[0_0_25px_rgba(56,189,248,0.4)]">
-                        <div className="relative flex items-center justify-center">
-                          <Shield className="w-10 h-10 sm:w-11 sm:h-11 text-cyan-400 fill-cyan-400/25 filter drop-shadow-[0_0_10px_rgba(56,189,248,0.9)]" />
+                    {/* Middle Ring with Radial Ticks */}
+                    <div className="w-32 h-32 sm:w-34 sm:h-34 rounded-full border border-sky-400/40 bg-sky-950/30 flex items-center justify-center shadow-[inset_0_0_20px_rgba(56,189,248,0.25)] relative">
+                      {/* Crosshair guidelines */}
+                      <div className="absolute inset-x-0 top-1/2 h-[1px] bg-sky-500/20" />
+                      <div className="absolute inset-y-0 left-1/2 w-[1px] bg-sky-500/20" />
+                      
+                      {/* Inner glowing core with Breathing Neon Shield */}
+                      <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-full border-2 border-cyan-400/60 bg-gradient-to-tr from-cyan-950/70 via-sky-900/50 to-emerald-950/70 flex items-center justify-center shadow-[0_0_30px_rgba(56,189,248,0.45)] relative z-10">
+                        <div className="relative flex items-center justify-center animate-cyber-pulse">
+                          <Shield className="w-11 h-11 sm:w-12 sm:h-12 text-cyan-400 fill-cyan-400/30 filter drop-shadow-[0_0_14px_rgba(56,189,248,0.95)]" />
                           <Check className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300 stroke-[3.5] absolute" />
                         </div>
                       </div>
@@ -1065,6 +1082,15 @@ const DashboardPage = () => {
                   ))}
                 </div>
 
+              </div>
+
+              {/* Bottom Status Bar (Aligned with Left Card Bottom Action Bar) */}
+              <div className="flex items-center justify-between pt-4 border-t border-slate-800/80 text-xs flex-shrink-0">
+                <div className="flex items-center space-x-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span className="text-[11px] font-medium text-slate-300">Continuous AI Guard Active</span>
+                </div>
+                <span className="text-[10px] font-mono text-cyan-400 font-bold bg-cyan-500/10 px-2.5 py-1 rounded-full border border-cyan-500/20">5-AGENT READY</span>
               </div>
             </div>
           )}
