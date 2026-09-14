@@ -27,7 +27,9 @@ import {
   Zap,
   ArrowRight,
   Trash2,
-  RotateCcw
+  RotateCcw,
+  Paperclip,
+  Cpu
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -325,51 +327,199 @@ const DashboardPage = () => {
         </div>
       </div>
 
+      {/* TOP PANORAMIC 5-AGENT HERO BANNER (VERIFY BEFORE YOU APPLY) */}
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-indigo-500/30 shadow-2xl relative overflow-hidden bg-gradient-to-r from-slate-950/95 via-indigo-950/40 to-slate-950/95 backdrop-blur-2xl">
+        {/* Ambient background glows */}
+        <div className="absolute -top-12 -left-12 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-12 right-1/4 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+          {/* Left Section (7 cols): Shield, Heading, Subhead, Badges */}
+          <div className="lg:col-span-7 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-indigo-600/30 via-sky-500/25 to-cyan-400/30 border border-sky-400/40 flex items-center justify-center flex-shrink-0 shadow-[0_0_30px_rgba(56,189,248,0.35)] relative group">
+              <Shield className="w-10 h-10 sm:w-12 sm:h-12 text-cyan-400 fill-cyan-400/25 filter drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+              <Check className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300 stroke-[3.5] absolute" />
+            </div>
+            
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+                Verify <span className="gradient-text">Before You Apply</span>
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+                {t('dashboard.banner_subhead', 'Let our 5-Agent AI system analyze job offers, screenshots, emails, WhatsApp messages and URLs before you trust them.')}
+              </p>
+              
+              {/* 4 Feature Badges */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-900/80 border border-slate-700/60 text-[11px] font-semibold text-slate-200 shadow-sm backdrop-blur-md">
+                  <FileText className="w-3.5 h-3.5 text-sky-400" />
+                  <span>{t('dashboard.banner_tag_text', 'Text Analysis')}</span>
+                </div>
+                <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-900/80 border border-slate-700/60 text-[11px] font-semibold text-slate-200 shadow-sm backdrop-blur-md">
+                  <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>{t('dashboard.banner_tag_ocr', 'Image OCR')}</span>
+                </div>
+                <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-900/80 border border-slate-700/60 text-[11px] font-semibold text-slate-200 shadow-sm backdrop-blur-md">
+                  <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>{t('dashboard.banner_tag_url', 'URL Verification')}</span>
+                </div>
+                <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-900/80 border border-slate-700/60 text-[11px] font-semibold text-slate-200 shadow-sm backdrop-blur-md">
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                  <span>{t('dashboard.banner_tag_agents', '5 AI Agents')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Section (5 cols): Cybernetic Chip & 5 Agents Checklist */}
+          <div className="lg:col-span-5 flex items-center justify-between sm:justify-end gap-6 pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-slate-800/80 lg:pl-6">
+            {/* Futuristic Microchip Graphic */}
+            <div className="relative flex items-center justify-center flex-shrink-0">
+              {/* Horizontal Circuit Traces */}
+              <div className="absolute -left-5 w-5 h-[2px] bg-gradient-to-r from-transparent to-cyan-400/80"></div>
+              <div className="absolute -right-5 w-5 h-[2px] bg-gradient-to-l from-transparent to-cyan-400/80"></div>
+              <div className="absolute -top-3 w-[2px] h-3 bg-gradient-to-b from-transparent to-sky-400/80"></div>
+              <div className="absolute -bottom-3 w-[2px] h-3 bg-gradient-to-t from-transparent to-sky-400/80"></div>
+
+              {/* Chip Body */}
+              <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border-2 border-cyan-400/60 flex flex-col items-center justify-center shadow-[0_0_25px_rgba(56,189,248,0.35)] relative overflow-hidden">
+                <div className="absolute inset-1 rounded-xl border border-indigo-500/30"></div>
+                <span className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-sky-400">
+                  5
+                </span>
+                <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-cyan-300">
+                  AGENTS
+                </span>
+              </div>
+            </div>
+
+            {/* 5 Intelligent Agents Right List */}
+            <div className="space-y-1.5">
+              <div className="text-[10px] sm:text-xs font-bold font-mono uppercase tracking-wider text-slate-300 pb-0.5">
+                {t('dashboard.banner_powered_by', 'Powered by 5 Intelligent Agents')}
+              </div>
+              {[
+                'Intake & Multimodal OCR',
+                'Linguistic Risk Agent',
+                'Verification Agent',
+                'Reasoning Agent (Gemini AI)',
+                'Recommendation Agent'
+              ].map((agentName, idx) => (
+                <div key={idx} className="flex items-center space-x-2 text-xs text-slate-300">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+                  <span className="text-[11px] sm:text-xs font-medium text-slate-200">{agentName}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         
         {/* INPUT FORM CONTAINER (7 COLS) */}
         <div className="lg:col-span-7 space-y-6">
           <div className="glass-panel p-5 sm:p-7 rounded-3xl border border-slate-800 space-y-6">
             
-            {/* INPUT TYPE TABS */}
-            <div className="flex p-1.5 bg-slate-900/90 rounded-2xl border border-slate-800/80">
+            {/* Header: Submit Job Offer */}
+            <div className="flex items-center space-x-3 pb-1 border-b border-slate-800/60">
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-sm">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-slate-100">
+                  {t('dashboard.submit_offer_title', 'Submit Job Offer')}
+                </h2>
+                <p className="text-xs text-slate-400">
+                  {t('dashboard.submit_offer_subtitle', 'Choose how you want to check the job offer:')}
+                </p>
+              </div>
+            </div>
+
+            {/* 3 Modern Interactive Selector Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Card 1: Text */}
               <button
                 type="button"
                 onClick={() => setActiveTab('text')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold transition ${
+                className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${
                   activeTab === 'text'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
+                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
                 }`}
               >
-                <FileText className="w-4 h-4" />
-                <span>{t('dashboard.tab_text')}</span>
+                {activeTab === 'text' && (
+                  <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center shadow-md">
+                    <Check className="w-3 h-3 text-white stroke-[3]" />
+                  </div>
+                )}
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-2.5">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-bold text-slate-100">
+                    {t('dashboard.tab_text', 'Text / Email Offer')}
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-tight">
+                    {t('dashboard.tab_text_desc', 'Paste job offer text, email or WhatsApp message.')}
+                  </p>
+                </div>
               </button>
 
+              {/* Card 2: Image */}
               <button
                 type="button"
                 onClick={() => setActiveTab('image')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold transition ${
+                className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${
                   activeTab === 'image'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
+                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
                 }`}
               >
-                <ImageIcon className="w-4 h-4" />
-                <span>{t('dashboard.tab_image')} (OCR)</span>
+                {activeTab === 'image' && (
+                  <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center shadow-md">
+                    <Check className="w-3 h-3 text-white stroke-[3]" />
+                  </div>
+                )}
+                <div className="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center mb-2.5">
+                  <ImageIcon className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-bold text-slate-100">
+                    {t('dashboard.tab_image', 'Image / Screenshot')}
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-tight">
+                    {t('dashboard.tab_image_desc', 'Upload an image (OCR analysis will be performed).')}
+                  </p>
+                </div>
               </button>
 
+              {/* Card 3: URL */}
               <button
                 type="button"
                 onClick={() => setActiveTab('url')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold transition ${
+                className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${
                   activeTab === 'url'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
+                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
                 }`}
               >
-                <Globe className="w-4 h-4" />
-                <span>{t('dashboard.tab_url')}</span>
+                {activeTab === 'url' && (
+                  <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center shadow-md">
+                    <Check className="w-3 h-3 text-white stroke-[3]" />
+                  </div>
+                )}
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-2.5">
+                  <Globe className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-bold text-slate-100">
+                    {t('dashboard.tab_url', 'Job URL')}
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-tight">
+                    {t('dashboard.tab_url_desc', 'Check the safety of a job posting link.')}
+                  </p>
+                </div>
               </button>
             </div>
 
@@ -464,40 +614,43 @@ const DashboardPage = () => {
                 </div>
               )}
 
-              {/* TARGET LANGUAGE SELECTOR */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
-                <span className="text-xs font-medium text-slate-400">{t('dashboard.select_lang')}:</span>
-                <select
-                  value={targetLanguage}
-                  onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none cursor-pointer"
-                >
-                  <option value="en">English (EN)</option>
-                  <option value="si">Sinhala (සිංහල)</option>
-                  <option value="ta">Tamil (தமிழ்)</option>
-                  <option value="hi">Hindi (हिंदी)</option>
-                  <option value="bn">Bengali (বাংলা)</option>
-                </select>
-              </div>
+              {/* BOTTOM CONTROLS: TARGET LANGUAGE & ANALYZE ACTION BUTTON */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-3 border-t border-slate-800/80">
+                {/* Target Language Dropdown Selector */}
+                <div className="relative">
+                  <select
+                    value={targetLanguage}
+                    onChange={(e) => handleLanguageChange(e.target.value)}
+                    className="w-full sm:w-auto bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-200 outline-none cursor-pointer flex items-center transition shadow-sm"
+                  >
+                    <option value="en">🌐 English (EN)</option>
+                    <option value="si">🌐 Sinhala (සිංහල)</option>
+                    <option value="ta">🌐 Tamil (தமிழ்)</option>
+                    <option value="hi">🌐 Hindi (हिंदी)</option>
+                    <option value="bn">🌐 Bengali (বাংলা)</option>
+                  </select>
+                </div>
 
-              {/* SUBMIT BUTTON */}
-              <button
-                type="submit"
-                disabled={analyzing}
-                className="w-full py-4 px-6 rounded-2xl btn-primary font-bold text-xs sm:text-sm shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 transition"
-              >
-                {analyzing ? (
-                  <>
-                    <Sparkles className="w-5 h-5 animate-spin" />
-                    <span>{t('dashboard.analyzing', 'Executing 5-Agent AI Pipeline...')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    <span>{t('dashboard.analyze_btn', 'Run 5-Agent AI Analysis')}</span>
-                  </>
-                )}
-              </button>
+                {/* Submit CTA Button */}
+                <button
+                  type="submit"
+                  disabled={analyzing}
+                  className="w-full sm:w-auto py-3 px-7 rounded-xl btn-primary font-bold text-xs shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 transition hover:scale-[1.02] active:scale-95"
+                >
+                  {analyzing ? (
+                    <>
+                      <Sparkles className="w-4 h-4 animate-spin" />
+                      <span>{t('dashboard.analyzing', 'Executing 5-Agent AI Pipeline...')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4 text-white" />
+                      <span>{t('dashboard.analyze_btn_label', 'Analyze Job Offer')}</span>
+                      <ArrowRight className="w-4 h-4 text-white" />
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
 
           </div>
@@ -964,24 +1117,24 @@ const DashboardPage = () => {
                 <div className="sm:col-span-7 space-y-3.5">
                   {[
                     {
-                      title: t('dashboard.check_content_title', 'Content Analysis'),
-                      desc: t('dashboard.check_content_desc', 'Detects suspicious language and patterns')
+                      title: t('dashboard.check_content_title', 'Intake & Multimodal OCR'),
+                      desc: t('dashboard.check_content_desc', 'Ingests text, scans images & extracts OCR signals')
                     },
                     {
-                      title: t('dashboard.check_pattern_title', 'Scam Pattern Detection'),
-                      desc: t('dashboard.check_pattern_desc', 'Finds known scam indicators')
+                      title: t('dashboard.check_pattern_title', 'Linguistic Risk Agent'),
+                      desc: t('dashboard.check_pattern_desc', 'Detects fee demands, urgency & impersonation')
                     },
                     {
-                      title: t('dashboard.check_company_title', 'Company Verification'),
-                      desc: t('dashboard.check_company_desc', 'Checks company legitimacy')
+                      title: t('dashboard.check_company_title', 'Verification Agent'),
+                      desc: t('dashboard.check_company_desc', 'WHOIS domain age & Google Safe Browsing')
                     },
                     {
-                      title: t('dashboard.check_url_title', 'URL Security Check'),
-                      desc: t('dashboard.check_url_desc', 'Analyzes links and domains')
+                      title: t('dashboard.check_url_title', 'Reasoning Agent (Gemini AI)'),
+                      desc: t('dashboard.check_url_desc', 'Synthesizes evidence into 0–100 Scam Score')
                     },
                     {
-                      title: t('dashboard.check_risk_title', 'Risk Assessment'),
-                      desc: t('dashboard.check_risk_desc', 'Calculates overall risk score')
+                      title: t('dashboard.check_risk_title', 'Recommendation Agent'),
+                      desc: t('dashboard.check_risk_desc', 'Generates actionable student safety guidance')
                     }
                   ].map((check, idx) => (
                     <div key={idx} className="flex items-start space-x-3 group">

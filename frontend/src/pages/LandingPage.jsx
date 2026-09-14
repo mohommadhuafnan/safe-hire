@@ -4,14 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useAIModal } from '../context/AIModalContext';
 import heroVideo from '../../vedio/vedio.mp4';
-import { 
-  ShieldCheck, 
-  Search, 
-  Globe2, 
-  BrainCircuit, 
-  FileText, 
-  CheckCircle, 
-  ArrowRight, 
+import {
+  ShieldCheck,
+  Search,
+  Globe2,
+  BrainCircuit,
+  FileText,
+  CheckCircle,
+  ArrowRight,
   Lock,
   GraduationCap,
   AlertTriangle,
@@ -51,7 +51,7 @@ const LandingPage = () => {
         if (document.hidden) {
           videoRef.current.pause();
         } else {
-          videoRef.current.play().catch(() => {});
+          videoRef.current.play().catch(() => { });
         }
       }
     };
@@ -214,8 +214,8 @@ const LandingPage = () => {
   }, [posterFilter, filteredPosters.length]);
 
   // Triple the posters list for infinite smooth slow-motion scrolling
-  const displayPosters = filteredPosters.length > 0 
-    ? [...filteredPosters, ...filteredPosters, ...filteredPosters] 
+  const displayPosters = filteredPosters.length > 0
+    ? [...filteredPosters, ...filteredPosters, ...filteredPosters]
     : [];
 
   // Auto-play slider with snappy speed transition
@@ -259,6 +259,7 @@ const LandingPage = () => {
 
   const reviewsRow1 = [
     {
+
       id: 1,
       name: "Nipuni Perera",
       role: "BSc Computer Science",
@@ -394,10 +395,10 @@ const LandingPage = () => {
 
   return (
     <div className="space-y-16 sm:space-y-24 pb-16">
-      
+
       {/* TRUE FULL-VIEWPORT (100vh / 100dvh) HERO SECTION */}
       <section className="relative w-full h-screen min-h-[100vh] min-h-[100dvh] flex flex-col justify-between items-center overflow-hidden bg-black pt-20 sm:pt-24 pb-6 sm:pb-8">
-        
+
         {/* FULL-VIEWPORT VIDEO BACKGROUND & MULTI-LAYER OVERLAYS */}
         <div className="absolute inset-0 w-full h-full z-0 overflow-hidden bg-black pointer-events-none">
           <video
@@ -417,7 +418,7 @@ const LandingPage = () => {
           {/* Balanced protective overlay: lightened so video is crystal clear while text remains sharp */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/15 to-[#090d16]/95 z-10" />
           <div className="absolute inset-0 bg-radial-at-c from-transparent via-transparent to-black/35 z-10" />
-          
+
           {/* Seamless Bottom Blend Gradient */}
           <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent via-[#090d16]/80 to-[#090d16] z-10 pointer-events-none" />
 
@@ -427,7 +428,7 @@ const LandingPage = () => {
 
         {/* VERTICALLY CENTERED HERO CONTENT */}
         <div className="relative z-20 px-6 text-center max-w-5xl mx-auto space-y-6 sm:space-y-8 my-auto animate-fade-in-up flex flex-col justify-center items-center">
-          
+
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-indigo-500/20 border border-sky-400/30 text-sky-300 text-xs font-semibold shadow-lg shadow-sky-500/10 backdrop-blur-md animate-pulse">
             <ShieldCheck className="w-4 h-4 text-sky-400" />
             <span>{t('landing.tagline')}</span>
@@ -450,7 +451,7 @@ const LandingPage = () => {
               <span>{t('landing.cta_analyze', 'Analyze Job Poster')}</span>
               <ArrowRight className="w-4 h-4 text-white" />
             </Link>
-            
+
             <a
               href="#demo-showcase"
               className="w-full sm:w-auto px-8 py-4 rounded-xl glass-card font-semibold text-sm text-slate-200 hover:text-white flex items-center justify-center space-x-2 border border-slate-700 hover:border-sky-400/50 hover:bg-slate-900/80 transition duration-300"
@@ -479,7 +480,7 @@ const LandingPage = () => {
         </div>
 
         {/* ANIMATED SCROLL DOWN INDICATOR */}
-        <div 
+        <div
           onClick={() => {
             const el = document.getElementById('demo-showcase');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -499,7 +500,7 @@ const LandingPage = () => {
       {/* LIVE NEURAL VISION SCANNER VIDEO & DEMO SHOWCASE SECTION */}
       {/* ========================================================================= */}
       <section id="demo-showcase" className="max-w-7xl mx-auto px-6 py-10 scroll-mt-24">
-        
+
         <div className="text-center mb-10 space-y-3 scroll-reveal">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold shadow-lg shadow-cyan-500/10 backdrop-blur-md animate-pulse">
             <Zap className="w-4 h-4 text-cyan-400" />
@@ -509,7 +510,7 @@ const LandingPage = () => {
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
             {t('landing.action_title_1', 'See ')}<span className="gradient-text">{t('landing.action_title_brand', 'SAFE-HIRE AI')}</span>{t('landing.action_title_2', ' in Action')}
           </h2>
-          
+
           <p className="text-slate-400 text-sm max-w-3xl mx-auto leading-relaxed">
             {t('landing.action_subtitle', 'Watch how our multimodal vision OCR engine extracts text, validates recruiter brand identity, and identifies scam red flags in real-time.')}
           </p>
@@ -517,7 +518,7 @@ const LandingPage = () => {
 
         {/* FUTURISTIC VIDEO HUD SHOWCASE CONTAINER */}
         <div className="relative rounded-3xl overflow-hidden border border-cyan-500/40 bg-slate-950/90 shadow-[0_0_90px_rgba(56,189,248,0.3)] glass-panel p-4 sm:p-7 scroll-reveal">
-          
+
           {/* Top Cyber Control Bar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-800">
             <div className="flex items-center space-x-3">
@@ -538,7 +539,7 @@ const LandingPage = () => {
 
           {/* DUAL-PANEL SHOWCASE GRID: VIDEO PLAYER ON LEFT + LIVE HUD STATS ON RIGHT */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            
+
             {/* LEFT: NEURAL VIDEO PLAYER WITH SCAN LASER OVERLAY */}
             <div className="lg:col-span-7 relative rounded-2xl overflow-hidden border-2 border-indigo-500/50 bg-black shadow-2xl group">
               <video
@@ -582,7 +583,7 @@ const LandingPage = () => {
 
               {/* LIVE FEATURES LIST */}
               <div className="space-y-3 pt-2">
-                
+
                 <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-start space-x-3">
                   <div className="p-2 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 shrink-0 mt-0.5">
                     <BrainCircuit className="w-5 h-5 text-indigo-400" />
@@ -638,7 +639,7 @@ const LandingPage = () => {
       {/* 5-AGENT AI WORKFLOW PIPELINE SECTION (PLACED DIRECTLY AFTER VIDEO HERO) */}
       {/* ========================================================================= */}
       <section id="workflow-pipeline" className="max-w-7xl mx-auto px-6 pt-4 pb-8 scroll-mt-24">
-        
+
         {/* Section Header */}
         <div className="text-center mb-14 space-y-3 scroll-reveal">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-400/30 text-sky-300 text-xs font-bold shadow-lg shadow-sky-500/10 backdrop-blur-md animate-pulse">
@@ -649,7 +650,7 @@ const LandingPage = () => {
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
             {t('landing.workflow_title', 'How SAFE-HIRE 5-Agent AI Works')}
           </h2>
-          
+
           <p className="text-slate-400 text-sm max-w-3xl mx-auto leading-relaxed">
             {t('landing.workflow_desc', 'An automated multi-agent pipeline analyzes job postings, screenshots, and URLs in seconds.')}
           </p>
@@ -657,7 +658,7 @@ const LandingPage = () => {
 
         {/* 5-Agent Sequential Cards Grid with Glowing Connectors */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
-          
+
           {[
             {
               step: '1',
@@ -722,8 +723,8 @@ const LandingPage = () => {
           ].map((agent, i) => {
             const IconComp = agent.icon;
             return (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 className={`glass-card p-6 rounded-3xl border ${agent.borderColor} relative group hover:-translate-y-2.5 transition-all duration-300 backdrop-blur-xl bg-slate-950/80 shadow-xl ${agent.glowColor} flex flex-col justify-between scroll-reveal ${agent.delay}`}
               >
                 {/* Step Connector Line (Desktop) */}
@@ -777,18 +778,18 @@ const LandingPage = () => {
       {/* INSTAGRAM-STYLE 3-POSTER GALLERY CAROUSEL SHOWCASE */}
       {/* ========================================================================= */}
       <section id="demo-showcase" className="max-w-7xl mx-auto px-6 py-8 scroll-mt-24">
-        
+
         {/* Section Header & Filter Tabs */}
         <div className="text-center mb-10 space-y-4">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold shadow-lg shadow-rose-500/10 backdrop-blur-md animate-pulse">
             <AlertTriangle className="w-4 h-4 text-rose-400" />
             <span>{t('landing.gallery_badge', 'INSTAGRAM-STYLE INTERACTIVE GALLERY')}</span>
           </div>
-          
+
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
             {t('landing.gallery_title', 'Spot Fake Job Posters vs Genuine Ads')}
           </h2>
-          
+
           <p className="text-slate-400 text-sm max-w-3xl mx-auto leading-relaxed">
             {t('landing.gallery_desc', 'Browse real-world scam flyers vs verified corporate offers. Click or swipe through the gallery to see how 5-Agent AI extracts red flags.')}
           </p>
@@ -797,8 +798,8 @@ const LandingPage = () => {
           <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
             {[
               { id: 'all', label: `${t('landing.gallery_filter_all', 'All Posters')} (${galleryPosters.length})` },
-              { id: 'scam', label: `${t('landing.gallery_filter_scams', 'High-Risk Scams')} (${galleryPosters.filter(p=>p.type==='scam').length})` },
-              { id: 'legit', label: `${t('landing.gallery_filter_legit', 'Verified Genuine')} (${galleryPosters.filter(p=>p.type==='legit').length})` }
+              { id: 'scam', label: `${t('landing.gallery_filter_scams', 'High-Risk Scams')} (${galleryPosters.filter(p => p.type === 'scam').length})` },
+              { id: 'legit', label: `${t('landing.gallery_filter_legit', 'Verified Genuine')} (${galleryPosters.filter(p => p.type === 'legit').length})` }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -806,11 +807,10 @@ const LandingPage = () => {
                   setPosterFilter(tab.id);
                   setCurrentPosterIndex(0);
                 }}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 ${
-                  posterFilter === tab.id
-                    ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30 border border-sky-400 scale-105'
-                    : 'bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
-                }`}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 ${posterFilter === tab.id
+                  ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30 border border-sky-400 scale-105'
+                  : 'bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                  }`}
               >
                 {tab.label}
               </button>
@@ -832,11 +832,10 @@ const LandingPage = () => {
                 <button
                   key={i}
                   onClick={() => handleDotClick(i)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    ((activeSlide % posterCount) + posterCount) % posterCount === i 
-                      ? 'w-7 bg-cyan-400 shadow-lg shadow-cyan-500/50' 
-                      : 'w-2 bg-slate-700 hover:bg-slate-500'
-                  }`}
+                  className={`h-2 rounded-full transition-all duration-300 ${((activeSlide % posterCount) + posterCount) % posterCount === i
+                    ? 'w-7 bg-cyan-400 shadow-lg shadow-cyan-500/50'
+                    : 'w-2 bg-slate-700 hover:bg-slate-500'
+                    }`}
                   aria-label={`Go to slide ${i + 1}`}
                 />
               ))}
@@ -861,20 +860,20 @@ const LandingPage = () => {
         </div>
 
         {/* VISIBLE 3-POSTER GALLERY SLIDING TRACK WITH FAST RESPONSIVE 3D CENTER FOCUS */}
-        <div 
+        <div
           onMouseEnter={() => setIsAutoSlide(false)}
           onMouseLeave={() => setIsAutoSlide(true)}
           className="relative w-full overflow-hidden py-4"
         >
-          <div 
+          <div
             onTransitionEnd={handleSlideTransitionEnd}
             className="flex items-stretch"
             style={{
-              transform: isMobile 
-                ? `translateX(-${activeSlide * 100}%)` 
+              transform: isMobile
+                ? `translateX(-${activeSlide * 100}%)`
                 : `translateX(-${(activeSlide - 1) * (100 / 3)}%)`,
-              transition: isTransitioning 
-                ? 'transform 450ms cubic-bezier(0.25, 1, 0.5, 1)' 
+              transition: isTransitioning
+                ? 'transform 450ms cubic-bezier(0.25, 1, 0.5, 1)'
                 : 'none',
               willChange: 'transform'
             }}
@@ -883,16 +882,15 @@ const LandingPage = () => {
               const isCenter = idx === activeSlide;
               const posterNumber = ((idx % posterCount) + 1);
               return (
-                <div 
+                <div
                   key={`${item.id}-${idx}`}
                   className="w-full md:w-1/3 flex-shrink-0 px-3 box-border"
                 >
-                  <div 
-                    className={`glass-panel p-5 rounded-3xl border ${
-                      isCenter 
-                        ? 'border-cyan-400/90 shadow-2xl shadow-cyan-500/25 scale-[1.02] z-20 bg-slate-950 ring-1 ring-cyan-400/30' 
-                        : `${item.borderClass} bg-slate-950/80 scale-[0.98] opacity-85 hover:opacity-100 hover:scale-100`
-                    } backdrop-blur-2xl relative overflow-hidden group flex flex-col justify-between transition-all duration-300 ease-out h-full`}
+                  <div
+                    className={`glass-panel p-5 rounded-3xl border ${isCenter
+                      ? 'border-cyan-400/90 shadow-2xl shadow-cyan-500/25 scale-[1.02] z-20 bg-slate-950 ring-1 ring-cyan-400/30'
+                      : `${item.borderClass} bg-slate-950/80 scale-[0.98] opacity-85 hover:opacity-100 hover:scale-100`
+                      } backdrop-blur-2xl relative overflow-hidden group flex flex-col justify-between transition-all duration-300 ease-out h-full`}
                   >
                     {/* Center Focus Badge Indicator */}
                     {isCenter && (
@@ -909,7 +907,7 @@ const LandingPage = () => {
                     </div>
 
                     <div className="space-y-4">
-                      
+
                       {/* Header Title */}
                       <div className="pt-2">
                         <h3 className={`text-base font-extrabold transition-colors tracking-tight line-clamp-1 ${isCenter ? 'text-cyan-300' : 'text-slate-100 group-hover:text-cyan-300'}`}>
@@ -922,9 +920,9 @@ const LandingPage = () => {
 
                       {/* Poster Image Frame */}
                       <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-xl group-hover:shadow-cyan-500/10 transition-all duration-500">
-                        <img 
-                          src={item.image} 
-                          alt={item.title} 
+                        <img
+                          src={item.image}
+                          alt={item.title}
                           className="w-full h-56 object-cover object-top group-hover:scale-105 transition duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-70" />
@@ -976,14 +974,14 @@ const LandingPage = () => {
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
             {t('landing.why_choose_title_1', 'Why Choose ')}<span className="gradient-text">{t('landing.why_choose_title_brand', 'SAFE-HIRE')}</span>{t('landing.why_choose_title_2', '?')}
           </h2>
-          
+
           <p className="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">
             {t('landing.why_choose_subtitle', "The world's first agentic multi-AI platform engineered specifically to protect South Asian undergraduates and job seekers from career scams.")}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          
+
           {/* Feature 1 */}
           <div className="glass-card p-7 rounded-3xl flex items-start space-x-5 border border-indigo-500/30 hover:border-indigo-400/80 transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(99,102,241,0.25)] relative overflow-hidden bg-slate-900/80 scroll-reveal-left reveal-delay-100">
             <div className="absolute top-0 right-0 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/25 transition-all duration-500 pointer-events-none" />
@@ -1068,7 +1066,7 @@ const LandingPage = () => {
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100">
             {t('landing.pricing_title_1', 'Choose Your ')}<span className="gradient-text-gold">{t('landing.pricing_title_accent', 'Protection Plan')}</span>
           </h2>
-          
+
           <p className="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">
             {t('landing.pricing_subtitle', 'Get unlimited AI scam verifications, AI OCR screenshot scans, WHOIS domain age lookups, and downloadable PDF reports.')}
           </p>
@@ -1079,23 +1077,21 @@ const LandingPage = () => {
               <button
                 type="button"
                 onClick={() => setBillingCycle('monthly')}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold transition ${
-                  billingCycle === 'monthly'
-                    ? 'bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-lg'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold transition ${billingCycle === 'monthly'
+                  ? 'bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-slate-200'
+                  }`}
               >
                 {t('landing.plan_1_month', '1 Month Plan')}
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => setBillingCycle('annual')}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
-                  billingCycle === 'annual'
-                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 text-slate-950 shadow-lg'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${billingCycle === 'annual'
+                  ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 text-slate-950 shadow-lg'
+                  : 'text-slate-400 hover:text-slate-200'
+                  }`}
               >
                 <span>{t('landing.plan_1_year', '1 Year Plan')}</span>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-extrabold">{t('landing.save_20', 'SAVE 20%')}</span>
@@ -1106,7 +1102,7 @@ const LandingPage = () => {
 
         {/* PRICING CARDS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-          
+
           {/* TIER 1: STARTER PLAN */}
           <div className="glass-card p-8 rounded-3xl border border-slate-800 flex flex-col justify-between space-y-6 scroll-reveal-scale reveal-delay-100">
             <div className="space-y-4">
@@ -1115,7 +1111,7 @@ const LandingPage = () => {
               </div>
               <h3 className="text-xl font-bold text-slate-100">{t('landing.starter_title', 'Starter Plan')}</h3>
               <p className="text-xs text-slate-400">{t('landing.starter_desc', 'Ideal for students verifying occasional job offers and internship emails.')}</p>
-              
+
               <div className="pt-2">
                 <div className="flex items-baseline space-x-1">
                   <span className="text-xs text-slate-400 font-medium">LKR</span>
@@ -1170,7 +1166,7 @@ const LandingPage = () => {
               </div>
               <h3 className="text-2xl font-bold text-slate-100">{t('landing.pro_title', 'Pro Student Plan')}</h3>
               <p className="text-xs text-slate-300">{t('landing.pro_desc', 'Complete 5-agent AI protection with OCR image screenshot analysis.')}</p>
-              
+
               <div className="pt-2">
                 <div className="flex items-baseline space-x-1">
                   <span className="text-xs text-indigo-300 font-medium">LKR</span>
@@ -1224,7 +1220,7 @@ const LandingPage = () => {
               </div>
               <h3 className="text-xl font-bold text-slate-100">{t('landing.enterprise_title', 'Enterprise Plan')}</h3>
               <p className="text-xs text-slate-400">{t('landing.enterprise_desc', 'For university career centers, graduate batches, and recruitment teams.')}</p>
-              
+
               <div className="pt-2">
                 <div className="flex items-baseline space-x-1">
                   <span className="text-xs text-slate-400 font-medium">LKR</span>
@@ -1282,7 +1278,7 @@ const LandingPage = () => {
           <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
             {t('landing.reviews_title', 'Trusted by 10,000+ Students & Graduates')}
           </h2>
-          
+
           <p className="text-slate-400 text-sm leading-relaxed">
             {t('landing.reviews_desc', 'See how SAFE-HIRE\'s 5-Agent AI helps undergraduates and job seekers across South Asia identify job scams, avoid fake fees, and secure authentic opportunities.')}
           </p>
@@ -1290,7 +1286,7 @@ const LandingPage = () => {
 
         {/* MARQUEE CONTAINER (PAUSES ON HOVER) */}
         <div className="pause-on-hover space-y-6 scroll-reveal-scale">
-          
+
           {/* ROW 1: SCROLLING LEFT */}
           <div className="overflow-hidden relative flex">
             {/* Left & Right Gradient Fades */}
@@ -1299,8 +1295,8 @@ const LandingPage = () => {
 
             <div className="animate-marquee">
               {[...reviewsRow1, ...reviewsRow1].map((review, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="w-[320px] sm:w-[380px] shrink-0 p-5 rounded-2xl glass-card border border-slate-800/90 hover:border-indigo-500/50 space-y-3 shadow-xl transition-all duration-300 mx-3"
                 >
                   <div className="flex items-center justify-between">
@@ -1315,7 +1311,7 @@ const LandingPage = () => {
                   </div>
 
                   <h4 className="text-xs font-bold text-slate-100 line-clamp-1">{review.title}</h4>
-                  
+
                   <p className="text-xs text-slate-300 leading-relaxed font-sans line-clamp-3">
                     "{review.text}"
                   </p>
@@ -1342,8 +1338,8 @@ const LandingPage = () => {
 
             <div className="animate-marquee-reverse">
               {[...reviewsRow2, ...reviewsRow2].map((review, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="w-[320px] sm:w-[380px] shrink-0 p-5 rounded-2xl glass-card border border-slate-800/90 hover:border-sky-500/50 space-y-3 shadow-xl transition-all duration-300 mx-3"
                 >
                   <div className="flex items-center justify-between">
@@ -1358,7 +1354,7 @@ const LandingPage = () => {
                   </div>
 
                   <h4 className="text-xs font-bold text-slate-100 line-clamp-1">{review.title}</h4>
-                  
+
                   <p className="text-xs text-slate-300 leading-relaxed font-sans line-clamp-3">
                     "{review.text}"
                   </p>
@@ -1385,7 +1381,7 @@ const LandingPage = () => {
       {/* ========================================================================= */}
       <section className="max-w-4xl mx-auto px-6 text-center scroll-reveal-scale">
         <div className="glass-panel p-10 sm:p-12 rounded-3xl border-2 border-indigo-500/40 bg-gradient-to-b from-indigo-950/60 via-slate-950 to-slate-950 relative overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.25)] group">
-          
+
           {/* Glowing Background Radial Highlights */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/35 transition-all duration-700 pointer-events-none" />
           <div className="absolute bottom-0 right-0 w-64 h-32 bg-sky-500/15 rounded-full blur-2xl pointer-events-none" />
@@ -1399,7 +1395,7 @@ const LandingPage = () => {
             <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-100 tracking-tight">
               {t('landing.cta_bottom_title', 'Protect Your Career Today')}
             </h2>
-            
+
             <p className="text-slate-300 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed font-sans">
               {t('landing.cta_bottom_desc', 'Join thousands of graduates using SAFE-HIRE to verify job postings before sharing personal details or paying registration fees.')}
             </p>
