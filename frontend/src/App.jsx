@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AIModalProvider } from './context/AIModalContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -50,6 +50,8 @@ const PublicAuthRoute = ({ children }) => {
 
 function AppRoutes() {
   const { i18n } = useTranslation();
+  const location = useLocation();
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
 
   React.useEffect(() => {
     const currentLang = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0].toLowerCase();
@@ -60,8 +62,8 @@ function AppRoutes() {
   return (
     <div className="min-h-screen relative overflow-hidden flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
       <CyberParticlesBackground />
-      <Navbar />
-      <main className="flex-grow">
+      {!isAuthPage && <Navbar />}
+      <main className="flex-grow flex flex-col">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route 
@@ -99,8 +101,8 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      <Footer />
-      <FloatingAIChatbot />
+      {!isAuthPage && <Footer />}
+      {!isAuthPage && <FloatingAIChatbot />}
     </div>
   );
 }

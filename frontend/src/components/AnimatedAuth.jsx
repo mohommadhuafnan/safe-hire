@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
   ShieldCheck, 
@@ -11,6 +11,7 @@ import {
   Building, 
   Globe, 
   ArrowRight, 
+  ArrowLeft,
   AlertCircle, 
   Sparkles, 
   CheckCircle2,
@@ -163,7 +164,7 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
   return (
     <div 
       onMouseMove={handleMouseMove}
-      className="relative min-h-screen pt-28 sm:pt-36 pb-12 px-3 sm:px-6 flex items-center justify-center overflow-hidden"
+      className="relative min-h-screen py-8 sm:py-12 px-3 sm:px-6 flex flex-col items-center justify-center overflow-hidden"
     >
 
       {/* AMBIENT BACKGROUND PARTICLES & GLOW ORBS */}
@@ -187,6 +188,36 @@ const AnimatedAuth = ({ initialMode = 'login' }) => {
           className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-gradient-to-tr from-sky-500/25 via-emerald-500/15 to-transparent blur-3xl"
         />
       </div>
+
+      {/* AUTH TOP BAR */}
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="relative z-20 w-full max-w-4xl flex items-center justify-between mb-4 px-1 sm:px-2"
+      >
+        <Link 
+          to="/" 
+          className="flex items-center space-x-2.5 group"
+          title={t('auth.back_to_home', 'Back to Home')}
+        >
+          <div className="w-9 h-9 rounded-xl bg-slate-900 border border-indigo-500/30 p-1 shadow-md shadow-indigo-500/20 group-hover:border-indigo-400/60 group-hover:scale-105 transition-all duration-200 flex items-center justify-center overflow-hidden">
+            <img src="/images/logo.png" alt="SAFE-HIRE AI Logo" className="w-full h-full object-contain" />
+          </div>
+          <div className="flex items-center space-x-1.5">
+            <span className="text-base font-black tracking-tight text-slate-100 group-hover:text-sky-300 transition-colors">SAFE-HIRE</span>
+            <span className="px-1.5 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-400/30 text-[9px] font-mono font-bold text-indigo-300 uppercase tracking-wider">AI</span>
+          </div>
+        </Link>
+
+        <Link
+          to="/"
+          className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-indigo-500/40 text-xs font-medium text-slate-300 hover:text-white transition-colors shadow-sm group"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:-translate-x-0.5 transition-transform" />
+          <span>{t('auth.back_to_home', 'Back to Home')}</span>
+        </Link>
+      </motion.div>
 
       {/* MAIN RESPONSIVE CONTAINER */}
       <div className="relative w-full max-w-4xl rounded-3xl glass-panel border border-white/15 shadow-2xl shadow-slate-950 overflow-hidden flex flex-col md:grid md:grid-cols-2">
