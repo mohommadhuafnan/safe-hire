@@ -28,13 +28,13 @@ _SYSTEM_PROMPT = {
     ),
 }
 
-# Model rotation: try fastest/most active Google Gemini models first
 _GEMINI_MODELS = [
-    "gemini-flash-latest",
-    "gemini-3.6-flash",
     "gemini-3.5-flash",
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
+    "gemini-flash-latest",
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-3.8-flash",
 ]
 
 # Smart fallback answers for common questions (used when all APIs fail)
@@ -84,7 +84,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     content: str
-    model: str = "gemini-2.5-flash"
+    model: str = "gemini-3.6-flash"
 
 
 def clean_stop_tokens(text: str) -> str:
@@ -143,7 +143,7 @@ async def chat_assistant(req: ChatRequest):
                             reply = clean_stop_tokens(reply)
                             if reply:
                                 logger.info(f"✅ Chatbot Gemini ({model_name}) responded successfully.")
-                                return ChatResponse(content=reply, model="gemini-2.5-flash")
+                                return ChatResponse(content=reply, model=model_name)
                 elif res.status_code in (401, 403):
                     logger.warning(f"Chatbot Gemini auth notice ({res.status_code}) for {model_name}.")
                 else:
@@ -176,7 +176,7 @@ async def chat_assistant(req: ChatRequest):
                     reply = clean_stop_tokens(reply)
                     if reply:
                         logger.info(f"✅ Chatbot ({model_name}) responded successfully.")
-                        return ChatResponse(content=reply, model="gemini-2.5-flash")
+                        return ChatResponse(content=reply, model=model_name)
                 elif res.status_code in (401, 403):
                     break
             except Exception as e:

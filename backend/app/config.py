@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     
     # Gemini AI Settings
     GEMINI_API_KEY: str = (os.getenv("GEMINI_API_KEY") or "").strip().strip('"').strip("'")
-    GEMINI_MODEL_PRIMARY: str = os.getenv("GEMINI_MODEL_PRIMARY", "gemini-flash-latest")
+    GEMINI_MODEL_PRIMARY: str = os.getenv("GEMINI_MODEL_PRIMARY", "gemini-3.6-flash")
     GEMINI_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "15"))
 
     # Hugging Face AI Settings

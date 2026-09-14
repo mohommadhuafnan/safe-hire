@@ -31,6 +31,30 @@ const FloatingAIChatbot = () => {
   
   const clientRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const chatWindowRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  // Close chatbot window when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        isOpen &&
+        chatWindowRef.current &&
+        !chatWindowRef.current.contains(event.target) &&
+        !triggerRef.current?.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen]);
 
   const quickPrompts = [
     t('chatbot.quick_prompt_1', "🔍 How do I spot a job scam?"),
@@ -137,6 +161,7 @@ Language preference: ${i18n.language || 'en'}.`
         )}
 
         <button
+          ref={triggerRef}
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle AI Assistant Chat"
           className="w-14 h-14 rounded-full bg-indigo-600 p-0.5 shadow-2xl shadow-indigo-500/50 hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center group border border-indigo-400/40"
@@ -157,7 +182,10 @@ Language preference: ${i18n.language || 'en'}.`
 
       {/* CHAT WINDOW PANEL */}
       {isOpen && (
-        <div className="fixed bottom-24 right-4 sm:right-6 z-50 w-[92vw] sm:w-96 h-[530px] max-h-[82vh] bg-slate-950/95 border border-indigo-500/30 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-slate-950 flex flex-col overflow-hidden animate-fade-in">
+        <div
+          ref={chatWindowRef}
+          className="fixed bottom-24 right-4 sm:right-6 z-50 w-[92vw] sm:w-96 h-[530px] max-h-[82vh] bg-slate-950/95 border border-indigo-500/30 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-slate-950 flex flex-col overflow-hidden animate-fade-in"
+        >
           
           {/* HEADER */}
           <div className="p-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">

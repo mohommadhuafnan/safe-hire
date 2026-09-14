@@ -43,11 +43,12 @@ class IntakeAgent:
     """Agent 1 & Agent 2: Ingests text, image OCR, and URL; extracts metadata, contacts, language, and performs multimodal vision content classification."""
 
     GEMINI_VISION_MODELS = [
-        "gemini-2.5-flash",
+        "gemini-3.5-flash",
         "gemini-flash-latest",
-        "gemini-2.5-pro",
-        "gemini-flash-lite-latest",
+        "gemini-3.1-flash-lite-preview",
+        "gemini-3.6-flash",
         "gemini-3.7-flash",
+        "gemini-3.8-flash",
     ]
 
     FREE_EMAIL_SERVICES = {
@@ -291,8 +292,8 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                         ],
                         "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1500}
                     }
-                    headers = {"Content-Type": "application/json", "X-goog-api-key": gemini_key}
-                    res = requests.post(url, json=payload, headers=headers, timeout=6)
+                    gemini_timeout = getattr(settings, "GEMINI_TIMEOUT", 15) or 15
+                    res = requests.post(url, json=payload, headers=headers, timeout=gemini_timeout)
                     if res.status_code == 200:
                         data = res.json()
                         candidates = data.get("candidates") or []

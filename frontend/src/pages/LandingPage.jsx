@@ -92,9 +92,19 @@ const LandingPage = () => {
   // Pricing State: 'monthly' (1 Month) vs 'annual' (1 Year)
   const [billingCycle, setBillingCycle] = useState('monthly');
 
+  // Mobile breakpoint detector for carousel responsive sliding
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 768 : false));
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Instagram-Style 3-Poster Gallery Carousel State
   const [posterFilter, setPosterFilter] = useState('all');
-  const [currentPosterIndex, setCurrentPosterIndex] = useState(0);
   const [isAutoSlide, setIsAutoSlide] = useState(true);
 
   const galleryPosters = [
@@ -191,31 +201,60 @@ const LandingPage = () => {
   ];
 
   const filteredPosters = galleryPosters.filter(p => posterFilter === 'all' || p.type === posterFilter);
+  const posterCount = filteredPosters.length;
 
-  // Auto-play slider every 4 seconds
+  // Seamless infinite slow-motion carousel using 3 sets of posters
+  const [activeSlide, setActiveSlide] = useState(posterCount);
+  const [isTransitioning, setIsTransitioning] = useState(true);
+
+  // When filter changes, reset active slide smoothly to middle set
   useEffect(() => {
-    if (!isAutoSlide || filteredPosters.length === 0) return;
+    setIsTransitioning(false);
+    setActiveSlide(filteredPosters.length);
+  }, [posterFilter, filteredPosters.length]);
+
+  // Triple the posters list for infinite smooth slow-motion scrolling
+  const displayPosters = filteredPosters.length > 0 
+    ? [...filteredPosters, ...filteredPosters, ...filteredPosters] 
+    : [];
+
+  // Auto-play slider every 5.5 seconds with smooth slow-motion glide
+  useEffect(() => {
+    if (!isAutoSlide || filteredPosters.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrentPosterIndex((prev) => (prev + 1) % filteredPosters.length);
-    }, 4000);
+      setIsTransitioning(true);
+      setActiveSlide(prev => prev + 1);
+    }, 5500);
     return () => clearInterval(interval);
   }, [isAutoSlide, filteredPosters.length]);
 
   const nextPosterSlide = () => {
-    setCurrentPosterIndex((prev) => (prev + 1) % filteredPosters.length);
+    setIsTransitioning(true);
+    setActiveSlide(prev => prev + 1);
   };
 
   const prevPosterSlide = () => {
-    setCurrentPosterIndex((prev) => (prev - 1 + filteredPosters.length) % filteredPosters.length);
+    setIsTransitioning(true);
+    setActiveSlide(prev => prev - 1);
   };
 
-  const getVisiblePosters = () => {
-    if (filteredPosters.length === 0) return [];
-    if (filteredPosters.length <= 3) return filteredPosters;
-    return [0, 1, 2].map(offset => {
-      const idx = (currentPosterIndex + offset) % filteredPosters.length;
-      return filteredPosters[idx];
-    });
+  const handleSlideTransitionEnd = () => {
+    if (posterCount === 0) return;
+    if (activeSlide >= 2 * posterCount) {
+      setIsTransitioning(false);
+      setActiveSlide(activeSlide - posterCount);
+    } else if (activeSlide < posterCount) {
+      setIsTransitioning(false);
+      setActiveSlide(activeSlide + posterCount);
+    }
+  };
+
+  const handleDotClick = (targetIndex) => {
+    if (posterCount === 0) return;
+    setIsTransitioning(true);
+    const currentNorm = ((activeSlide % posterCount) + posterCount) % posterCount;
+    const diff = targetIndex - currentNorm;
+    setActiveSlide(activeSlide + diff);
   };
 
   const reviewsRow1 = [
@@ -368,23 +407,22 @@ const LandingPage = () => {
             muted
             playsInline
             preload="auto"
-            className="w-full h-full object-cover opacity-85 filter brightness-95 contrast-105 transition-opacity duration-1000"
+            className="w-full h-full object-cover opacity-100 filter brightness-105 contrast-100 transition-opacity duration-1000"
           >
             <source src={heroVideo} type="video/mp4" />
             <source src="/vedio/vedio.mp4" type="video/mp4" />
             Your browser does not support HTML5 video playback.
           </video>
 
-          {/* Semi-transparent Overlay: rgba(0, 0, 0, 0.50) & dark gradient */}
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] z-10" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/25 to-[#090d16] z-10" />
-          <div className="absolute inset-0 bg-radial-at-c from-sky-900/25 via-transparent to-black/80 z-10" />
+          {/* Balanced protective overlay: lightened so video is crystal clear while text remains sharp */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/15 to-[#090d16]/95 z-10" />
+          <div className="absolute inset-0 bg-radial-at-c from-transparent via-transparent to-black/35 z-10" />
           
           {/* Seamless Bottom Blend Gradient */}
-          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent via-[#090d16]/90 to-[#090d16] z-10 pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent via-[#090d16]/80 to-[#090d16] z-10 pointer-events-none" />
 
           {/* Cybernetic Digital Grid Effect */}
-          <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] opacity-20 z-10" />
+          <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] opacity-15 z-10" />
         </div>
 
         {/* VERTICALLY CENTERED HERO CONTENT */}
@@ -395,12 +433,12 @@ const LandingPage = () => {
             <span>{t('landing.tagline')}</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
             {t('landing.headline', 'AI-Powered Protection Against')} <br className="hidden sm:inline" />
             <span className="gradient-text">{t('landing.headline_accent', 'Recruitment & Job Scams')}</span>
           </h1>
 
-          <p className="text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed drop-shadow">
+          <p className="text-base sm:text-lg text-slate-100 max-w-3xl mx-auto leading-relaxed font-medium drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
             {t('landing.subhead')}
           </p>
 
@@ -409,7 +447,6 @@ const LandingPage = () => {
               to="/dashboard"
               className="w-full sm:w-auto px-9 py-4 rounded-xl btn-glow-blue font-extrabold text-sm text-white flex items-center justify-center space-x-2.5 shadow-xl transition duration-300"
             >
-              <Sparkles className="w-4 h-4 text-cyan-300 animate-spin" style={{ animationDuration: '4s' }} />
               <span>{t('landing.cta_analyze', 'Analyze Job Poster')}</span>
               <ArrowRight className="w-4 h-4 text-white" />
             </Link>
@@ -584,7 +621,6 @@ const LandingPage = () => {
                   to="/dashboard"
                   className="w-full py-3.5 rounded-xl btn-glow-blue font-bold text-xs text-white flex items-center justify-center space-x-2 shadow-xl transition"
                 >
-                  <Sparkles className="w-4 h-4 text-cyan-300 animate-spin" />
                   <span>{t('landing.action_btn_start', 'Start Verification Scan Now')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -786,7 +822,7 @@ const LandingPage = () => {
         <div className="flex items-center justify-between mb-6 px-2">
           <div className="text-xs font-mono text-slate-400 flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping inline-block" />
-            <span>{t('landing.gallery_viewing_simultaneous', 'Viewing 3 Posters Simultaneously')} {isAutoSlide ? t('landing.gallery_auto_slide', '(Auto-sliding active)') : t('landing.gallery_paused_hover', '(Paused on hover)')}</span>
+            <span>{t('landing.gallery_viewing_simultaneous', 'Viewing 3 Posters Simultaneously')} {isAutoSlide ? t('landing.gallery_auto_slide', '(Slow-motion auto-slide)') : t('landing.gallery_paused_hover', '(Paused on hover)')}</span>
           </div>
 
           <div className="flex items-center space-x-3">
@@ -795,9 +831,9 @@ const LandingPage = () => {
               {filteredPosters.map((_, i) => (
                 <button
                   key={i}
-                  onClick={() => setCurrentPosterIndex(i)}
+                  onClick={() => handleDotClick(i)}
                   className={`h-2 rounded-full transition-all duration-500 ${
-                    currentPosterIndex === i 
+                    ((activeSlide % posterCount) + posterCount) % posterCount === i 
                       ? 'w-7 bg-cyan-400 shadow-lg shadow-cyan-500/50' 
                       : 'w-2 bg-slate-700 hover:bg-slate-500'
                   }`}
@@ -824,85 +860,104 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* VISIBLE 3-POSTER GALLERY GRID WITH 3D CENTER FOCUS */}
+        {/* VISIBLE 3-POSTER GALLERY SLIDING TRACK WITH SLOW-MOTION 3D CENTER FOCUS */}
         <div 
           onMouseEnter={() => setIsAutoSlide(false)}
           onMouseLeave={() => setIsAutoSlide(true)}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch transition-all duration-700 ease-in-out py-2"
+          className="relative w-full overflow-hidden py-4"
         >
-          {getVisiblePosters().map((item, idx) => {
-            const isCenter = idx === 1;
-            return (
-              <div 
-                key={`${item.id}-${idx}`}
-                className={`glass-panel p-5 rounded-3xl border ${
-                  isCenter 
-                    ? 'border-cyan-400/80 shadow-2xl shadow-cyan-500/20 scale-105 z-20 bg-slate-950' 
-                    : `${item.borderClass} bg-slate-950/80 scale-95 opacity-90 hover:opacity-100 hover:scale-100`
-                } backdrop-blur-2xl relative overflow-hidden group flex flex-col justify-between transition-all duration-500 ease-out`}
-              >
-                {/* Center Focus Badge Indicator */}
-                {isCenter && (
-                  <div className="absolute top-2 left-4 z-20 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 text-[9px] font-mono uppercase tracking-widest flex items-center gap-1 shadow-md">
-                    <Sparkles className="w-3 h-3 text-cyan-400 animate-spin" style={{ animationDuration: '6s' }} />
-                    <span>{t('landing.gallery_center_focus', 'CENTER FOCUS')}</span>
-                  </div>
-                )}
-
-                {/* Top Risk Badge Pill */}
-                <div className={`absolute top-0 right-0 px-3.5 py-1.5 rounded-bl-2xl border-b border-l ${item.badgeClass} text-[11px] font-extrabold flex items-center space-x-1.5 shadow-lg backdrop-blur-md z-20`}>
-                  <span className={`w-2 h-2 rounded-full ${item.dotClass} animate-pulse`} />
-                  <span>{item.riskLevel} ({item.score})</span>
-                </div>
-
-                <div className="space-y-4">
-                  
-                  {/* Header Title */}
-                  <div className="pt-2">
-                    <h3 className={`text-base font-extrabold transition-colors tracking-tight line-clamp-1 ${isCenter ? 'text-cyan-300' : 'text-slate-100 group-hover:text-cyan-300'}`}>
-                      {item.title}
-                    </h3>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {t('landing.gallery_poster_prefix', 'Poster #')}{item.id} {t('landing.gallery_poster_of', 'of')} {galleryPosters.length}
-                    </span>
-                  </div>
-
-                  {/* Poster Image Frame */}
-                  <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-xl group-hover:shadow-cyan-500/10 transition-all duration-500">
-                    <img 
-                      src={item.image} 
-                      alt={item.title} 
-                      className="w-full h-56 object-cover object-top group-hover:scale-105 transition duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-70" />
-
-                    {/* AI Banner Overlay */}
-                    <div className="absolute bottom-2 left-2 right-2 p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl shadow-lg">
-                      <div className="text-[10px] font-bold text-sky-400 mb-0.5 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-cyan-400" />
-                        <span>{t('landing.gallery_signal_extracted', 'AI Extracted Signal:')}</span>
+          <div 
+            onTransitionEnd={handleSlideTransitionEnd}
+            className="flex items-stretch"
+            style={{
+              transform: isMobile 
+                ? `translateX(-${activeSlide * 100}%)` 
+                : `translateX(-${(activeSlide - 1) * (100 / 3)}%)`,
+              transition: isTransitioning 
+                ? 'transform 1000ms cubic-bezier(0.22, 1, 0.36, 1)' 
+                : 'none',
+              willChange: 'transform'
+            }}
+          >
+            {displayPosters.map((item, idx) => {
+              const isCenter = idx === activeSlide;
+              const posterNumber = ((idx % posterCount) + 1);
+              return (
+                <div 
+                  key={`${item.id}-${idx}`}
+                  className="w-full md:w-1/3 flex-shrink-0 px-3 box-border"
+                >
+                  <div 
+                    className={`glass-panel p-5 rounded-3xl border ${
+                      isCenter 
+                        ? 'border-cyan-400/90 shadow-2xl shadow-cyan-500/25 scale-[1.02] z-20 bg-slate-950 ring-1 ring-cyan-400/30' 
+                        : `${item.borderClass} bg-slate-950/80 scale-[0.98] opacity-85 hover:opacity-100 hover:scale-100`
+                    } backdrop-blur-2xl relative overflow-hidden group flex flex-col justify-between transition-all duration-700 ease-out h-full`}
+                  >
+                    {/* Center Focus Badge Indicator */}
+                    {isCenter && (
+                      <div className="absolute top-2 left-4 z-20 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 text-[9px] font-mono uppercase tracking-widest flex items-center gap-1 shadow-md">
+                        <Sparkles className="w-3 h-3 text-cyan-400 animate-spin" style={{ animationDuration: '6s' }} />
+                        <span>{t('landing.gallery_center_focus', 'CENTER FOCUS')}</span>
                       </div>
-                      <p className="text-[10px] text-slate-200 font-mono leading-tight line-clamp-2">
-                        {item.extractedText}
-                      </p>
+                    )}
+
+                    {/* Top Risk Badge Pill */}
+                    <div className={`absolute top-0 right-0 px-3.5 py-1.5 rounded-bl-2xl border-b border-l ${item.badgeClass} text-[11px] font-extrabold flex items-center space-x-1.5 shadow-lg backdrop-blur-md z-20`}>
+                      <span className={`w-2 h-2 rounded-full ${item.dotClass} animate-pulse`} />
+                      <span>{item.riskLevel} ({item.score})</span>
                     </div>
-                  </div>
 
-                  {/* 4-Metric Grid */}
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    {item.metrics.map((m, mIdx) => (
-                      <div key={mIdx} className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-                        <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider line-clamp-1">{m.label}</span>
-                        <span className={`font-extrabold text-[10px] mt-0.5 ${m.color || 'text-slate-200'} line-clamp-1`}>{m.val}</span>
+                    <div className="space-y-4">
+                      
+                      {/* Header Title */}
+                      <div className="pt-2">
+                        <h3 className={`text-base font-extrabold transition-colors tracking-tight line-clamp-1 ${isCenter ? 'text-cyan-300' : 'text-slate-100 group-hover:text-cyan-300'}`}>
+                          {item.title}
+                        </h3>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {t('landing.gallery_poster_prefix', 'Poster #')}{posterNumber} {t('landing.gallery_poster_of', 'of')} {posterCount}
+                        </span>
                       </div>
-                    ))}
+
+                      {/* Poster Image Frame */}
+                      <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-xl group-hover:shadow-cyan-500/10 transition-all duration-500">
+                        <img 
+                          src={item.image} 
+                          alt={item.title} 
+                          className="w-full h-56 object-cover object-top group-hover:scale-105 transition duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-70" />
+
+                        {/* AI Banner Overlay */}
+                        <div className="absolute bottom-2 left-2 right-2 p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl shadow-lg">
+                          <div className="text-[10px] font-bold text-sky-400 mb-0.5 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-cyan-400" />
+                            <span>{t('landing.gallery_signal_extracted', 'AI Extracted Signal:')}</span>
+                          </div>
+                          <p className="text-[10px] text-slate-200 font-mono leading-tight line-clamp-2">
+                            {item.extractedText}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 4-Metric Grid */}
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        {item.metrics.map((m, mIdx) => (
+                          <div key={mIdx} className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+                            <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider line-clamp-1">{m.label}</span>
+                            <span className={`font-extrabold text-[10px] mt-0.5 ${m.color || 'text-slate-200'} line-clamp-1`}>{m.val}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                    </div>
+
                   </div>
-
                 </div>
-
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
       </section>
