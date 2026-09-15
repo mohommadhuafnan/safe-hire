@@ -23,4 +23,4 @@ print("\nIP Address Safe Browsing:", sb1)
 sb2 = agent.check_safe_browsing("http://cheap-jobs.top")
 print("Suspicious TLD Safe Browsing:", sb2)
 
-print("\n✅ Verification Agent edge case tests completed successfully!")
+print("\n[OK] Verification Agent edge case tests completed successfully!")

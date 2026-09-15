@@ -26,15 +26,17 @@ async def register(user_in: UserRegister):
         "full_name": user_in.full_name,
         "institution": user_in.institution or "University Student",
         "preferred_language": user_in.preferred_language or "en",
-        "created_at": now
+        "created_at": now,
+        "first_login_at": now,
+        "last_login_at": now
     }
 
     res = await db["users"].insert_one(new_user)
     user_id = str(res.inserted_id)
 
-    # Initialize 7-Day Free Trial
+    # Initialize 7-Day Free Trial counting from registration/login timestamp
     try:
-        await PaymentService.get_or_create_subscription(user_id, new_user["email"])
+        await PaymentService.start_or_refresh_trial(user_id, new_user["email"], is_login=True)
     except Exception as sub_err:
         pass
 
@@ -79,6 +81,22 @@ async def login(user_in: UserLogin):
         )
         
     user_id = str(user["_id"])
+    
+    # Update last login timestamp in DB
+    try:
+        update_fields = {"last_login_at": now}
+        if not user.get("first_login_at"):
+            update_fields["first_login_at"] = now
+        await db["users"].update_one({"_id": user["_id"]}, {"$set": update_fields})
+    except Exception as upd_err:
+        pass
+
+    # Activate/refresh 7-Day Free Trial counting from login date
+    try:
+        await PaymentService.start_or_refresh_trial(user_id, user.get("email", ""), is_login=True)
+    except Exception as sub_err:
+        pass
+
     access_token = create_access_token(data={"sub": user_id})
 
     profile = UserProfile(
@@ -126,20 +144,35 @@ async def firebase_login(req: FirebaseLoginRequest):
                 "firebase_uid": decoded.get("uid") if decoded else None,
                 "institution": "University Student",
                 "preferred_language": "en",
-                "created_at": now
+                "created_at": now,
+                "first_login_at": now,
+                "last_login_at": now
             }
             res = await db["users"].insert_one(new_user)
             user_id = str(res.inserted_id)
             user = new_user
             user["_id"] = res.inserted_id
 
-            # Initialize 7-Day Free Trial
+            # Initialize 7-Day Free Trial counting from login date
             try:
-                await PaymentService.get_or_create_subscription(user_id, email)
+                await PaymentService.start_or_refresh_trial(user_id, email, is_login=True)
             except Exception as sub_err:
                 pass
         else:
             user_id = str(user["_id"])
+            try:
+                update_fields = {"last_login_at": now}
+                if not user.get("first_login_at"):
+                    update_fields["first_login_at"] = now
+                await db["users"].update_one({"_id": user["_id"]}, {"$set": update_fields})
+            except Exception as upd_err:
+                pass
+
+            # Refresh 7-Day Free Trial counting from login date
+            try:
+                await PaymentService.start_or_refresh_trial(user_id, email, is_login=True)
+            except Exception as sub_err:
+                pass
 
         access_token = create_access_token(data={"sub": user_id})
 

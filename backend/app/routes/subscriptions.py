@@ -71,6 +71,28 @@ async def cancel_subscription(current_user: dict = Depends(get_current_user)):
     result = await PaymentService.cancel_subscription(user_id)
     return result
 
+@router.post("/start-trial", response_model=SubscriptionResponse)
+async def start_or_refresh_free_trial(current_user: dict = Depends(get_current_user)):
+    """Start or refresh the 7-Day Free Trial counting from the user's active login date."""
+    user_id = str(current_user.get("id") or current_user.get("_id") or "")
+    user_email = current_user.get("email", "")
+    
+    sub = await PaymentService.start_or_refresh_trial(user_id, user_email, is_login=True)
+    
+    return SubscriptionResponse(
+        id=str(sub.get("_id", "")),
+        plan=sub.get("plan", "free_trial"),
+        status=sub.get("status", "active"),
+        billing_cycle=sub.get("billing_cycle", "trial"),
+        scans_limit=int(sub.get("scans_limit", 25)),
+        scans_used=int(sub.get("scans_used", 0)),
+        days_remaining=int(sub.get("days_remaining", 7)),
+        cancel_at_period_end=sub.get("cancel_at_period_end", False),
+        current_period_end=sub.get("current_period_end"),
+        trial_end=sub.get("trial_end"),
+        plan_details=sub.get("plan_details")
+    )
+
 @router.get("/check-access")
 async def check_access(
     target_language: Optional[str] = Query("en"),
@@ -79,3 +101,4 @@ async def check_access(
     """Check if the user is authorized to perform a scan in the requested language."""
     access_status = await PaymentService.check_user_access(current_user, target_language or "en")
     return access_status
+

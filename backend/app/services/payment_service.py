@@ -71,9 +71,9 @@ class PaymentService:
         return is_valid
 
     @staticmethod
-    async def get_or_create_subscription(user_id: str, user_email: str = "") -> Dict[str, Any]:
+    async def get_or_create_subscription(user_id: str, user_email: str = "", is_login: bool = False) -> Dict[str, Any]:
         """
-        Fetch the current user subscription from MongoDB or provision a 7-Day Free Trial.
+        Fetch the current user subscription from MongoDB or provision/activate a 7-Day Free Trial counting from user login date.
         """
         db = get_db()
         now = datetime.now(timezone.utc)
@@ -84,15 +84,17 @@ class PaymentService:
         if not sub and isinstance(user_id, str):
             sub = await db["subscriptions"].find_one({"user_id": str(user_id)})
 
-        if not sub:
-            # Check user doc created_at for accurate trial calculation
-            user_doc = await db["users"].find_one({"_id": user_query_id}) if ObjectId.is_valid(str(user_id)) else None
-            user_created_at = (user_doc.get("created_at") if user_doc else None) or now
-            if user_created_at.tzinfo is None:
-                user_created_at = user_created_at.replace(tzinfo=timezone.utc)
+        user_doc = await db["users"].find_one({"_id": user_query_id}) if ObjectId.is_valid(str(user_id)) else None
+        login_date = (user_doc.get("last_login_at") if user_doc else None) or (user_doc.get("first_login_at") if user_doc else None) or now
+        if login_date.tzinfo is None:
+            login_date = login_date.replace(tzinfo=timezone.utc)
 
-            trial_days = PLANS["free_trial"]["duration_days"]
-            trial_end = user_created_at + timedelta(days=trial_days)
+        trial_days = PLANS["free_trial"]["duration_days"]
+
+        if not sub:
+            # Provision new 7-Day Free Trial starting from user's login date
+            trial_start = login_date
+            trial_end = trial_start + timedelta(days=trial_days)
 
             sub = {
                 "user_id": user_query_id,
@@ -102,9 +104,9 @@ class PaymentService:
                 "billing_cycle": "trial",
                 "scans_limit": PLANS["free_trial"]["scans_limit"],
                 "scans_used": 0,
-                "trial_start": user_created_at,
+                "trial_start": trial_start,
                 "trial_end": trial_end,
-                "current_period_start": user_created_at,
+                "current_period_start": trial_start,
                 "current_period_end": trial_end,
                 "cancel_at_period_end": False,
                 "created_at": now,
@@ -115,6 +117,52 @@ class PaymentService:
                 sub["_id"] = res.inserted_id
             except Exception as e:
                 logger.error(f"Error provisioning trial subscription: {e}")
+        else:
+            # If user is on free_trial and logging in or was previously set with old timestamps
+            plan_id = sub.get("plan", "free_trial")
+            if plan_id == "free_trial":
+                existing_start = sub.get("trial_start")
+                existing_end = sub.get("trial_end") or sub.get("current_period_end")
+                if existing_end and isinstance(existing_end, datetime) and existing_end.tzinfo is None:
+                    existing_end = existing_end.replace(tzinfo=timezone.utc)
+                if existing_start and isinstance(existing_start, datetime) and existing_start.tzinfo is None:
+                    existing_start = existing_start.replace(tzinfo=timezone.utc)
+
+                # If is_login or trial was initialized before the user actually logged in to use it:
+                # Refresh the 7-day window from user's login date if within scan quota
+                scans_used = int(sub.get("scans_used", 0))
+                scans_limit = int(sub.get("scans_limit", 25))
+
+                should_refresh_trial = (
+                    is_login or 
+                    not existing_start or 
+                    (existing_end and now > existing_end and scans_used < scans_limit)
+                )
+
+                if should_refresh_trial:
+                    trial_start = now if is_login or (existing_end and now > existing_end) else (existing_start or now)
+                    trial_end = trial_start + timedelta(days=trial_days)
+                    sub["status"] = "active" if (now <= trial_end and scans_used < scans_limit) else "expired"
+                    sub["trial_start"] = trial_start
+                    sub["trial_end"] = trial_end
+                    sub["current_period_start"] = trial_start
+                    sub["current_period_end"] = trial_end
+                    try:
+                        await db["subscriptions"].update_one(
+                            {"_id": sub["_id"]},
+                            {
+                                "$set": {
+                                    "status": sub["status"],
+                                    "trial_start": trial_start,
+                                    "trial_end": trial_end,
+                                    "current_period_start": trial_start,
+                                    "current_period_end": trial_end,
+                                    "updated_at": now
+                                }
+                            }
+                        )
+                    except Exception as update_err:
+                        logger.warning(f"Failed updating refreshed trial: {update_err}")
 
         # Check for expiry on trial or recurring periods
         plan_id = sub.get("plan", "free_trial")
@@ -137,16 +185,26 @@ class PaymentService:
         sub["plan_details"] = plan_meta
         sub["id"] = str(sub.get("_id", ""))
         
-        # Calculate days remaining
+        # Calculate days remaining (e.g. today is Day 1 -> 7 days remaining)
         days_left = 0
         if period_end and isinstance(period_end, datetime):
             if period_end.tzinfo is None:
                 period_end = period_end.replace(tzinfo=timezone.utc)
             diff = period_end - now
-            days_left = max(0, diff.days + (1 if diff.seconds > 0 else 0))
+            if diff.total_seconds() > 0:
+                days_left = (int(diff.total_seconds() - 1) // 86400) + 1
+            else:
+                days_left = 0
         sub["days_remaining"] = days_left
 
         return sub
+
+    @staticmethod
+    async def start_or_refresh_trial(user_id: str, user_email: str = "", is_login: bool = True) -> Dict[str, Any]:
+        """
+        Activates or resets the 7-Day Free Trial counting from the user's login date.
+        """
+        return await PaymentService.get_or_create_subscription(user_id, user_email, is_login=is_login)
 
     @staticmethod
     async def check_user_access(user: dict, target_language: str = "en") -> Dict[str, Any]:

@@ -68,6 +68,12 @@ export const paymentService = {
   async cancelSubscription() {
     const res = await api.post('/api/subscriptions/cancel');
     return res.data;
+  },
+
+  // Start or refresh free trial from login date
+  async startTrial() {
+    const res = await api.post('/api/subscriptions/start-trial');
+    return res.data;
   }
 };
 
