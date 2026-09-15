@@ -80,11 +80,19 @@ class AgentPipeline:
         extracted_invalid_phones = (intake_res.get("metadata_extracted") or {}).get("invalid_phones", [])
         verification_res = self.verification_agent.verify(
             text=cleaned_text,
-            domain=domain,
+            domain=intake_res.get("primary_domain") or intake_res.get("domain") or domain,
             claimed_brand=claimed_brand,
             emails=extracted_emails,
             phones=extracted_phones,
-            invalid_phones=extracted_invalid_phones
+            invalid_phones=extracted_invalid_phones,
+            domain_source=intake_res.get("domain_source", "none"),
+            domain_source_label=intake_res.get("domain_source_label", "No Domain Found"),
+            domain_source_priority=intake_res.get("domain_source_priority", 5),
+            is_social_wrapper=intake_res.get("is_social_wrapper", False),
+            social_platform=intake_res.get("social_platform"),
+            redirect_chain=intake_res.get("redirect_chain", []),
+            resolved_url=intake_res.get("resolved_url", ""),
+            submitted_url=input_url or intake_res.get("submitted_url", "")
         ) or {}
         logger.info(f"[{request_id}] Stage 3 COMPLETE: domain={verification_res.get('domain')}, trust_score={verification_res.get('verification_trust_score')}")
 
@@ -165,7 +173,15 @@ class AgentPipeline:
             "explanation_text": explanation_text,
             "verified_facts": reasoning_res.get("verified_facts") or intake_res.get("verified_facts") or [],
             "ai_inferences": reasoning_res.get("ai_inferences") or [],
-            "input_url": input_url or intake_res.get("domain") or ""
+            "input_url": input_url or intake_res.get("submitted_url") or intake_res.get("domain") or "",
+            "primary_domain": verification_res.get("primary_domain") or intake_res.get("primary_domain") or "",
+            "domain_source": verification_res.get("domain_source") or intake_res.get("domain_source") or "",
+            "domain_source_label": verification_res.get("domain_source_label") or intake_res.get("domain_source_label") or "",
+            "domain_source_priority": verification_res.get("domain_source_priority") or intake_res.get("domain_source_priority") or 5,
+            "is_social_wrapper": verification_res.get("is_social_wrapper") or intake_res.get("is_social_wrapper") or False,
+            "social_platform": verification_res.get("social_platform") or intake_res.get("social_platform"),
+            "resolved_url": verification_res.get("resolved_url") or intake_res.get("resolved_url") or input_url,
+            "redirect_chain": verification_res.get("redirect_chain") or intake_res.get("redirect_chain") or []
         }
 
 pipeline_runner = AgentPipeline()

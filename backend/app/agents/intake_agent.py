@@ -4,8 +4,9 @@ import requests
 import json
 import base64
 from bs4 import BeautifulSoup
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from app.config import settings
+from app.services.url_resolver import URLResolver
 
 try:
     import pytesseract
@@ -442,31 +443,48 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
 
     @staticmethod
     def extract_text_from_url(url: str) -> dict:
-        """Deep scrape webpage content, domain metadata, and title from URL."""
+        """Deep scrape webpage content, domain metadata, title, and follow shorteners/redirects from URL."""
         if not url:
-            return {"text": "", "domain": "", "status": "none", "title": ""}
+            return {
+                "text": "",
+                "domain": "",
+                "root_domain": "",
+                "status": "none",
+                "title": "",
+                "resolved_url": "",
+                "redirect_chain": [],
+                "social_platform": None,
+                "domain_category": "UNKNOWN",
+                "embedded_employer_links": []
+            }
 
-        url_clean = url.strip()
-        if not url_clean.startswith("http://") and not url_clean.startswith("https://"):
-            url_clean = "https://" + url_clean
+        # Safe shortener expansion & redirect resolution
+        resolution = URLResolver.resolve_url(url)
+        target_url = resolution.get("final_url") or url.strip()
+        if not target_url.startswith("http://") and not target_url.startswith("https://"):
+            target_url = "https://" + target_url
 
-        domain = ""
-        try:
-            from urllib.parse import urlparse
-            parsed = urlparse(url_clean)
-            domain = parsed.netloc.split(":")[0]
-            if domain.startswith("www."):
-                domain = domain[4:]
-        except Exception:
-            pass
+        domain = resolution.get("final_domain") or URLResolver.clean_domain_string(target_url)
+        root_domain = resolution.get("root_domain") or URLResolver.extract_root_domain(domain)
+        embedded_links = []
 
         try:
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) SAFE-HIRE/1.0 AI Scam Verification Engine"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 SAFE-HIRE/1.0 AI Scam Verification Engine"
             }
-            response = requests.get(url_clean, headers=headers, timeout=12)
+            response = requests.get(target_url, headers=headers, timeout=12)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, "html.parser")
+
+                # Extract potential employer application domains linked from the page
+                for a_tag in soup.find_all("a", href=True):
+                    href = a_tag["href"].strip()
+                    if href.startswith("http") and not any(s in href.lower() for s in ["linkedin.com", "facebook.com", "twitter.com", "instagram.com", "t.me", "whatsapp.com", "youtube.com"]):
+                        clean_href_dom = URLResolver.clean_domain_string(href)
+                        if clean_href_dom and URLResolver.classify_domain(clean_href_dom) == "EMPLOYER_DOMAIN":
+                            if clean_href_dom not in embedded_links:
+                                embedded_links.append(clean_href_dom)
+
                 for element in soup(["script", "style", "nav", "footer", "header", "noscript"]):
                     element.extract()
                 text = soup.get_text(separator=" ", strip=True)
@@ -481,17 +499,29 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                 return {
                     "text": combined_content,
                     "domain": domain,
+                    "root_domain": root_domain,
                     "status": "success",
-                    "title": title
+                    "title": title,
+                    "resolved_url": target_url,
+                    "redirect_chain": resolution.get("redirect_chain", [url]),
+                    "social_platform": resolution.get("social_platform"),
+                    "domain_category": resolution.get("domain_category"),
+                    "embedded_employer_links": embedded_links[:5]
                 }
         except Exception as e:
-            logger.warning(f"URL deep scraping notice for {url_clean}: {e}")
+            logger.warning(f"URL deep scraping notice for {target_url}: {e}")
 
         return {
-            "text": f"Target Web Portal: {url_clean}. Domain: {domain}",
+            "text": f"Target Web Portal: {target_url}. Domain: {domain}",
             "domain": domain,
+            "root_domain": root_domain,
             "status": "partial",
-            "title": domain
+            "title": domain,
+            "resolved_url": target_url,
+            "redirect_chain": resolution.get("redirect_chain", [url]),
+            "social_platform": resolution.get("social_platform"),
+            "domain_category": resolution.get("domain_category"),
+            "embedded_employer_links": []
         }
 
     @staticmethod
@@ -533,7 +563,6 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
     def process(self, input_text: str = "", image_bytes: bytes = None, filename: str = "", input_url: str = "", target_language: str = None) -> dict:
         combined_text = ""
         source = "text"
-        extracted_domain = ""
         ocr_extracted_text = ""
         ocr_status = "NOT_APPLICABLE"
         claimed_brand = ""
@@ -610,12 +639,38 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                 if poster_summary:
                     combined_text += f"Visual Summary: {poster_summary}\n"
 
+        # Candidate domain lists for 4-tier selection
+        poster_domains = []
+        text_domains = []
+        url_resolved_domain = ""
+        resolved_url = ""
+        redirect_chain = []
+        url_social_platform = None
+        url_embedded_domains = []
+
         if input_url and input_url.strip():
             url_res = self.extract_text_from_url(input_url.strip())
             combined_text += f"\n{url_res['text']}\n"
-            if url_res.get("domain") and url_res["domain"].lower() not in self.FREE_EMAIL_SERVICES:
-                extracted_domain = url_res["domain"].lower()
+            url_resolved_domain = url_res.get("root_domain") or url_res.get("domain") or ""
+            resolved_url = url_res.get("resolved_url") or input_url.strip()
+            redirect_chain = url_res.get("redirect_chain") or [input_url.strip()]
+            url_social_platform = url_res.get("social_platform")
+            url_embedded_domains = url_res.get("embedded_employer_links") or []
             source = "url" if not input_text and not image_bytes else "mixed"
+
+        # Collect Priority 1: Poster Domains (from Vision AI website/QR and OCR)
+        if isinstance(vision_res, dict):
+            if vision_res.get("website"):
+                poster_domains.append(vision_res["website"])
+            if vision_res.get("qrCode"):
+                poster_domains.append(vision_res["qrCode"])
+            if vision_res.get("company_website"):
+                poster_domains.append(vision_res["company_website"])
+        if ocr_extracted_text:
+            ocr_urls = re.findall(r'https?://[^\s"\'<>]+', ocr_extracted_text)
+            ocr_wwws = re.findall(r'\bwww\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b', ocr_extracted_text, re.IGNORECASE)
+            poster_domains.extend(ocr_urls)
+            poster_domains.extend(ocr_wwws)
 
         # Regex Extraction of metadata entities
         emails_found = list(set(re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', combined_text)))
@@ -648,49 +703,40 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
             if vision_res.get("website") and vision_res.get("website") not in urls_found:
                 urls_found.append(vision_res.get("website"))
 
-        # Domain extraction (exhaustively checking URLs, website fields, domain patterns, and corporate emails)
-        if not extracted_domain and isinstance(vision_res, dict) and vision_res.get("website"):
-            v_site = vision_res.get("website", "").strip().lower()
-            v_site = re.sub(r'^https?://', '', v_site).split('/')[0].split(':')[0]
-            if v_site.startswith("www."):
-                v_site = v_site[4:]
-            if "." in v_site and v_site not in self.FREE_EMAIL_SERVICES:
-                extracted_domain = v_site
+        # Collect Priority 2: Text Domains
+        text_domains.extend(urls_found)
+        text_domains.extend(url_embedded_domains)
+        dom_matches = re.findall(r'\b[a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev|info|co\.uk|ac\.lk|gov\.lk|com\.lk)\b', combined_text, re.IGNORECASE)
+        ignored_exts = {'.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx', '.webp', '.gif', '.mp4'}
+        for dm in dom_matches:
+            if not any(dm.lower().endswith(ext) for ext in ignored_exts):
+                text_domains.append(dm)
 
-        if not extracted_domain and urls_found:
-            for raw_u in urls_found:
-                try:
-                    from urllib.parse import urlparse
-                    parsed_u = urlparse(raw_u if raw_u.startswith("http") else f"https://{raw_u}")
-                    u_domain = parsed_u.netloc.split(':')[0] if parsed_u.netloc else parsed_u.path.split('/')[0]
-                    if u_domain.startswith("www."):
-                        u_domain = u_domain[4:]
-                    if u_domain and "." in u_domain and u_domain.lower() not in self.FREE_EMAIL_SERVICES:
-                        extracted_domain = u_domain.lower()
-                        break
-                except Exception:
-                    continue
-
-        if not extracted_domain:
-            # Common domain regex in text (e.g. dialog.lk, virtusa.com)
-            dom_matches = re.findall(r'\b[a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev|info|co\.uk|ac\.lk|gov\.lk|com\.lk)\b', combined_text, re.IGNORECASE)
-            ignored_exts = {'.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx', '.webp', '.gif', '.mp4'}
-            for dm in dom_matches:
-                dm_lower = dm.lower()
-                if any(dm_lower.endswith(ext) for ext in ignored_exts):
-                    continue
-                if dm_lower not in self.FREE_EMAIL_SERVICES and '.' in dm_lower:
-                    extracted_domain = dm_lower
+        # Corporate email domain (Priority 3b)
+        corporate_email_domain = ""
+        for em in emails_found:
+            if "@" in em:
+                e_dom = em.split('@')[-1].lower().strip()
+                if URLResolver.classify_domain(e_dom) == "EMPLOYER_DOMAIN":
+                    corporate_email_domain = e_dom
                     break
 
-        # Fallback to corporate email domain (strictly excluding free consumer webmail)
-        if not extracted_domain and emails_found:
-            for em in emails_found:
-                if "@" in em:
-                    e_dom = em.split('@')[-1].lower().strip()
-                    if e_dom and "." in e_dom and e_dom not in self.FREE_EMAIL_SERVICES:
-                        extracted_domain = e_dom
-                        break
+        # Select Primary Employer Domain via 4-Tier Hierarchy
+        domain_selection = URLResolver.select_primary_employer_domain(
+            poster_domains=poster_domains,
+            text_domains=text_domains,
+            resolved_domain=url_resolved_domain,
+            email_domain=corporate_email_domain,
+            submitted_domain=input_url,
+            claimed_brand=claimed_brand
+        )
+
+        extracted_domain = domain_selection["primary_domain"]
+        domain_source = domain_selection["domain_source"]
+        domain_source_label = domain_selection["domain_source_label"]
+        domain_source_priority = domain_selection["domain_source_priority"]
+        is_social_wrapper = domain_selection.get("is_social_wrapper", False)
+        social_platform = domain_selection.get("social_platform") or url_social_platform
 
         detected_lang = self.detect_language(combined_text)
         final_lang = target_language if (target_language and target_language in ["en", "si", "ta", "hi", "bn"]) else detected_lang
@@ -740,8 +786,16 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
             verified_facts.append(f"Observed contact email: {emails_found[0]}")
         if urls_found:
             verified_facts.append(f"Observed web link: {urls_found[0]}")
+        
         if extracted_domain:
-            verified_facts.append(f"Associated company domain: {extracted_domain}")
+            if is_social_wrapper:
+                verified_facts.append(f"Submitted link platform: {extracted_domain} ({social_platform or 'Social Platform'}) — Note: Job post wrapper, not employer domain.")
+            else:
+                verified_facts.append(f"Identified Employer Domain: {extracted_domain} (Source: {domain_source_label})")
+
+        if redirect_chain and len(redirect_chain) > 1:
+            verified_facts.append(f"Resolved redirect destination: {resolved_url} (Expanded from {input_url})")
+
         if valid_phones:
             verified_facts.append(f"Observed contact telephone: {valid_phones[0]}")
         elif invalid_phones:
@@ -760,6 +814,17 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
             "claimed_brand": claimed_brand,
             "source": source,
             "domain": extracted_domain,
+            "primary_domain": extracted_domain,
+            "full_hostname": domain_selection.get("full_hostname") or extracted_domain,
+            "domain_source": domain_source,
+            "domain_source_label": domain_source_label,
+            "domain_source_priority": domain_source_priority,
+            "domain_category": domain_selection.get("domain_category", "UNKNOWN"),
+            "is_social_wrapper": is_social_wrapper,
+            "social_platform": social_platform,
+            "submitted_url": input_url,
+            "resolved_url": resolved_url or input_url,
+            "redirect_chain": redirect_chain,
             "detected_language": detected_lang,
             "final_language": final_lang,
             "validation_error": validation_error,

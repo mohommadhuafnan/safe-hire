@@ -263,10 +263,29 @@ class GeminiAPIClient {
         });
     }
 
+    static formatDomainAge(ageDays) {
+        if (ageDays === null || ageDays === undefined || isNaN(ageDays) || ageDays < 0) return "Unavailable";
+        if (ageDays === 0) return "Less than 1 day";
+        if (ageDays < 30) return `${ageDays} ${ageDays === 1 ? 'day' : 'days'}`;
+        if (ageDays < 365) {
+            const months = Math.floor(ageDays / 30);
+            const days = ageDays % 30;
+            return days > 0 ? `${months} ${months === 1 ? 'month' : 'months'} ${days} ${days === 1 ? 'day' : 'days'}` : `${months} ${months === 1 ? 'month' : 'months'}`;
+        }
+        const years = Math.floor(ageDays / 365);
+        const remDays = ageDays % 365;
+        const months = Math.floor(remDays / 30);
+        return months > 0 ? `${years} ${years === 1 ? 'year' : 'years'} ${months} ${months === 1 ? 'month' : 'months'}` : `${years} ${years === 1 ? 'year' : 'years'}`;
+    }
+
     static cleanDomain(str) {
         if (!str) return "";
-        const freeWebmail = ["gmail.com", "googlemail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com", "aol.com", "mail.com"];
+        const freeWebmail = ["gmail.com", "googlemail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com", "aol.com", "mail.com", "proton.me", "protonmail.com"];
         let clean = String(str).trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].split('?')[0].split(':')[0];
+        if (clean.includes('@')) {
+            clean = clean.split('@').pop() || '';
+        }
+        clean = clean.replace(/[.,;:()[\]{}'"]+$/, '').trim();
         if (clean && clean.includes('.') && !freeWebmail.includes(clean)) {
             return clean;
         }
@@ -303,6 +322,7 @@ class GeminiAPIClient {
                         const regDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                         const years = Math.floor(regDays / 365);
                         const isNew = regDays < 90;
+                        const ageFmt = GeminiAPIClient.formatDomainAge(regDays);
                         const registrar = w.registrar || "ICANN Accredited Registrar";
                         return {
                             status: isNew ? 'suspicious' : 'verified',
@@ -310,9 +330,10 @@ class GeminiAPIClient {
                             creation_date: creationStr,
                             registered_days: regDays,
                             domain_years: years,
+                            domain_age_formatted: ageFmt,
                             is_new_domain: isNew,
                             registrar: registrar,
-                            whois_status: isNew ? `⚠️ HIGH RISK DOMAIN: Created ${regDays} days ago (< 90 days) • ${registrar}` : `ESTABLISHED DOMAIN: ${years}+ Yrs Old (${regDays} days) • ${registrar}`,
+                            whois_status: isNew ? `⚠️ HIGH RISK DOMAIN: Created ${ageFmt} ago (< 90 days) • ${registrar}` : `ESTABLISHED DOMAIN: ${ageFmt} Old • ${registrar}`,
                             api_verified: true
                         };
                     }
@@ -332,9 +353,9 @@ class GeminiAPIClient {
                 for (const ev of events) {
                     if (ev.eventAction === 'registration') creationStr = ev.eventDate;
                 }
-                let regDays = 365;
+                let regDays = null;
                 let isNew = false;
-                let years = 1;
+                let years = null;
                 if (creationStr) {
                     const diffMs = Date.now() - new Date(creationStr).getTime();
                     regDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
@@ -353,15 +374,17 @@ class GeminiAPIClient {
                         }
                     }
                 }
+                const ageFmt = GeminiAPIClient.formatDomainAge(regDays);
                 return {
                     status: isNew ? 'suspicious' : 'verified',
                     domain: targetDomain,
                     creation_date: creationStr,
                     registered_days: regDays,
                     domain_years: years,
+                    domain_age_formatted: ageFmt,
                     is_new_domain: isNew,
                     registrar: registrar,
-                    whois_status: isNew ? `⚠️ HIGH RISK DOMAIN: Created ${regDays} days ago (< 90 days) • ${registrar}` : `ESTABLISHED DOMAIN: ${years}+ Yrs Old (${regDays} days) • ${registrar}`,
+                    whois_status: isNew ? `⚠️ HIGH RISK DOMAIN: Created ${ageFmt} ago (< 90 days) • ${registrar}` : `ESTABLISHED DOMAIN: ${ageFmt} Old • ${registrar}`,
                     api_verified: true
                 };
             }
@@ -369,7 +392,7 @@ class GeminiAPIClient {
             console.warn("Client RDAP lookup notice:", e);
         }
 
-        // 2. Secondary: Certificate Transparency Logs via CertSpotter (works globally for .lk and ccTLDs with CORS)
+        // 3. Tertiary: Certificate Transparency Logs via CertSpotter
         try {
             const csRes = await fetch(`https://api.certspotter.com/v1/issuances?domain=${encodeURIComponent(targetDomain)}&include_subdomains=true&expand=dns_names`);
             if (csRes.ok) {
@@ -390,6 +413,7 @@ class GeminiAPIClient {
                         const regDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                         const years = Math.floor(regDays / 365);
                         const isNew = regDays < 90;
+                        const ageFmt = GeminiAPIClient.formatDomainAge(regDays);
                         const registrar = "Certificate Transparency & Registry Verified";
                         return {
                             status: isNew ? 'suspicious' : 'verified',
@@ -397,9 +421,10 @@ class GeminiAPIClient {
                             creation_date: new Date(earliestTs).toISOString(),
                             registered_days: regDays,
                             domain_years: years,
+                            domain_age_formatted: ageFmt,
                             is_new_domain: isNew,
                             registrar: registrar,
-                            whois_status: isNew ? `⚠️ HIGH RISK DOMAIN: Created ${regDays} days ago (< 90 days) • ${registrar}` : `ESTABLISHED DOMAIN: ${years}+ Yrs Old (${regDays} days) • ${registrar}`,
+                            whois_status: isNew ? `⚠️ HIGH RISK DOMAIN: Created ${ageFmt} ago (< 90 days) • ${registrar}` : `ESTABLISHED DOMAIN: ${ageFmt} Active • ${registrar}`,
                             api_verified: true
                         };
                     }
@@ -410,15 +435,16 @@ class GeminiAPIClient {
         }
 
         return {
-            status: "verified",
+            status: "unavailable",
             domain: targetDomain,
-            creation_date: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
-            registered_days: 180,
-            domain_years: 0,
+            creation_date: "N/A",
+            registered_days: null,
+            domain_years: null,
+            domain_age_formatted: "Unavailable",
             is_new_domain: false,
-            registrar: "Domain Registry Verified",
-            whois_status: "ESTABLISHED DOMAIN: Active Record • DNS & Registry Verified",
-            api_verified: true
+            registrar: "Domain Registry",
+            whois_status: "Public registration data unavailable for this domain",
+            api_verified: false
         };
     }
 

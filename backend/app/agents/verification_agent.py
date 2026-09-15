@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone, date, timedelta
 from app.config import settings
+from app.services.url_resolver import URLResolver
 
 logger = logging.getLogger("safe_hire.verification_agent")
 
@@ -43,19 +44,7 @@ class VerificationAgent:
 
     def extract_root_domain(self, domain: str) -> str:
         """Extracts the registrable root domain (e.g. careers.google.com -> google.com, jobs.bbc.co.uk -> bbc.co.uk)."""
-        if not domain or '.' not in domain:
-            return domain or ""
-        parts = domain.lower().split('.')
-        two_part_tlds = {
-            'co.uk', 'gov.uk', 'ac.uk', 'org.uk', 'co.in', 'gov.in', 'ac.in', 'edu.in',
-            'ac.lk', 'edu.lk', 'gov.lk', 'com.lk', 'org.lk', 'co.nz', 'com.au', 'com.bd', 'ac.bd'
-        }
-        if len(parts) >= 3:
-            last_two = f"{parts[-2]}.{parts[-1]}"
-            if last_two in two_part_tlds:
-                return '.'.join(parts[-3:])
-            return '.'.join(parts[-2:])
-        return domain
+        return URLResolver.extract_root_domain(domain)
 
     def query_apilayer_whois(self, domain: str) -> Optional[Dict[str, Any]]:
         """Query APILayer WHOIS API for live domain creation date, expiration, registrar, and fake URL analysis."""
@@ -63,7 +52,6 @@ class VerificationAgent:
         if not api_key or not domain:
             return None
 
-        # Check target domain, and if it has a subdomain, try root domain as fallback
         domains_to_try = [domain]
         root_dom = self.extract_root_domain(domain)
         if root_dom and root_dom != domain:
@@ -132,10 +120,11 @@ class VerificationAgent:
                         is_fake_risk = True
                         fake_url_reasons.append(f"Suspicious Extension: Domain uses '{domain.split('.')[-1]}' extension.")
 
+                    age_formatted = URLResolver.format_domain_age(age_days)
                     status_text = (
-                        f"⚠️ HIGH RISK DOMAIN: Created {age_days} days ago (< 90 days) • {registrar}"
+                        f"⚠️ HIGH RISK DOMAIN: Created {age_formatted} ago (< 90 days) • {registrar}"
                         if is_fake_risk else
-                        f"ESTABLISHED DOMAIN: {years or 1}+ Yrs Old ({age_days or 365} days) • {registrar}"
+                        f"ESTABLISHED DOMAIN: {age_formatted} Old • {registrar}"
                     )
 
                     return {
@@ -147,6 +136,7 @@ class VerificationAgent:
                         "name_servers": name_servers,
                         "registered_days": age_days,
                         "domain_years": years,
+                        "domain_age_formatted": age_formatted,
                         "expiration_days_remaining": exp_days,
                         "is_new_domain": is_new,
                         "is_fake_url_risk": is_fake_risk,
@@ -211,10 +201,11 @@ class VerificationAgent:
                                         registrar = item[3]
                                         break
 
+                    age_formatted = URLResolver.format_domain_age(age_days)
                     status_text = (
-                        f"⚠️ HIGH RISK DOMAIN: Created {age_days} days ago (< 90 days) • {registrar}"
+                        f"⚠️ HIGH RISK DOMAIN: Created {age_formatted} ago (< 90 days) • {registrar}"
                         if is_new else
-                        f"ESTABLISHED DOMAIN: {years or 1}+ Yrs Old ({age_days or 365} days) • {registrar}"
+                        f"ESTABLISHED DOMAIN: {age_formatted} Old • {registrar}"
                     )
 
                     return {
@@ -225,6 +216,7 @@ class VerificationAgent:
                         "registrar": registrar,
                         "registered_days": age_days,
                         "domain_years": years,
+                        "domain_age_formatted": age_formatted,
                         "is_new_domain": is_new,
                         "is_fake_url_risk": is_new,
                         "whois_status": status_text,
@@ -264,10 +256,11 @@ class VerificationAgent:
                         age_days = max(0, (now - earliest_dt).days)
                         years = age_days // 365
                         is_new = age_days < 90
+                        age_formatted = URLResolver.format_domain_age(age_days)
                         status_text = (
-                            f"⚠️ HIGH RISK / NEW DOMAIN: Registered {age_days} Days Ago (< 90 Days) • Certificate Transparency Log"
+                            f"⚠️ HIGH RISK / NEW DOMAIN: Registered {age_formatted} Ago (< 90 Days) • Certificate Transparency Log"
                             if is_new else
-                            f"ESTABLISHED DOMAIN: {years or 1}+ Yrs Old ({age_days} Days Active) • Certificate Transparency Log"
+                            f"ESTABLISHED DOMAIN: {age_formatted} Active • Certificate Transparency Log"
                         )
                         return {
                             "status": "suspicious" if is_new else "verified",
@@ -276,6 +269,7 @@ class VerificationAgent:
                             "registrar": "Certificate Transparency & Registry Verified",
                             "registered_days": age_days,
                             "domain_years": years,
+                            "domain_age_formatted": age_formatted,
                             "is_new_domain": is_new,
                             "is_fake_url_risk": is_new,
                             "whois_status": status_text,
@@ -303,10 +297,11 @@ class VerificationAgent:
                     age_days = max(0, (now - dt).days)
                     years = age_days // 365
                     is_new = age_days < 90
+                    age_formatted = URLResolver.format_domain_age(age_days)
                     status_text = (
-                        f"⚠️ HIGH RISK / NEW DOMAIN: First Recorded {age_days} Days Ago (< 90 Days) • Internet Archive CDX"
+                        f"⚠️ HIGH RISK / NEW DOMAIN: First Recorded {age_formatted} Ago (< 90 Days) • Internet Archive CDX"
                         if is_new else
-                        f"ESTABLISHED DOMAIN: {years or 1}+ Yrs Old ({age_days} Days Active) • Internet Archive CDX"
+                        f"ESTABLISHED DOMAIN: {age_formatted} Active • Internet Archive CDX"
                     )
                     return {
                         "status": "suspicious" if is_new else "verified",
@@ -315,6 +310,7 @@ class VerificationAgent:
                         "registrar": "Internet Archive Historical Record",
                         "registered_days": age_days,
                         "domain_years": years,
+                        "domain_age_formatted": age_formatted,
                         "is_new_domain": is_new,
                         "is_fake_url_risk": is_new,
                         "whois_status": status_text,
@@ -354,10 +350,11 @@ class VerificationAgent:
                         age_days = max(0, (now - dt).days)
                         years = age_days // 365
                         is_new = age_days < 90
+                        age_formatted = URLResolver.format_domain_age(age_days)
                         status_text = (
-                            f"⚠️ NEW TLS RECORD: Active {age_days} Days (< 90 Days) • {issuer_name}"
+                            f"⚠️ NEW TLS RECORD: Active {age_formatted} (< 90 Days) • {issuer_name}"
                             if is_new else
-                            f"ACTIVE VERIFIED DOMAIN: {years or 1}+ Yrs ({age_days} Days TLS History) • {issuer_name}"
+                            f"ACTIVE VERIFIED DOMAIN: {age_formatted} TLS History • {issuer_name}"
                         )
                         return {
                             "status": "suspicious" if is_new else "verified",
@@ -367,6 +364,7 @@ class VerificationAgent:
                             "registrar": issuer_name,
                             "registered_days": age_days,
                             "domain_years": years,
+                            "domain_age_formatted": age_formatted,
                             "is_new_domain": is_new,
                             "is_fake_url_risk": is_new,
                             "whois_status": status_text,
@@ -385,6 +383,7 @@ class VerificationAgent:
                 "domain": "N/A",
                 "registered_days": None,
                 "domain_years": None,
+                "domain_age_formatted": "Unavailable",
                 "is_new_domain": False,
                 "whois_status": "No Domain Provided",
                 "api_verified": False
@@ -446,8 +445,9 @@ class VerificationAgent:
                     age_days = max(0, (now - creation_date).days)
                     is_new = age_days < 90
                     years = age_days // 365
+                    age_formatted = URLResolver.format_domain_age(age_days)
                     registrar = getattr(w, 'registrar', None) or "ICANN Accredited Registrar"
-                    status_text = f"Registered < 90 Days Ago ({age_days} days) • {registrar}" if is_new else f"Established Domain: {years or 1}+ Yrs Old ({age_days} days) • {registrar}"
+                    status_text = f"Registered < 90 Days Ago ({age_formatted}) • {registrar}" if is_new else f"Established Domain: {age_formatted} Old • {registrar}"
                     
                     return {
                         "status": "suspicious" if is_new else "verified",
@@ -456,6 +456,7 @@ class VerificationAgent:
                         "registrar": registrar,
                         "registered_days": age_days,
                         "domain_years": years,
+                        "domain_age_formatted": age_formatted,
                         "is_new_domain": is_new,
                         "whois_status": status_text,
                         "api_verified": True
@@ -480,11 +481,12 @@ class VerificationAgent:
             return {
                 "status": "suspicious",
                 "domain": domain_clean,
-                "creation_date": (now_utc - timedelta(days=15)).isoformat(),
+                "creation_date": "N/A",
                 "registered_days": 15,
                 "domain_years": 0,
+                "domain_age_formatted": "Unavailable (< 90 Days High Risk TLD)",
                 "is_new_domain": True,
-                "whois_status": "Suspicious TLD Extension (.xyz/.top/.site/etc.) — High Risk",
+                "whois_status": f"Suspicious TLD Extension ({domain_clean.split('.')[-1]}) — High Risk",
                 "api_verified": False
             }
 
@@ -492,11 +494,12 @@ class VerificationAgent:
             return {
                 "status": "verified",
                 "domain": domain_clean,
-                "creation_date": (now_utc - timedelta(days=1825)).isoformat(),
-                "registered_days": 1825,
-                "domain_years": 5,
+                "creation_date": "N/A",
+                "registered_days": None,
+                "domain_years": None,
+                "domain_age_formatted": "Institutional Domain (Active DNS)",
                 "is_new_domain": False,
-                "whois_status": f"Active Established Institutional Domain ({domain_clean}) • DNS Verified",
+                "whois_status": f"Active Official Institutional Domain ({domain_clean}) • DNS Verified",
                 "api_verified": True
             }
 
@@ -504,12 +507,13 @@ class VerificationAgent:
             return {
                 "status": "verified",
                 "domain": domain_clean,
-                "creation_date": (now_utc - timedelta(days=180)).isoformat(),
-                "registered_days": 180,
-                "domain_years": 0,
+                "creation_date": "N/A",
+                "registered_days": None,
+                "domain_years": None,
+                "domain_age_formatted": "Unavailable",
                 "is_new_domain": False,
-                "whois_status": f"Active Live Domain ({domain_clean}) • Live DNS Record Verified",
-                "api_verified": True
+                "whois_status": f"Active Live Domain ({domain_clean}) • Registration age unavailable",
+                "api_verified": False
             }
 
         return {
@@ -518,8 +522,9 @@ class VerificationAgent:
             "creation_date": "N/A",
             "registered_days": None,
             "domain_years": None,
+            "domain_age_formatted": "Unavailable",
             "is_new_domain": False,
-            "whois_status": "WHOIS registry check unavailable",
+            "whois_status": "Public registration data unavailable for this domain",
             "api_verified": False
         }
 
@@ -693,7 +698,15 @@ class VerificationAgent:
         claimed_brand: str = None, 
         emails: list = None,
         phones: list = None,
-        invalid_phones: list = None
+        invalid_phones: list = None,
+        domain_source: str = "none",
+        domain_source_label: str = "No Domain Found",
+        domain_source_priority: int = 5,
+        is_social_wrapper: bool = False,
+        social_platform: Optional[str] = None,
+        redirect_chain: Optional[list] = None,
+        resolved_url: str = "",
+        submitted_url: str = ""
     ) -> Dict[str, Any]:
         target_domain = self.extract_clean_domain(domain)
         if not target_domain and text:
@@ -712,6 +725,13 @@ class VerificationAgent:
                         target_domain = c_clean
                         break
 
+        # Check if domain was categorized as a social wrapper
+        if not is_social_wrapper and target_domain:
+            cat = URLResolver.classify_domain(target_domain)
+            if cat == "SOCIAL_PLATFORM":
+                is_social_wrapper = True
+                social_platform = social_platform or URLResolver.SOCIAL_PLATFORMS.get(URLResolver.extract_root_domain(target_domain))
+
         whois_res = self.check_whois(target_domain)
         safe_browsing_res = self.check_safe_browsing(target_domain)
 
@@ -723,34 +743,58 @@ class VerificationAgent:
 
         # Domain evidence
         if target_domain:
-            if whois_res.get("is_new_domain"):
-                trust_rating -= 35
+            if is_social_wrapper:
+                # Do NOT grant trust rating points for LinkedIn/Facebook's age to an employer!
                 evidence_items.append({
                     "category": "domain_whois",
-                    "indicator": "new_domain_registration",
-                    "severity": "high",
-                    "evidence": f"Domain '{target_domain}' was registered recently (< 90 days) or uses a high-risk TLD"
-                })
-            elif whois_res.get("status") == "verified":
-                trust_rating += 15
-                evidence_items.append({
-                    "category": "domain_whois",
-                    "indicator": "established_domain",
+                    "indicator": "social_platform_domain",
                     "severity": "low",
-                    "evidence": f"Domain '{target_domain}' has an established WHOIS history ({whois_res.get('registered_days', 'N/A')} days)"
+                    "evidence": f"Domain '{target_domain}' belongs to a social media platform ({social_platform or 'Social Media'}). Employer's standalone company domain was not specified."
                 })
+            else:
+                if whois_res.get("is_new_domain"):
+                    trust_rating -= 35
+                    evidence_items.append({
+                        "category": "domain_whois",
+                        "indicator": "new_domain_registration",
+                        "severity": "high",
+                        "evidence": f"Employer domain '{target_domain}' was registered recently ({whois_res.get('domain_age_formatted', '< 90 days')}) or uses a high-risk TLD"
+                    })
+                elif whois_res.get("status") == "verified":
+                    trust_rating += 15
+                    evidence_items.append({
+                        "category": "domain_whois",
+                        "indicator": "established_domain",
+                        "severity": "low",
+                        "evidence": f"Employer domain '{target_domain}' has an established registry history ({whois_res.get('domain_age_formatted', 'Active')})"
+                    })
 
-            if safe_browsing_res.get("flagged"):
-                trust_rating -= 40
-                evidence_items.append({
-                    "category": "web_safety",
-                    "indicator": "safe_browsing_flag",
-                    "severity": "high",
-                    "evidence": f"URL '{target_domain}' flagged for security threats by Safe Browsing"
-                })
+                if safe_browsing_res.get("flagged"):
+                    trust_rating -= 40
+                    evidence_items.append({
+                        "category": "web_safety",
+                        "indicator": "safe_browsing_flag",
+                        "severity": "high",
+                        "evidence": f"URL '{target_domain}' flagged for security threats by Safe Browsing"
+                    })
 
-        # Email evidence
-        if email_validation_res:
+        # Email evidence & Domain alignment cross-check
+        domain_match_res = {"match": None, "details": "N/A"}
+        if email_validation_res and email_validation_res.get("email"):
+            em_val = email_validation_res["email"]
+            if "@" in em_val and target_domain:
+                email_dom = em_val.split("@")[-1].lower().strip()
+                domain_match_res = URLResolver.compare_domains(target_domain, email_dom)
+                if domain_match_res.get("match") is False:
+                    if not is_social_wrapper:
+                        trust_rating -= 25
+                    evidence_items.append({
+                        "category": "contact_verification",
+                        "indicator": "domain_email_mismatch",
+                        "severity": "high" if not is_social_wrapper else "medium",
+                        "evidence": domain_match_res.get("details") or f"Domain discrepancy: Job vacancy domain is '{target_domain}', but recruiter contact email uses '@{email_dom}'."
+                    })
+
             if email_validation_res.get("is_disposable_email"):
                 trust_rating -= 35
                 evidence_items.append({
@@ -800,11 +844,22 @@ class VerificationAgent:
 
         return {
             "domain": target_domain or "",
+            "primary_domain": target_domain or "",
+            "domain_source": domain_source,
+            "domain_source_label": domain_source_label,
+            "domain_source_priority": domain_source_priority,
+            "is_social_wrapper": is_social_wrapper,
+            "social_platform": social_platform,
+            "redirect_chain": redirect_chain or [],
+            "resolved_url": resolved_url,
+            "submitted_url": submitted_url,
             "whois_info": whois_res,
             "safe_browsing": safe_browsing_res,
             "email_validation": email_validation_res,
             "phone_validation": phone_val_result,
+            "domain_match": domain_match_res.get("match"),
+            "domain_match_details": domain_match_res.get("details"),
             "verification_trust_score": trust_rating,
             "evidence_items": evidence_items,
-            "is_verified_corporate_domain": bool(target_domain and trust_rating > 70 and not whois_res.get("is_new_domain"))
+            "is_verified_corporate_domain": bool(target_domain and not is_social_wrapper and trust_rating > 70 and not whois_res.get("is_new_domain"))
         }

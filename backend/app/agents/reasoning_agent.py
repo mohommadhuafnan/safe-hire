@@ -169,6 +169,9 @@ class ReasoningAgent:
         whois_info = verification_data.get("whois_info") or {}
         email_val = verification_data.get("email_validation") or {}
         safe_browsing = verification_data.get("safe_browsing") or {}
+        is_social_wrapper = verification_data.get("is_social_wrapper", False)
+        domain_source_label = verification_data.get("domain_source_label") or intake_data.get("domain_source_label") or "Unknown Source"
+        primary_domain = verification_data.get("primary_domain") or verification_data.get("domain") or "N/A"
 
         evidence_list = []
         evidence_list.extend(linguistic_data.get("evidence_items") or [])
@@ -184,14 +187,18 @@ Analyze the structured intelligence below and produce a rigorous, evidence-based
 - Visual / Content Summary: {poster_summary}
 - OCR Processing Status: {ocr_status}
 - Claimed Brand / Institution: {intake_data.get('claimed_brand') or 'Not Specified'}
-- Target Domain: {verification_data.get('domain', 'N/A')}
+- Primary Employer Domain: {primary_domain} (Source: {domain_source_label})
+- Social / Wrapper Platform: {verification_data.get('social_platform') or ('Yes' if is_social_wrapper else 'No')}
+- Redirect Chain: {json.dumps(verification_data.get('redirect_chain') or intake_data.get('redirect_chain') or [])}
 - Extracted Contacts: {json.dumps(intake_data.get('metadata_extracted') or {})}
 - Verified Facts: {json.dumps(intake_data.get('verified_facts') or [])}
 
 [EXTERNAL VERIFICATION RESULTS]:
-- WHOIS Domain Registry Status: {whois_info.get('whois_status', 'Check unavailable')} (Status: {whois_info.get('status', 'unavailable')})
+- Domain WHOIS Age: {whois_info.get('domain_age_formatted', 'Unavailable')} (Status: {whois_info.get('status', 'unavailable')}, Registrar: {whois_info.get('registrar', 'N/A')})
+- WHOIS Status Message: {whois_info.get('whois_status', 'Check unavailable')}
 - Safe Browsing Status: {safe_browsing.get('status', 'unavailable')} (Flagged: {safe_browsing.get('flagged', False)})
 - Email Deliverability & Verification: {email_val.get('analysis_summary', 'Check unavailable')}
+- Domain vs Email Alignment: {verification_data.get('domain_match_details', 'N/A')}
 - Contact Phone Verification: {(verification_data.get('phone_validation') or {}).get('summary', 'No phone provided')}
 - Corporate Trust Rating: {verification_data.get('verification_trust_score', 70)}/100
 
@@ -212,12 +219,14 @@ CRITICAL INSTRUCTIONS & RULES:
 2. UNREADABLE / POOR QUALITY CONTENT:
    - If text is unreadable or OCR failed, set "content_type": "unclear", "scam_score": "N/A", "risk_level": "Unable to Determine".
 
-3. JOB RECRUITMENT CONTENT:
+3. JOB RECRUITMENT CONTENT & DOMAIN REPUTATION:
    - Compute an evidence-based scam probability score (0 to 100).
+   - NEVER assume a job vacancy is safe because it was submitted via LinkedIn, Facebook, or a URL shortener. The platform domain (e.g. linkedin.com) is only a host wrapper, NOT proof that the hiring company is legitimate.
+   - If WHOIS registration data is unavailable for the employer domain, state that registration age is unavailable rather than assuming 0 days or fabricated age.
+   - If there is a domain mismatch (e.g. company domain is different from contact email domain), highlight this discrepancy as a risk factor.
    - A score of 0-20 represents "Low Apparent Risk" (no major red flags found). NEVER claim "100% Guaranteed Safe" or "0% Scam Guaranteed".
    - If there are fee demands, set scam_score >= 75 ("Severe Risk").
    - If there is brand impersonation with generic free email, set scam_score >= 65 ("High Risk").
-   - If evidence is missing (e.g. unverified company), explicitly state "Not verified" and assign moderate uncertainty.
 
 4. SEPARATE OBSERVED FACTS FROM AI INFERENCES & STRICT ACCURACY ON CONTACTS:
    - "verified_facts": Things directly observable in the submission or confirmed by verification services.
@@ -228,13 +237,13 @@ CRITICAL INSTRUCTIONS & RULES:
 
 5. FORMAT THE "explanation" FIELD AS A RICH MULTI-SECTION AUDIT IN {target_lang_name}:
 📋 POSTER SUMMARY:
-[2-3 sentence overview of the submission and entities]
+[2-3 sentence overview of the submission, employer domain, and entities]
 
 🎯 SCAM RISK VERDICT:
 [Clear verdict explaining the risk level, why it was assigned, and the conclusion]
 
 🔍 DETAILED EVIDENCE & RED FLAGS:
-[Bullet points analyzing upfront fees, domain trust, emails, urgency, and channels]
+[Bullet points analyzing upfront fees, employer domain reputation, email consistency, urgency, and channels]
 
 ✅ SAFETY CONCLUSION & ADVICE:
 [Actionable guidance for the job seeker]
@@ -498,8 +507,11 @@ Please submit a genuine recruitment flyer or job vacancy URL if you wish to veri
         claimed_brand = linguistic_data.get("claimed_brand") or intake_data.get("claimed_brand") or ""
         free_email = linguistic_data.get("free_email") or ""
         domain = verification_data.get("domain") or "Not Specified"
+        is_social_wrapper = bool(verification_data.get("is_social_wrapper"))
+        domain_match = verification_data.get("domain_match")
         trust_score = verification_data.get("verification_trust_score", 75)
         is_new_domain = bool((verification_data.get("whois_info") or {}).get("is_new_domain"))
+        domain_age_fmt = (verification_data.get("whois_info") or {}).get("domain_age_formatted", "Unavailable")
         safe_browsing_flag = bool((verification_data.get("safe_browsing") or {}).get("flagged"))
 
         # Base evidence score calculation
@@ -518,9 +530,13 @@ Please submit a genuine recruitment flyer or job vacancy URL if you wish to veri
             score += 45
             reasons.append(f"🌐 Threat detected on URL: Safe Browsing flagged the destination link.")
 
-        if is_new_domain:
+        if is_new_domain and not is_social_wrapper:
             score += 20
-            reasons.append(f"🌐 Newly registered domain (< 90 days): '{domain}'. High frequency in ephemeral scam campaigns.")
+            reasons.append(f"🌐 Newly registered domain ({domain_age_fmt}): '{domain}'. High frequency in ephemeral scam campaigns.")
+
+        if domain_match is False:
+            score += 20
+            reasons.append(f"⚠️ Domain discrepancy: Job advertisement is associated with '{domain}', but recruiter contact uses a different domain.")
 
         if has_suspicious_channels:
             score += 15
@@ -535,11 +551,14 @@ Please submit a genuine recruitment flyer or job vacancy URL if you wish to veri
             score += 15
             reasons.append(f"🏢 Recruiter claims '{claimed_brand}' but uses free email without verifiable company domain.")
 
+        if is_social_wrapper and domain != "Not Specified":
+            reasons.append(f"ℹ️ Submitted via {verification_data.get('social_platform', 'Social Platform')} ({domain}). Note: Wrapper platform, not employer's standalone domain.")
+
         # If clean verified posting
         if score <= 15:
             reasons.append("✅ No upfront fee demands, disposable domains, or impersonation flags detected.")
-            if domain and domain != "Not Specified":
-                reasons.append(f"✅ Established domain reference: {domain}")
+            if domain and domain != "Not Specified" and not is_social_wrapper:
+                reasons.append(f"✅ Established employer domain reference: {domain} ({domain_age_fmt})")
 
         score = max(5, min(98, score))
         risk_level = self._score_to_risk_level(score)
@@ -547,7 +566,7 @@ Please submit a genuine recruitment flyer or job vacancy URL if you wish to veri
         explanation = f"""📋 POSTER SUMMARY:
 • Extracted Snippet: \"{cleaned_snippet}\"
 • Claimed Entity: {claimed_brand or 'Not Specified'}
-• Web Link / Domain: {domain}
+• Employer Domain: {domain} ({'Social Platform' if is_social_wrapper else verification_data.get('domain_source_label', 'Identified Domain')})
 
 🎯 SCAM RISK VERDICT:
 Risk Level: {risk_level} (Estimated Risk Score: {score}/100)

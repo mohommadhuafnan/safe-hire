@@ -251,142 +251,196 @@ const AgentBreakdown = ({ result }) => {
       badge: hasRealDomain
         ? (verificationData.verification_trust_score > 60 ? t('agents.agent_3_badge_trusted', 'Trusted Domain') : t('agents.agent_3_badge_suspicious', 'Suspicious Web Record'))
         : 'N/A',
-      content: (
-        <div className="space-y-3 text-xs">
-          {hasRealDomain ? (
-            <>
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-                <span className="text-slate-300 font-medium">{t('agents.target_domain', 'Target Domain')}:</span>
-                <span className="font-mono text-sky-400 font-bold">{rawDomain}</span>
-              </div>
+      content: (() => {
+        const primaryDomain = verificationData.primary_domain || verificationData.domain || result.primary_domain || intakeData.primary_domain || rawDomain;
+        const domainSourceLabel = verificationData.domain_source_label || result.domain_source_label || intakeData.domain_source_label || (hasRealDomain ? 'Extracted Domain' : 'No Domain Found');
+        const isSocialWrapper = Boolean(verificationData.is_social_wrapper || result.is_social_wrapper || intakeData.is_social_wrapper);
+        const socialPlatform = verificationData.social_platform || result.social_platform || intakeData.social_platform;
+        const redirectChain = verificationData.redirect_chain || result.redirect_chain || intakeData.redirect_chain || [];
+        const resolvedUrl = verificationData.resolved_url || result.resolved_url || intakeData.resolved_url;
+        const submittedUrl = verificationData.submitted_url || result.input_url || intakeData.submitted_url;
+        const domainMatch = verificationData.domain_match !== undefined ? verificationData.domain_match : result.domain_match;
+        const domainMatchDetails = verificationData.domain_match_details || result.domain_match_details;
+        const whoisAgeFormatted = verificationData.whois_info?.domain_age_formatted || 
+          (verificationData.whois_info?.domain_years ? `${verificationData.whois_info.domain_years} Years (${verificationData.whois_info.registered_days} Days Old)` : (verificationData.whois_info?.registered_days ? `${verificationData.whois_info.registered_days} Days Old` : (verificationData.whois_info?.status === 'verified' ? 'Established Record' : 'Unavailable')));
 
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-                <span className="text-slate-300 font-medium">{t('agents.domain_age', 'Domain Age')}:</span>
-                <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
-                  {verificationData.whois_info?.domain_years ? `${verificationData.whois_info.domain_years} Years (${verificationData.whois_info.registered_days} Days Old)` : (verificationData.whois_info?.registered_days ? `${verificationData.whois_info.registered_days} Days Old` : (verificationData.whois_info?.status === 'verified' ? 'Established Record' : 'Record Check Unavailable'))}
-                </span>
-              </div>
-
-              {/* Registration Date */}
-              {(() => {
-                const regDate = verificationData.whois_info?.creation_date && verificationData.whois_info.creation_date !== 'N/A' && !isNaN(new Date(verificationData.whois_info.creation_date).getTime())
-                  ? new Date(verificationData.whois_info.creation_date)
-                  : (verificationData.whois_info?.registered_days 
-                      ? new Date(Date.now() - verificationData.whois_info.registered_days * 86400000)
-                      : null
-                    );
-                if (!regDate) return null;
-                return (
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-                    <span className="text-slate-300 font-medium">{t('agents.domain_registration_date', 'Domain Registration Date')}:</span>
-                    <span className="font-mono text-slate-200">{regDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                  </div>
-                );
-              })()}
-
-              {/* Expiry Date if Available */}
-              {(() => {
-                const expDate = verificationData.whois_info?.expiration_date && verificationData.whois_info.expiration_date !== 'N/A' && !isNaN(new Date(verificationData.whois_info.expiration_date).getTime())
-                  ? new Date(verificationData.whois_info.expiration_date)
-                  : null;
-                if (!expDate) return null;
-                return (
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-                    <span className="text-slate-300 font-medium">{t('agents.domain_expiration_date', 'Domain Expiry Date')}:</span>
-                    <span className="font-mono text-slate-200">{expDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                  </div>
-                );
-              })()}
-
-              {verificationData.whois_info?.registrar && (
+        return (
+          <div className="space-y-3 text-xs">
+            {hasRealDomain ? (
+              <>
                 <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-                  <span className="text-slate-300 font-medium">{t('agents.domain_registrar', 'Domain Registrar')}:</span>
-                  <span className="font-semibold text-slate-300">{verificationData.whois_info.registrar}</span>
+                  <span className="text-slate-300 font-medium">{t('agents.target_domain', 'Employer Domain')}:</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-mono text-sky-400 font-bold">{primaryDomain || rawDomain}</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      {domainSourceLabel}
+                    </span>
+                  </div>
                 </div>
-              )}
 
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-                <span className="text-slate-300 font-medium">{t('agents.whois_security_status', 'WHOIS Domain Security Status')}:</span>
-                <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
-                  {verificationData.whois_info?.whois_status || 'Domain Record Evaluated'}
-                </span>
-              </div>
+                {/* Redirect Chain / Shortener Expansion Banner */}
+                {redirectChain.length > 1 && (
+                  <div className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Redirect & Shortener Resolution</span>
+                    <div className="text-[11px] font-mono text-slate-300 flex items-center space-x-1.5 overflow-x-auto">
+                      <span className="text-amber-300 truncate max-w-[160px]" title={submittedUrl}>{submittedUrl}</span>
+                      <span className="text-slate-500">➔</span>
+                      <span className="text-emerald-400 truncate max-w-[200px]" title={resolvedUrl}>{resolvedUrl}</span>
+                    </div>
+                  </div>
+                )}
 
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-                <span className="text-slate-300 font-medium">{t('agents.safe_browsing_api', 'Google Safe Browsing API')}:</span>
-                <span className={`font-semibold ${verificationData.safe_browsing?.flagged ? 'text-rose-400' : 'text-emerald-400'}`}>
-                  {verificationData.safe_browsing?.status || 'Clean'}
-                </span>
-              </div>
-            </>
-          ) : (
-            <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-1">
-              <div className="flex items-center space-x-2 text-slate-300 font-semibold">
-                <Info className="w-4 h-4 text-sky-400" />
-                <span>{t('agents.no_domain_provided', 'No Website Domain Provided')}</span>
-              </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                {t('agents.no_domain_desc', 'No employer website URL was detected in the submitted job listing. Domain WHOIS registry and Safe Browsing audits apply only when an employer website URL is provided.')}
-              </p>
-            </div>
-          )}
+                {/* Social Platform Post Wrapper Notice */}
+                {isSocialWrapper && (
+                  <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1">
+                    <div className="flex items-center space-x-1.5 font-bold text-xs">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Social Platform Wrapper ({socialPlatform || 'Social Media'})</span>
+                    </div>
+                    <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                      The submitted link is hosted on a social portal. SAFE-HIRE does not assume the job is safe merely because {socialPlatform || 'the platform'} is an established domain.
+                    </p>
+                  </div>
+                )}
 
-          {/* Abstract API Email Validation Card */}
-          {verificationData.email_validation && verificationData.email_validation.email && (
-            <div className={`p-3 rounded-lg border space-y-2 ${
-              verificationData.email_validation.is_high_risk 
-                ? 'bg-rose-500/10 border-rose-500/30' 
-                : 'bg-slate-900/90 border-slate-800'
-            }`}>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-200 flex items-center">
-                  📧 {t('agents.abstract_email_validation', 'Abstract API Email Validation')}
-                </span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                  verificationData.email_validation.is_high_risk
-                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                }`}>
-                  {verificationData.email_validation.deliverability || 'DELIVERABLE'}
-                </span>
-              </div>
+                {/* Domain vs Email Discrepancy */}
+                {domainMatch === false && (
+                  <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-start space-x-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+                    <span className="text-[11px] leading-relaxed">
+                      {domainMatchDetails || 'Domain Discrepancy: Employer application domain does not match contact email domain.'}
+                    </span>
+                  </div>
+                )}
 
-              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1">
-                <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">{t('agents.contact_email', 'Contact Email')}:</span>
-                  <span className="text-sky-300 font-semibold truncate block">{verificationData.email_validation.email}</span>
-                </div>
-                <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">{t('agents.quality_score', 'Quality Score')}:</span>
-                  <span className="text-emerald-400 font-semibold">{Math.round((verificationData.email_validation.quality_score || 0.5) * 100)} / 100</span>
-                </div>
-                <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">{t('agents.disposable_email', 'Disposable Email')}:</span>
-                  <span className={`font-bold ${verificationData.email_validation.is_disposable_email ? 'text-rose-400' : 'text-emerald-400'}`}>
-                    {verificationData.email_validation.is_disposable_email ? '⚠️ YES (Disposable)' : '✅ NO'}
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                  <span className="text-slate-300 font-medium">{t('agents.domain_age', 'Domain Age')}:</span>
+                  <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : (whoisAgeFormatted === 'Unavailable' ? 'text-slate-400' : 'text-emerald-400')}`}>
+                    {whoisAgeFormatted}
                   </span>
                 </div>
-                <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">{t('agents.smtp_validation', 'SMTP Validation')}:</span>
-                  <span className={`font-bold ${verificationData.email_validation.is_smtp_valid === false ? 'text-rose-400' : 'text-emerald-400'}`}>
-                    {verificationData.email_validation.is_smtp_valid === false ? '❌ Failed' : '✅ Valid'}
+
+                {/* Registration Date */}
+                {(() => {
+                  const regDate = verificationData.whois_info?.creation_date && verificationData.whois_info.creation_date !== 'N/A' && !isNaN(new Date(verificationData.whois_info.creation_date).getTime())
+                    ? new Date(verificationData.whois_info.creation_date)
+                    : (verificationData.whois_info?.registered_days 
+                        ? new Date(Date.now() - verificationData.whois_info.registered_days * 86400000)
+                        : null
+                      );
+                  if (!regDate) return null;
+                  return (
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                      <span className="text-slate-300 font-medium">{t('agents.domain_registration_date', 'Domain Registration Date')}:</span>
+                      <span className="font-mono text-slate-200">{regDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                    </div>
+                  );
+                })()}
+
+                {/* Expiry Date if Available */}
+                {(() => {
+                  const expDate = verificationData.whois_info?.expiration_date && verificationData.whois_info.expiration_date !== 'N/A' && !isNaN(new Date(verificationData.whois_info.expiration_date).getTime())
+                    ? new Date(verificationData.whois_info.expiration_date)
+                    : null;
+                  if (!expDate) return null;
+                  return (
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                      <span className="text-slate-300 font-medium">{t('agents.domain_expiration_date', 'Domain Expiry Date')}:</span>
+                      <span className="font-mono text-slate-200">{expDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                    </div>
+                  );
+                })()}
+
+                {verificationData.whois_info?.registrar && (
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                    <span className="text-slate-300 font-medium">{t('agents.domain_registrar', 'Domain Registrar')}:</span>
+                    <span className="font-semibold text-slate-300">{verificationData.whois_info.registrar}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                  <span className="text-slate-300 font-medium">{t('agents.whois_security_status', 'WHOIS Domain Security Status')}:</span>
+                  <span className={`font-semibold ${verificationData.whois_info?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
+                    {verificationData.whois_info?.whois_status || 'Domain Record Evaluated'}
                   </span>
                 </div>
-              </div>
 
-              {verificationData.email_validation.analysis_summary && (
-                <p className={`text-[11px] p-2 rounded leading-relaxed border font-mono ${
-                  verificationData.email_validation.is_high_risk 
-                    ? 'bg-rose-950/50 text-rose-300 border-rose-500/20' 
-                    : 'bg-slate-950 text-slate-300 border-slate-800'
-                }`}>
-                  {verificationData.email_validation.analysis_summary}
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+                  <span className="text-slate-300 font-medium">{t('agents.safe_browsing_api', 'Google Safe Browsing API')}:</span>
+                  <span className={`font-semibold ${verificationData.safe_browsing?.flagged ? 'text-rose-400' : 'text-emerald-400'}`}>
+                    {verificationData.safe_browsing?.status || 'Clean'}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-1">
+                <div className="flex items-center space-x-2 text-slate-300 font-semibold">
+                  <Info className="w-4 h-4 text-sky-400" />
+                  <span>{t('agents.no_domain_provided', 'No Website Domain Provided')}</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {t('agents.no_domain_desc', 'No employer website URL was detected in the submitted job listing. Domain WHOIS registry and Safe Browsing audits apply only when an employer website URL is provided.')}
                 </p>
-              )}
-            </div>
-          )}
-        </div>
-      )
+              </div>
+            )}
+
+            {/* Abstract API Email Validation Card */}
+            {verificationData.email_validation && verificationData.email_validation.email && (
+              <div className={`p-3 rounded-lg border space-y-2 ${
+                verificationData.email_validation.is_high_risk 
+                  ? 'bg-rose-500/10 border-rose-500/30' 
+                  : 'bg-slate-900/90 border-slate-800'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-200 flex items-center">
+                    📧 {t('agents.abstract_email_validation', 'Abstract API Email Validation')}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                    verificationData.email_validation.is_high_risk
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  }`}>
+                    {verificationData.email_validation.deliverability || 'DELIVERABLE'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1">
+                  <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
+                    <span className="text-slate-400 block text-[10px]">{t('agents.contact_email', 'Contact Email')}:</span>
+                    <span className="text-sky-300 font-semibold truncate block">{verificationData.email_validation.email}</span>
+                  </div>
+                  <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
+                    <span className="text-slate-400 block text-[10px]">{t('agents.quality_score', 'Quality Score')}:</span>
+                    <span className="text-emerald-400 font-semibold">{Math.round((verificationData.email_validation.quality_score || 0.5) * 100)} / 100</span>
+                  </div>
+                  <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
+                    <span className="text-slate-400 block text-[10px]">{t('agents.disposable_email', 'Disposable Email')}:</span>
+                    <span className={`font-bold ${verificationData.email_validation.is_disposable_email ? 'text-rose-400' : 'text-emerald-400'}`}>
+                      {verificationData.email_validation.is_disposable_email ? '⚠️ YES (Disposable)' : '✅ NO'}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
+                    <span className="text-slate-400 block text-[10px]">{t('agents.smtp_validation', 'SMTP Validation')}:</span>
+                    <span className={`font-bold ${verificationData.email_validation.is_smtp_valid === false ? 'text-rose-400' : 'text-emerald-400'}`}>
+                      {verificationData.email_validation.is_smtp_valid === false ? '❌ Failed' : '✅ Valid'}
+                    </span>
+                  </div>
+                </div>
+
+                {verificationData.email_validation.analysis_summary && (
+                  <p className={`text-[11px] p-2 rounded leading-relaxed border font-mono ${
+                    verificationData.email_validation.is_high_risk 
+                      ? 'bg-rose-950/50 text-rose-300 border-rose-500/20' 
+                      : 'bg-slate-950 text-slate-300 border-slate-800'
+                  }`}>
+                    {verificationData.email_validation.analysis_summary}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })(),
     },
     {
       id: 'agent-4',
