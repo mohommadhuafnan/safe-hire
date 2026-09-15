@@ -290,11 +290,30 @@ const DashboardPage = () => {
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
-    if (previewUrl && previewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(previewUrl);
+    if (previewUrl && previewUrl.startsWith('blob:') && (!result || result.previewUrl !== previewUrl)) {
+      try {
+        URL.revokeObjectURL(previewUrl);
+      } catch (e) {}
     }
     setPreviewUrl('');
     setError('');
+  };
+
+  const handleTabChange = (newTab) => {
+    if (newTab === activeTab) return;
+    setActiveTab(newTab);
+    setError('');
+    // Clear inputs of other tabs when switching so previously uploaded image or text does not stick around
+    if (newTab !== 'image') {
+      setSelectedFile(null);
+      setPreviewUrl('');
+    }
+    if (newTab !== 'text') {
+      setInputText('');
+    }
+    if (newTab !== 'url') {
+      setInputUrl('');
+    }
   };
 
   const handleResetScan = () => {
@@ -390,12 +409,22 @@ const DashboardPage = () => {
         response.data?.intake_data?.is_job_poster === false
       );
 
+      const currentPreview = previewUrl;
+
       if (isNonJobResult) {
         setCurrentStep(1);
       } else {
         setCurrentStep(5);
       }
-      setResult(response.data);
+      setResult({
+        ...response.data,
+        previewUrl: currentPreview
+      });
+      // Clear file upload input and text fields from the form after analyzing so next scan starts clean
+      setSelectedFile(null);
+      setPreviewUrl('');
+      setInputText('');
+      setInputUrl('');
     } catch (err) {
       clearInterval(stepInterval);
 
@@ -429,12 +458,20 @@ const DashboardPage = () => {
             fallbackRes.pipeline_stopped_stage === 1 ||
             fallbackRes.intake_data?.is_job_poster === false
           );
+          const currentPreview = previewUrl;
           if (isNonJobFallback) {
             setCurrentStep(1);
           } else {
             setCurrentStep(5);
           }
-          setResult(fallbackRes);
+          setResult({
+            ...fallbackRes,
+            previewUrl: currentPreview
+          });
+          setSelectedFile(null);
+          setPreviewUrl('');
+          setInputText('');
+          setInputUrl('');
         }
       } catch (fallbackErr) {
         setError(err.response?.data?.detail || 'Failed to complete scam analysis. Please check network connection.');
@@ -512,7 +549,7 @@ const DashboardPage = () => {
               {/* Card 1: Text */}
               <button
                 type="button"
-                onClick={() => setActiveTab('text')}
+                onClick={() => handleTabChange('text')}
                 className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${activeTab === 'text'
                   ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
                   : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
@@ -539,7 +576,7 @@ const DashboardPage = () => {
               {/* Card 2: Image */}
               <button
                 type="button"
-                onClick={() => setActiveTab('image')}
+                onClick={() => handleTabChange('image')}
                 className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${activeTab === 'image'
                   ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
                   : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
@@ -566,7 +603,7 @@ const DashboardPage = () => {
               {/* Card 3: URL */}
               <button
                 type="button"
-                onClick={() => setActiveTab('url')}
+                onClick={() => handleTabChange('url')}
                 className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${activeTab === 'url'
                   ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
                   : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
@@ -905,9 +942,9 @@ const DashboardPage = () => {
                     </span>
                   </div>
 
-                  {previewUrl && (
+                  {(result?.previewUrl || previewUrl) && (
                     <div className="flex justify-center p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
-                      <img src={previewUrl} alt="Analyzed Media" className="max-h-48 rounded-lg object-contain" />
+                      <img src={result?.previewUrl || previewUrl} alt="Analyzed Media" className="max-h-48 rounded-lg object-contain" />
                     </div>
                   )}
 
