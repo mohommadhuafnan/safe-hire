@@ -879,69 +879,91 @@ Please analyze a genuine recruitment posting or job vacancy URL to receive a com
         const hasUrgency = calculatedResult.subScores.urgency_pressure_risk > 50;
         const hasChannel = Boolean(combinedText.includes("telegram") || combinedText.includes("whatsapp"));
 
+        const findingsList = [];
+        if (hasFee) {
+            findingsList.push("⚠️ CRITICAL: Upfront registration fee or deposit demanded. Legitimate employers NEVER charge candidates.");
+        } else {
+            findingsList.push("No upfront registration fee demands or deposit requests detected in this submission.");
+        }
+        if (hasUrgency) {
+            findingsList.push("Artificial urgency / pressure tactics detected in job offer terms.");
+        }
+        if (hasChannel) {
+            findingsList.push("Unofficial recruitment channels or informal contact routes detected (Telegram/WhatsApp).");
+        }
+        if (liveWhois?.is_new_domain) {
+            findingsList.push(`Newly registered domain (< 90 days): ${domain}. Ephemeral domains carry higher fraud risk.`);
+        } else if (liveWhois?.domain_years && liveWhois.domain_years >= 1) {
+            findingsList.push(`Established domain history: ${domain} (${liveWhois.domain_age_formatted} old).`);
+        }
+        findingsList.push("SAFE-HIRE multi-signal recruitment fraud audit complete.");
+
+        const evidenceBullets = findingsList.map(f => `• ${f}`).join("\n");
+        const docSummary = file ? `Analyzed uploaded recruitment poster (${file.name}).` : (text ? `Analyzed submitted job description: "${text.slice(0, 150)}..."` : `Analyzed recruitment URL (${url || domain}).`);
+
         let explanationText = "";
         if (language === 'ta') {
           explanationText = `📋 போஸ்டர் சுருக்கம்:
-வேலைவாய்ப்பு விளம்பரம் பகுப்பாய்வு செய்யப்பட்டது (${file ? file.name : "உரை"}).
+${file ? `பதிவேற்றப்பட்ட வேலைவாய்ப்பு விளம்பரம் பகுப்பாய்வு செய்யப்பட்டது (${file.name}).` : "வேலைவாய்ப்பு விவரங்கள் சரிபார்க்கப்பட்டன."}
 
 🎯 மோசடி ஆபத்து தீர்ப்பு:
 ஆபத்து நிலை: ${riskLevel} (மதிப்பெண்: ${score}/100)
-${hasFee ? "கட்டண கோரிக்கைகள் கண்டறியப்பட்டுள்ளன. சட்டபூர்வமான நிறுவனங்கள் ஒருபோதும் கட்டணம் கேட்கமாட்டா." : "முன்பணக் கட்டணக் கோரிக்கைகள் ஏதும் கண்டறியப்படவில்லை."}
+${hasFee ? "முக்கிய எச்சரிக்கை: முன்பணக் கட்டணக் கோரிக்கைகள் கண்டறியப்பட்டுள்ளன. சட்டபூர்வமான நிறுவனங்கள் ஒருபோதும் கட்டணம் கேட்கமாட்டா." : "முன்பணக் கட்டணக் கோரிக்கைகள் ஏதும் கண்டறியப்படவில்லை."}
 
 🔍 விரிவான ஆதாரங்கள் & பகுப்பாய்வு:
-${hasFee ? "• ⚠️ முக்கிய எச்சரிக்கை: பதிவு அல்லது வைப்புத்தொகை கட்டணக் கோரிக்கைகள் கண்டறியப்பட்டுள்ளன.\n" : "• ✅ முன்பணக் கட்டணக் கோரிக்கைகள் ஏதும் இல்லை.\n"}${hasUrgency ? "• ⏰ அவசர அழுத்த உத்திகள் கண்டறியப்பட்டுள்ளன.\n" : ""}${hasChannel ? "• 📱 அதிகாரப்பூர்வமற்ற தொடர்பு வழிகள் (டெலிகிராம்/வாட்ஸ்அப்) பயன்படுத்தப்பட்டுள்ளன.\n" : ""}• 🛡️ SAFE-HIRE பகுப்பாய்வு நிறைவடைந்தது.
+${evidenceBullets}
 
 ✅ பாதுகாப்பு முடிவு & ஆலோசனை:
 ஆவணங்களை அனுப்புவதற்கு அல்லது பணம் செலுத்துவதற்கு முன் அதிகாரப்பூர்வ நிறுவன போர்ட்டல் மூலம் தகவல்களை சரிபார்க்கவும்.`;
         } else if (language === 'si') {
           explanationText = `📋 පෝස්ටර් සාරාංශය:
-රැකියා දැන්වීම විශ්ලේෂණය කරන ලදී (${file ? file.name : "පෙළ"}).
+${file ? `ඇතුළත් කරන ලද රැකියා දැන්වීම විශ්ලේෂණය කරන ලදී (${file.name}).` : "රැකියා දැන්වීම් විස්තර විශ්ලේෂණය කරන ලදී."}
 
 🎯 වංචා අවදානම් තීරණය:
 අවදානම් තත්ත්වය: ${riskLevel} (ලකුණු: ${score}/100)
-${hasFee ? "ගාස්තු ඉල්ලීම් හඳුනාගෙන ඇත. නීත්‍යානුකූල ආයතන කිසිවිටෙකත් ලියාපදිංචි ගාස්තු අය නොකරයි." : "පූර්ව ගාස්තු ඉල්ලීම් හඳුනාගෙන නොමැත."}
+${hasFee ? "බරපතල අවධානය: ලියාපදිංචි හෝ තැන්පතු ගාස්තු ඉල්ලීම් හඳුනාගෙන ඇත. නීත්‍යානුකූල ආයතන කිසිවිටෙකත් රැකියා සඳහා මුදල් අය නොකරයි." : "පූර්ව ගාස්තු ඉල්ලීම් හඳුනාගෙන නොමැත."}
 
 🔍 විස්තරාත්මක සාක්ෂි හා විශ්ලේෂණය:
-${hasFee ? "• ⚠️ බරපතල අවධානය: ලියාපදිංචි හෝ ලැප්ටොප් තැන්පතු ගාස්තු ඉල්ලීම් හඳුනාගෙන ඇත.\n" : "• ✅ පූර්ව ගාස්තු ඉල්ලීම් නොමැත.\n"}${hasUrgency ? "• ⏰ කඩිනම් බලපෑම් උපක්‍රම හඳුනාගෙන ඇත.\n" : ""}${hasChannel ? "• 📱 නිල නොවන සන්නිවේදන මාර්ග (Telegram/WhatsApp) පවතී.\n" : ""}• 🛡️ SAFE-HIRE සත්‍යාපනය සම්පූර්ණයි.
+${evidenceBullets}
 
 ✅ ආරක්ෂිත නිගමනය සහ උපදෙස්:
 ලේඛන යැවීමට හෝ මුදල් ගෙවීමට පෙර නිල ආයතනික කැරියර් පෝර්ටලය හරහා තොරතුරු පරීක්ෂා කරන්න.`;
         } else if (language === 'hi') {
           explanationText = `📋 पोस्टर सारांश:
-भर्ती विज्ञापन का विश्लेषण किया गया (${file ? file.name : "पाठ"}).
+${file ? `अपलोड किए गए भर्ती विज्ञापन का विश्लेषण किया गया (${file.name}).` : "नौकरी रिक्ति विवरण का विश्लेषण किया गया।"}
 
 🎯 धोखाधड़ी जोखिम निर्णय:
 जोखिम स्तर: ${riskLevel} (स्कोर: ${score}/100)
-${hasFee ? "शुल्क की मांग पाई गई है। वैध कंपनियां कभी भी आवेदन शुल्क नहीं मांगतीं।" : "कोई अग्रिम शुल्क मांग नहीं पाई गई।"}
+${hasFee ? "चेतावनी: पंजीकरण या लैपटॉप जमा शुल्क की मांग पाई गई है। वैध कंपनियां कभी भी आवेदन शुल्क नहीं मांगतीं।" : "कोई अग्रिम शुल्क मांग नहीं पाई गई।"}
 
 🔍 विस्तृत साक्ष्य एवं विश्लेषण:
-${hasFee ? "• ⚠️ चेतावनी: पंजीकरण या लैपटॉप जमा शुल्क की मांग पाई गई।\n" : "• ✅ कोई अग्रिम शुल्क मांग नहीं है।\n"}${hasUrgency ? "• ⏰ कृत्रिम जल्दबाजी के दबाव के तरीके पाए गए।\n" : ""}${hasChannel ? "• 📱 अनधिकृत संपर्क चैनल (टेलीग्राम/व्हाट्सएप) मौजूद हैं।\n" : ""}• 🛡️ SAFE-HIRE सत्यापन पूर्ण।
+${evidenceBullets}
 
 ✅ सुरक्षा निष्कर्ष एवं सलाह:
 दस्तावेज़ भेजने या भुगतान करने से पहले केवल आधिकारिक कंपनी करियर पोर्टल से जानकारी सत्यापित करें।`;
         } else if (language === 'bn') {
           explanationText = `📋 পোস্টার সারসংক্ষেপ:
-নিয়োগের বিজ্ঞপ্তি বিশ্লেষণ করা হয়েছে (${file ? file.name : "পাঠ্য"}).
+${file ? `আপলোড করা নিয়োগ বিজ্ঞপ্তি বিশ্লেষণ করা হয়েছে (${file.name}).` : "নিয়োগ বিজ্ঞপ্তি বিশদ বিশ্লেষণ করা হয়েছে।"}
 
 🎯 প্রতারণার ঝুঁকির রায়:
 ঝুঁকির মাত্রা: ${riskLevel} (স্কোর: ${score}/100)
-${hasFee ? "ফি বা অর্থ দাবির তথ্য পাওয়া গেছে। বৈধ কোম্পানিগুলো কখনোই ফি চায় না।" : "কোনো অগ্রিম ফি দাবি পাওয়া যায়নি।"}
+${hasFee ? "সতর্কবার্তা: নিবন্ধন বা জামানত ফি দাবির তথ্য পাওয়া গেছে। বৈধ কোম্পানিগুলো কখনোই ফি চায় না।" : "কোনো অগ্রিম ফি দাবি পাওয়া যায়নি।"}
 
 🔍 বিস্তারিত প্রমাণ ও বিশ্লেষণ:
-${hasFee ? "• ⚠️ সতর্কবার্তা: নিবন্ধন বা জামানত ফি দাবির তথ্য পাওয়া গেছে।\n" : "• ✅ কোনো অগ্রিম ফি দাবি পাওয়া যায়নি।\n"}${hasUrgency ? "• ⏰ কৃত্রিম তাড়ার চাপ সৃষ্টি করার কৌশল সনাক্ত করা হয়েছে।\n" : ""}${hasChannel ? "• 📱 অনানুষ্ঠানিক যোগাযোগ মাধ্যম (টেলিগ্রাম/হোয়াটসঅ্যাপ) উপস্থিত রয়েছে।\n" : ""}• 🛡️ SAFE-HIRE যাচাইকরণ সম্পন্ন।
+${evidenceBullets}
 
 ✅ নিরাপত্তা উপসংহার ও পরামর্শ:
 নথিপত্র পাঠাতে বা অর্থ প্রদান করার আগে অফিসিয়াল করপোরেট ক্যারিয়ার পোর্টালে সরাসরি তথ্য যাচাই করুন।`;
         } else {
-          explanationText = `📋 EXHAUSTIVE POSTER SUMMARY:
-Analyzed recruitment advertisement file (${file ? file.name : "text"}).
+          explanationText = `📋 POSTER SUMMARY:
+${docSummary}
 
-🎯 SCAM RISK VERDICT & RATING:
-Risk Assessment Level: ${riskLevel} (Score: ${score}/100)
-${hasFee ? "Critical fraud warning: Upfront fee demand detected. Legitimate employers NEVER charge candidates." : "No upfront fee demands detected."}
+🎯 SCAM RISK VERDICT:
+Risk Assessment Level: ${riskLevel} (Scam Probability Score: ${score}/100)
+${hasFee ? "Critical fraud warning: Upfront registration fee or deposit demand detected. Legitimate employers NEVER charge candidates." : "No upfront fee demands detected based on available evidence."}
 
 🔍 DETAILED EVIDENCE & RED FLAGS:
-${hasFee ? "• ⚠️ CRITICAL: Fee or payment terms detected. Legitimate employers NEVER charge candidates for registration or laptop deposits.\n" : "• ✅ No upfront fee demands detected.\n"}${hasUrgency ? "• ⏰ Urgency pressure tactics detected.\n" : ""}${hasChannel ? "• 📱 Unofficial messaging channels present (Telegram/WhatsApp).\n" : ""}• 🛡️ SAFE-HIRE Verification complete.
+${evidenceBullets}
 
 ✅ SAFETY CONCLUSION & ADVICE:
 Verify job offers directly on official corporate career portals before sending documents or making payments.`;

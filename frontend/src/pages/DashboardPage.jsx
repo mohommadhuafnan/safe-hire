@@ -51,12 +51,22 @@ const StructuredExplanationView = ({ text }) => {
   return (
     <div className="space-y-3 font-sans">
       {sections.map((sec, idx) => {
-        const lines = (sec.body || '')
-          .split(/(?:\s*-\s+|\s*•\s+|\n-\s*|\n•\s*|\n\d+\.\s*)/)
-          .map(l => l.trim())
-          .filter(Boolean);
+        const rawLines = (sec.body || '').split(/\r?\n/);
+        const bulletLines = [];
+        const paraLines = [];
 
-        const hasBullets = lines.length > 1;
+        for (const rawL of rawLines) {
+          const l = rawL.trim();
+          if (!l) continue;
+          if (l.startsWith('•') || l.startsWith('-') || /^\d+\.\s/.test(l)) {
+            const cleanBullet = l.replace(/^([•\-\*]|\d+\.)\s*/, '').trim();
+            if (cleanBullet && cleanBullet !== '•' && cleanBullet !== '-') {
+              bulletLines.push(cleanBullet);
+            }
+          } else {
+            paraLines.push(l);
+          }
+        }
 
         return (
           <div key={idx} className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 space-y-2">
@@ -65,11 +75,21 @@ const StructuredExplanationView = ({ text }) => {
               <span className="uppercase text-[11px] text-sky-300 font-bold tracking-wider">{sec.title}</span>
             </div>
 
-            {hasBullets ? (
+            {paraLines.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                {paraLines.map((p, pIdx) => (
+                  <p key={pIdx} className="text-xs text-slate-300 leading-relaxed font-medium">
+                    {p}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {bulletLines.length > 0 && (
               <ul className="space-y-2 pt-1">
-                {lines.map((line, lIdx) => {
-                  const isWarning = line.toLowerCase().includes('fee demand') || line.toLowerCase().includes('risk') || line.toLowerCase().includes('fake') || line.toLowerCase().includes('impersonation') || line.toLowerCase().includes('telegram');
-                  const isClean = line.toLowerCase().includes('no fee') || line.toLowerCase().includes('no urgency') || line.toLowerCase().includes('clean') || line.toLowerCase().includes('safe') || line.toLowerCase().includes('genuine');
+                {bulletLines.map((line, lIdx) => {
+                  const isWarning = line.toLowerCase().includes('fee demand') || line.toLowerCase().includes('risk') || line.toLowerCase().includes('critical') || line.toLowerCase().includes('fake') || line.toLowerCase().includes('impersonation') || line.toLowerCase().includes('telegram');
+                  const isClean = line.toLowerCase().includes('no upfront fee') || line.toLowerCase().includes('no fee') || line.toLowerCase().includes('no urgency') || line.toLowerCase().includes('clean') || line.toLowerCase().includes('safe') || line.toLowerCase().includes('genuine') || line.toLowerCase().includes('established domain');
 
                   return (
                     <li key={lIdx} className="flex items-start space-x-2.5 text-xs text-slate-200 leading-relaxed">
@@ -87,10 +107,6 @@ const StructuredExplanationView = ({ text }) => {
                   );
                 })}
               </ul>
-            ) : (
-              <p className="text-xs text-slate-300 leading-relaxed pt-1 font-medium">
-                {sec.body}
-              </p>
             )}
           </div>
         );
@@ -420,11 +436,15 @@ const DashboardPage = () => {
         ...response.data,
         previewUrl: currentPreview
       });
-      // Clear file upload input and text fields from the form after analyzing so next scan starts clean
-      setSelectedFile(null);
-      setPreviewUrl('');
-      setInputText('');
-      setInputUrl('');
+      if (activeTab === 'image') {
+        // Retain uploaded image in upload box so the user can see what they scanned
+        setInputText('');
+        setInputUrl('');
+      } else {
+        // Clear file upload input when analyzing text or URL
+        setSelectedFile(null);
+        setPreviewUrl('');
+      }
     } catch (err) {
       clearInterval(stepInterval);
 
@@ -468,10 +488,13 @@ const DashboardPage = () => {
             ...fallbackRes,
             previewUrl: currentPreview
           });
-          setSelectedFile(null);
-          setPreviewUrl('');
-          setInputText('');
-          setInputUrl('');
+          if (activeTab === 'image') {
+            setInputText('');
+            setInputUrl('');
+          } else {
+            setSelectedFile(null);
+            setPreviewUrl('');
+          }
         }
       } catch (fallbackErr) {
         setError(err.response?.data?.detail || 'Failed to complete scam analysis. Please check network connection.');

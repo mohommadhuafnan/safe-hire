@@ -4,40 +4,34 @@ export const parseExplanationSections = (text) => {
   const cleanText = text.trim();
   if (!cleanText) return [];
 
-  // Match emoji section markers: 📋, 🎯, 🔍, 💡, ✅, 🌐
-  const emojiMatches = Array.from(cleanText.matchAll(/(📋|🎯|🔍|💡|✅|🌐)\s*([^📋🎯🔍💡✅🌐]+)/g));
+  // Match line-starting emoji section headers: e.g. "📋 POSTER SUMMARY:" or "🎯 SCAM RISK VERDICT:"
+  const headerRegex = /(?:^|\r?\n)\s*(📋|🎯|🔍|💡|✅|🌐|📊)\s*([^\r\n:]+):?\s*/g;
+  const matches = Array.from(cleanText.matchAll(headerRegex));
 
-  if (emojiMatches.length > 0) {
-    return emojiMatches.map(m => {
-      const emoji = m[1];
-      const rawContent = m[2].trim();
+  if (matches.length > 0) {
+    const sections = [];
+    for (let i = 0; i < matches.length; i++) {
+      const currentMatch = matches[i];
+      const emoji = currentMatch[1];
+      const title = currentMatch[2].trim();
+      const contentStartIndex = currentMatch.index + currentMatch[0].length;
+      const contentEndIndex = (i + 1 < matches.length) ? matches[i + 1].index : cleanText.length;
+      const body = cleanText.slice(contentStartIndex, contentEndIndex).trim();
 
-      let title = 'SUMMARY & AUDIT';
-      let body = rawContent;
-
-      const firstLineBreak = rawContent.indexOf('\n');
-      const colonIdx = rawContent.indexOf(':');
-
-      if (colonIdx !== -1 && (firstLineBreak === -1 || colonIdx < firstLineBreak) && colonIdx < 80) {
-        title = rawContent.slice(0, colonIdx).trim();
-        body = rawContent.slice(colonIdx + 1).trim();
-      } else if (firstLineBreak !== -1 && firstLineBreak < 80) {
-        title = rawContent.slice(0, firstLineBreak).trim();
-        body = rawContent.slice(firstLineBreak + 1).trim();
-      } else {
-        if (emoji === '📋') title = 'POSTER SUMMARY';
-        else if (emoji === '🎯') title = 'SCAM RISK VERDICT';
-        else if (emoji === '🔍') title = 'DETAILED EVIDENCE & RED FLAGS';
-        else if (emoji === '💡') title = 'AUDIT CONCLUSION & ADVICE';
-        else if (emoji === '🌐') title = 'TECHNICAL DOMAIN INTELLIGENCE';
-        else if (emoji === '✅') title = 'SAFETY CONCLUSION';
+      if (title || body) {
+        sections.push({
+          emoji,
+          title: title || 'AUDIT SUMMARY',
+          body: body || ''
+        });
       }
-
-      return { emoji, title, body: body || rawContent };
-    });
+    }
+    if (sections.length > 0) {
+      return sections;
+    }
   }
 
-  // Fallback: If no emojis are present, split by double newlines or single paragraphs
+  // Fallback: If no headers are matched, split by double newlines or single paragraphs
   const sectionSplit = cleanText.split(/\n\n+/).filter(Boolean);
   if (sectionSplit.length > 1) {
     return sectionSplit.map((para, i) => ({
