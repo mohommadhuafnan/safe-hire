@@ -1129,77 +1129,87 @@ const DashboardPage = () => {
               /* GENUINE JOB VACANCY FULL AUDIT REPORT & CERTIFICATE */
               <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-indigo-500/30 bg-slate-900/80 space-y-6 animate-fade-in shadow-2xl">
 
-                {/* REPORT HEADER BAR */}
-                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-                  <div className="flex items-start sm:items-center space-x-3.5 min-w-0 flex-1">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20 shrink-0">
+                {/* REPORT HEADER BAR (FULL WIDTH TITLE & CONTROL TIER) */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-slate-950/90 border border-indigo-500/20 shadow-xl space-y-4">
+                  {/* Top Row: Title, Badge, and Document Icon with 100% full width */}
+                  <div className="flex items-start sm:items-center space-x-3.5 border-b border-slate-800/80 pb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20 shrink-0">
                       <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
                         <FileText className="w-6 h-6 text-sky-400" />
                       </div>
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm sm:text-base md:text-lg font-extrabold text-slate-100 tracking-tight leading-snug break-words">
+                        <h2 className="text-base sm:text-xl font-extrabold text-slate-100 tracking-tight leading-tight">
                           {t('dashboard.full_report_title', 'Full AI Audit Report & Verification Certificate')}
-                        </h3>
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 whitespace-nowrap">
+                        </h2>
+                        <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 whitespace-nowrap shadow-sm">
                           {t('dashboard.verified_badge', 'VERIFIED')}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {t('dashboard.analyzed_on', 'Analyzed on')} {new Date(result.created_at || Date.now()).toLocaleString()} • {t('dashboard.target_user', 'Target')}: {user?.full_name || 'Student'}
+                      <p className="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span>{t('dashboard.analyzed_on', 'Analyzed on')} {new Date(result.created_at || Date.now()).toLocaleString()}</span>
+                        <span className="text-slate-600 hidden sm:inline">•</span>
+                        <span>{t('dashboard.target_user', 'Target')}: <strong className="text-slate-300 font-semibold">{user?.full_name || 'Student'}</strong></span>
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto shrink-0">
-                    {/* Language Selector inside Report Header */}
-                    <div className="flex items-center space-x-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 shadow-sm">
-                      <Globe className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                      <select
-                        value={(i18n.resolvedLanguage || i18n.language || 'en').split('-')[0]}
-                        onChange={(e) => handleLanguageChange(e.target.value)}
-                        disabled={isTranslatingReport}
-                        className="bg-transparent border-none outline-none text-slate-200 cursor-pointer text-xs font-semibold pr-1 disabled:opacity-60"
-                      >
-                        <option value="en" className="bg-slate-900">English (EN)</option>
-                        <option value="si" className="bg-slate-900">සිංහල (SI)</option>
-                        <option value="ta" className="bg-slate-900">தமிழ் (TA)</option>
-                        <option value="hi" className="bg-slate-900">हिंदी (HI)</option>
-                        <option value="bn" className="bg-slate-900">বাংলা (BN)</option>
-                      </select>
-                      {isTranslatingReport && <Loader2 className="w-3 h-3 text-sky-400 animate-spin ml-0.5" />}
+                  {/* Action Control Bar (Language Selector, New Scan, Download PDF, Gemini AI Chat) */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                    {/* Left: Language Selector */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-slate-400 font-medium hidden sm:inline">Report Language:</span>
+                      <div className="flex items-center space-x-2 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 shadow-sm transition">
+                        <Globe className="w-4 h-4 text-sky-400 shrink-0" />
+                        <select
+                          value={(i18n.resolvedLanguage || i18n.language || 'en').split('-')[0]}
+                          onChange={(e) => handleLanguageChange(e.target.value)}
+                          disabled={isTranslatingReport}
+                          className="bg-transparent border-none outline-none text-slate-200 cursor-pointer text-xs font-semibold pr-1 disabled:opacity-60"
+                        >
+                          <option value="en" className="bg-slate-900">English (EN)</option>
+                          <option value="si" className="bg-slate-900">සිංහල (SI)</option>
+                          <option value="ta" className="bg-slate-900">தமிழ் (TA)</option>
+                          <option value="hi" className="bg-slate-900">हिंदी (HI)</option>
+                          <option value="bn" className="bg-slate-900">বাংলা (BN)</option>
+                        </select>
+                        {isTranslatingReport && <Loader2 className="w-3.5 h-3.5 text-sky-400 animate-spin ml-1" />}
+                      </div>
                     </div>
 
-                    <button
-                      onClick={handleResetScan}
-                      className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition whitespace-nowrap"
-                      title={t('dashboard.new_scan', 'Start New Scan')}
-                    >
-                      <RotateCcw className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                      <span>{t('dashboard.new_scan', 'New Scan')}</span>
-                    </button>
+                    {/* Right: Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={handleResetScan}
+                        className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition shadow-sm whitespace-nowrap"
+                        title={t('dashboard.new_scan', 'Start New Scan')}
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                        <span>{t('dashboard.new_scan', 'New Scan')}</span>
+                      </button>
 
-                    <button
-                      onClick={() => exportAnalysisReport(result, user, i18n.language)}
-                      className="flex items-center justify-center space-x-2 px-4 py-2 rounded-xl btn-primary font-bold text-xs shadow-md transition hover:scale-105 whitespace-nowrap"
-                    >
-                      <Download className="w-4 h-4 text-white shrink-0" />
-                      <span>{t('dashboard.download_report')}</span>
-                    </button>
+                      <button
+                        onClick={() => exportAnalysisReport(result, user, i18n.language)}
+                        className="flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl btn-primary font-bold text-xs shadow-lg transition hover:scale-105 whitespace-nowrap"
+                      >
+                        <Download className="w-4 h-4 text-white shrink-0" />
+                        <span>{t('dashboard.download_report', 'Download PDF Report')}</span>
+                      </button>
 
-                    <button
-                      onClick={() => openAIModal({
-                        title: `Gemini 3.6 Flash Deep AI Audit (Report #${(result.id || 'REPORT').slice(-6)})`,
-                        initialPrompt: `Provide an in-depth security breakdown and safety advice for this job verification report:\nScam Score: ${result.scam_score}/100\nRisk Level: ${result.risk_level}\nExplanation: "${result.explanation_text}"`,
-                        category: 'full_report_audit',
-                        contextData: result
-                      })}
-                      className="p-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-sky-300 hover:text-white transition shrink-0"
-                      title="Interactive Gemini AI Chat Audit"
-                    >
-                      <Sparkles className="w-4 h-4 animate-pulse" />
-                    </button>
+                      <button
+                        onClick={() => openAIModal({
+                          title: `Gemini 3.6 Flash Deep AI Audit (Report #${(result.id || 'REPORT').slice(-6)})`,
+                          initialPrompt: `Provide an in-depth security breakdown and safety advice for this job verification report:\nScam Score: ${result.scam_score}/100\nRisk Level: ${result.risk_level}\nExplanation: "${result.explanation_text}"`,
+                          category: 'full_report_audit',
+                          contextData: result
+                        })}
+                        className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500 text-sky-300 hover:text-white transition shadow-sm shrink-0"
+                        title="Interactive Gemini AI Chat Audit"
+                      >
+                        <Sparkles className="w-4 h-4 animate-pulse" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
