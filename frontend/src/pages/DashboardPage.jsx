@@ -1203,20 +1203,6 @@ const DashboardPage = () => {
                       <Download className="w-3.5 h-3.5 text-white shrink-0" />
                       <span>{t('dashboard.download_report', 'Download PDF Report')}</span>
                     </button>
-
-                    {/* AI Chat Audit Button */}
-                    <button
-                      onClick={() => openAIModal({
-                        title: `Gemini 3.6 Flash Deep AI Audit (Report #${(result.id || 'REPORT').slice(-6)})`,
-                        initialPrompt: `Provide an in-depth security breakdown and safety advice for this job verification report:\nScam Score: ${result.scam_score}/100\nRisk Level: ${result.risk_level}\nExplanation: "${result.explanation_text}"`,
-                        category: 'full_report_audit',
-                        contextData: result
-                      })}
-                      className="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500 text-sky-300 hover:text-white transition shadow-sm shrink-0"
-                      title="Interactive Gemini AI Chat Audit"
-                    >
-                      <Sparkles className="w-4 h-4 animate-pulse" />
-                    </button>
                   </div>
                 </div>
 
