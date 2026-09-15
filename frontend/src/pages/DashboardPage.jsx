@@ -38,6 +38,82 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import GeminiAPIClient from '../services/GeminiAPIClient';
 
+const classifyBulletStatus = (text) => {
+  if (!text || typeof text !== 'string') return 'neutral';
+  const l = text.trim();
+  const lower = l.toLowerCase();
+
+  // Explicit emoji indicators
+  if (l.startsWith('✅') || lower.includes('✅') || l.startsWith('✔')) return 'clean';
+  if (l.startsWith('⚠️') || l.startsWith('🚨') || l.startsWith('🚩') || l.startsWith('❌') || lower.includes('⚠️') || lower.includes('🚩')) return 'warning';
+
+  // 1. Check for positive clean findings / negations first
+  const isPositiveClean =
+    lower.includes('zero indicator') ||
+    lower.includes('zero fee') ||
+    lower.includes('zero payment') ||
+    lower.includes('no upfront') ||
+    lower.includes('no fee') ||
+    lower.includes('no payment') ||
+    lower.includes('no charge') ||
+    lower.includes('no deposit') ||
+    lower.includes('no urgency') ||
+    lower.includes('no artificial') ||
+    lower.includes('no pressure') ||
+    lower.includes('no high-pressure') ||
+    lower.includes('no threat') ||
+    lower.includes('no suspicious') ||
+    lower.includes('no critical') ||
+    lower.includes('not detected') ||
+    lower.includes('none detected') ||
+    lower.includes('clean / unflagged') ||
+    lower.includes('clean / safe') ||
+    lower.includes('verified active') ||
+    lower.includes('established domain') ||
+    lower.includes('established active') ||
+    lower.includes('reputable corporate') ||
+    lower.includes('aligns with expected') ||
+    lower.includes('official corporate career') ||
+    lower.includes('official company website');
+
+  if (isPositiveClean) {
+    return 'clean';
+  }
+
+  // 2. Check for active danger / warning indicators
+  const isDangerWarning =
+    lower.includes('demand') ||
+    lower.includes('requires payment') ||
+    lower.includes('upfront fee') ||
+    lower.includes('laptop deposit') ||
+    lower.includes('registration fee') ||
+    lower.includes('training fee') ||
+    lower.includes('newly registered domain') ||
+    lower.includes('less than 90 days') ||
+    lower.includes('less than 3 months') ||
+    lower.includes('less than three months') ||
+    lower.includes('fake') ||
+    lower.includes('impersonat') ||
+    lower.includes('phishing') ||
+    lower.includes('malicious') ||
+    lower.includes('free gmail') ||
+    lower.includes('@gmail.com') ||
+    lower.includes('@yahoo.com') ||
+    lower.includes('telegram only') ||
+    lower.includes('whatsapp only') ||
+    lower.includes('discrepancy') ||
+    lower.includes('mismatch') ||
+    lower.includes('high risk') ||
+    lower.includes('severe risk') ||
+    lower.includes('caution:');
+
+  if (isDangerWarning) {
+    return 'warning';
+  }
+
+  return 'neutral';
+};
+
 const StructuredExplanationView = ({ text }) => {
   const sections = parseExplanationSections(text);
 
@@ -70,7 +146,7 @@ const StructuredExplanationView = ({ text }) => {
         }
 
         return (
-          <div key={idx} className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 space-y-2">
+          <div key={idx} className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80 space-y-2.5">
             <div className="flex items-center space-x-2 text-xs font-extrabold text-slate-100 tracking-tight border-b border-slate-800/60 pb-2">
               <span className="text-sm">{sec.emoji}</span>
               <span className="uppercase text-[11px] text-sky-300 font-bold tracking-wider">{sec.title}</span>
@@ -87,23 +163,24 @@ const StructuredExplanationView = ({ text }) => {
             )}
 
             {bulletLines.length > 0 && (
-              <ul className="space-y-2 pt-1">
+              <ul className="space-y-2.5 pt-1">
                 {bulletLines.map((line, lIdx) => {
-                  const isWarning = line.toLowerCase().includes('fee demand') || line.toLowerCase().includes('risk') || line.toLowerCase().includes('critical') || line.toLowerCase().includes('fake') || line.toLowerCase().includes('impersonation') || line.toLowerCase().includes('telegram');
-                  const isClean = line.toLowerCase().includes('no upfront fee') || line.toLowerCase().includes('no fee') || line.toLowerCase().includes('no urgency') || line.toLowerCase().includes('clean') || line.toLowerCase().includes('safe') || line.toLowerCase().includes('genuine') || line.toLowerCase().includes('established domain');
+                  const status = classifyBulletStatus(line);
 
                   return (
                     <li key={lIdx} className="flex items-start space-x-2.5 text-xs text-slate-200 leading-relaxed">
                       <span className="mt-0.5 flex-shrink-0">
-                        {isWarning ? (
+                        {status === 'warning' ? (
                           <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-                        ) : isClean ? (
+                        ) : status === 'clean' ? (
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                         ) : (
                           <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 block" />
                         )}
                       </span>
-                      <span className="font-medium text-slate-200">{line}</span>
+                      <span className={`font-medium ${status === 'warning' ? 'text-rose-200/95' : status === 'clean' ? 'text-slate-200' : 'text-slate-300'}`}>
+                        {line}
+                      </span>
                     </li>
                   );
                 })}

@@ -888,22 +888,23 @@ Please analyze a genuine recruitment posting or job vacancy URL to receive a com
 
         const findingsList = [];
         if (hasFee) {
-            findingsList.push("⚠️ CRITICAL: Upfront registration fee or deposit demanded. Legitimate employers NEVER charge candidates.");
+            findingsList.push("⚠️ Payment Demand Warning: Upfront registration fee, training charge, or deposit demanded. Legitimate employers NEVER charge candidates.");
         } else {
-            findingsList.push("No upfront registration fee demands or deposit requests detected in this submission.");
+            findingsList.push("✅ Fee Verification: Zero upfront registration fees or monetary deposit demands detected.");
         }
         if (hasUrgency) {
-            findingsList.push("Artificial urgency / pressure tactics detected in job offer terms.");
+            findingsList.push("⚠️ Pressure Tactics Warning: Artificial urgency or high-pressure recruitment terms detected.");
+        } else {
+            findingsList.push("✅ Communication Tone: Professional job terms without artificial time pressure.");
         }
         if (hasChannel) {
-            findingsList.push("Unofficial recruitment channels or informal contact routes detected (Telegram/WhatsApp).");
+            findingsList.push("⚠️ Channel Caution: Unofficial communication channels (Telegram / WhatsApp) detected for application routing.");
         }
         if (liveWhois?.is_new_domain) {
-            findingsList.push(`Newly registered domain (< 90 days): ${domain}. Ephemeral domains carry higher fraud risk.`);
+            findingsList.push(`⚠️ Domain Age Caution: Newly registered domain (< 90 days): '${domain}'.`);
         } else if (liveWhois?.domain_years && liveWhois.domain_years >= 1) {
-            findingsList.push(`Established domain history: ${domain} (${liveWhois.domain_age_formatted} old).`);
+            findingsList.push(`✅ Domain Reputation: Established active web record for '${domain}' (${liveWhois.domain_age_formatted} old).`);
         }
-        findingsList.push("SAFE-HIRE multi-signal recruitment fraud audit complete.");
 
         const evidenceBullets = findingsList.map(f => `• ${f}`).join("\n");
         const docSummary = file ? `Analyzed uploaded recruitment poster (${file.name}).` : (text ? `Analyzed submitted job description: "${text.slice(0, 150)}..."` : `Analyzed recruitment URL (${url || domain}).`);

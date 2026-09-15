@@ -433,18 +433,21 @@ CRITICAL INSTRUCTIONS & RULES:
    - Free email providers (@gmail.com, @yahoo.com) are NEVER company website domains.
    - If a phone number is malformed, too short, or a fake/dummy sequence, explicitly cite it as a warning or scam red flag.
 
-5. FORMAT THE "explanation" FIELD AS A RICH MULTI-SECTION AUDIT IN {target_lang_name}:
+5. FORMAT THE "explanation" FIELD AS A RICH, DEEP MULTI-SECTION AUDIT IN {target_lang_name}:
 📋 POSTER SUMMARY:
-[2-3 sentence overview of the submission, employer domain, and entities]
+[Provide a comprehensive, contextual summary of the submission, claimed employer, position, qualifications, and contact details.]
 
 🎯 SCAM RISK VERDICT:
-[Clear verdict explaining the risk level ({calc_risk}), why it was assigned, and the conclusion]
+[Provide an authoritative explanation of the assigned {calc_risk} verdict and scam probability score ({calc_score}/100), explaining the primary drivers behind this determination.]
 
 🔍 DETAILED EVIDENCE & RED FLAGS:
-[Bullet points analyzing upfront fees, employer domain reputation, email consistency, urgency, and channels]
+[Provide rich, dynamic, contextual bullet points analyzing the submission. DO NOT use rigid repetitive prefixes like 'Risk: Zero...'. Clearly separate positive clean checks from actual warning signs:
+- If a security check is clean/passed, state it positively (e.g. "• Fee Verification: Zero upfront registration fees, uniform charges, or monetary deposits were detected.")
+- If an item presents a risk/caution, explain the specific evidence and risk rationale (e.g. "• Domain Age Caution: The employer domain was registered less than 90 days ago, which is typical of newly launched sites and warrants verification via corporate directories.")
+- Provide deep analysis on contact channels, email authenticity, brand consistency, and urgency tactics with specific context from the submission.]
 
 ✅ SAFETY CONCLUSION & ADVICE:
-[Actionable guidance for the job seeker]
+[Provide clear, actionable, tailored safety guidance for the job seeker.]
 
 Return ONLY a raw JSON object with this exact structure (no markdown fences outside JSON):
 {{
@@ -722,7 +725,30 @@ Please submit a genuine recruitment flyer or job vacancy URL if you wish to veri
             }
 
         # 2. Job Recruitment Case
-        reasons = calc_reasons or ["Analysis completed."]
+        reasons = list(calc_reasons or [])
+        if not reasons or reasons == ["Analysis completed."]:
+            reasons = []
+            if linguistic_data.get("has_payment_demand"):
+                reasons.append("Payment Demand Warning: Upfront fees, uniform charges, or monetary deposits are requested.")
+            else:
+                reasons.append("Fee Verification: Zero upfront registration fees or monetary deposits detected.")
+
+            if linguistic_data.get("has_impersonation_risk"):
+                reasons.append("Brand Integrity Warning: Communication originates from an unverified or personal contact channel.")
+            else:
+                reasons.append("Brand Verification: Recruiter credentials and job details align with legitimate business formats.")
+
+            whois = verification_data.get("whois_info") or {}
+            if whois.get("is_new_domain"):
+                reasons.append(f"Domain Age Caution: The employer domain '{domain}' was registered less than 90 days ago.")
+            elif domain and domain != "Not Specified":
+                reasons.append(f"Domain Reputation: Verified active web record for '{domain}'.")
+
+            if linguistic_data.get("has_urgency_tactics"):
+                reasons.append("Pressure Tactics Warning: High-pressure deadlines or artificial time scarcity identified.")
+            else:
+                reasons.append("Communication Tone: Professional job specifications without artificial urgency.")
+
         sub_scores = calc_sub_scores or self._compute_sub_scores(linguistic_data, verification_data, is_job)
 
         explanation = f"""📋 POSTER SUMMARY:
