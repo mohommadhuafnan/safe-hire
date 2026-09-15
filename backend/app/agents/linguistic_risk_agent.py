@@ -68,8 +68,9 @@ class LinguisticRiskAgent:
 
     SUSPICIOUS_CONTACTS = [
         "telegram", "t.me", "whatsapp only", "dm on telegram", "inbox me", "contact on whatsapp", 
-        "no interview", "copy paste job", "typing job", "data entry $", "earn 1000 daily", 
-        "work 2 hours earn", "guaranteed income", "no qualification required", "direct joining", "no experience required earn"
+        "no interview", "copy paste job", "typing job", "data entry", "earn $", "earn 1000", "earn weekly", "earn daily",
+        "work 2 hours", "work from home 2 hours", "guaranteed income", "no qualification required", "direct joining", 
+        "no experience required", "instant selection", "quick cash", "daily payout", "weekly payout"
     ]
 
     def analyze(self, text: str = "", language: str = "en") -> dict:

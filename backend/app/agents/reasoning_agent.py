@@ -70,13 +70,192 @@ class ReasoningAgent:
         "deepseek-ai/DeepSeek-V3",
     ]
 
+    @classmethod
+    def calculate_deterministic_scam_score(
+        cls,
+        intake_data: dict,
+        linguistic_data: dict,
+        verification_data: dict
+    ) -> tuple[Union[int, str], str, dict, list]:
+        """
+        Calculates a 100% reproducible and deterministic scam probability score based on
+        mathematically weighted multi-agent evidence from Stages 1, 2, and 3.
+        """
+        intake_data = intake_data or {}
+        linguistic_data = linguistic_data or {}
+        verification_data = verification_data or {}
+
+        is_job = intake_data.get("is_job_poster", True)
+        content_type = intake_data.get("content_type", "job_poster")
+        is_unreadable = bool(intake_data.get("is_unreadable"))
+
+        # 1. Non-Job Content Case
+        if not is_job or content_type == "not_job_poster":
+            return (
+                "N/A",
+                "Not a Job Advertisement",
+                {"financial_fee_risk": 0, "impersonation_risk": 0, "domain_reputation_risk": 0, "urgency_pressure_risk": 0},
+                ["Content classified as non-recruitment media. Scam probability scoring is not applicable."]
+            )
+
+        # 2. Unreadable / Low Quality Case
+        if is_unreadable or content_type == "unclear":
+            return (
+                "N/A",
+                "Unable to Determine",
+                {"financial_fee_risk": 0, "impersonation_risk": 0, "domain_reputation_risk": 0, "urgency_pressure_risk": 0},
+                ["Image or document quality insufficient for automated scam analysis."]
+            )
+
+        # 3. Job Recruitment Evidence Scoring
+        has_payment = bool(linguistic_data.get("has_payment_demand"))
+        payment_terms = linguistic_data.get("matched_payment") or []
+        has_impersonation = bool(linguistic_data.get("has_impersonation_risk"))
+        impersonation_flags = linguistic_data.get("impersonation_flags") or []
+        has_urgency = bool(linguistic_data.get("has_urgency_tactics"))
+        urgency_terms = linguistic_data.get("matched_urgency") or []
+        has_suspicious_channels = bool(linguistic_data.get("has_suspicious_channels"))
+        suspicious_terms = linguistic_data.get("matched_suspicious_terms") or []
+        claimed_brand = linguistic_data.get("claimed_brand") or intake_data.get("claimed_brand") or ""
+        free_email = linguistic_data.get("free_email") or ""
+        domain = verification_data.get("domain") or "Not Specified"
+        is_social_wrapper = bool(verification_data.get("is_social_wrapper"))
+        domain_match = verification_data.get("domain_match")
+        trust_score = verification_data.get("verification_trust_score", 70)
+        whois_info = verification_data.get("whois_info") or {}
+        is_new_domain = bool(whois_info.get("is_new_domain"))
+        domain_age_days = whois_info.get("registered_days")
+        domain_age_fmt = whois_info.get("domain_age_formatted", "Unavailable")
+        safe_browsing_flag = bool((verification_data.get("safe_browsing") or {}).get("flagged"))
+        email_val = verification_data.get("email_validation") or {}
+        is_disposable_email = bool(email_val.get("is_disposable_email"))
+        phone_val = verification_data.get("phone_validation") or {}
+        is_invalid_phone = bool(phone_val.get("is_valid") is False)
+
+        score = 10  # Baseline low risk for standard employment advertisement
+        reasons = []
+
+        # Upfront Payment / Registration Fee (Critical Red Flag)
+        if has_payment:
+            score += 60
+            reasons.append(f"⚠️ Upfront fee / deposit demanded: {', '.join(payment_terms[:3])}. Legitimate employers never charge candidates.")
+
+        # Safe Browsing Threat (Critical Red Flag)
+        if safe_browsing_flag:
+            score += 45
+            reasons.append("🌐 Threat detected on URL: Safe Browsing flagged the destination link for security threats.")
+
+        # Brand Impersonation & Free Webmail Mismatch
+        if has_impersonation:
+            score += 30
+            reasons.append(f"🎭 Brand impersonation detected: {'; '.join(impersonation_flags[:2])}")
+        elif claimed_brand and free_email and (not domain or domain == "Not Specified" or is_social_wrapper):
+            score += 20
+            reasons.append(f"🏢 Recruiter claims '{claimed_brand}' but uses free email (@{free_email}) without verifiable company domain.")
+
+        # Disposable Email
+        if is_disposable_email:
+            score += 30
+            reasons.append("📧 Contact email is a temporary or disposable email address.")
+
+        # Newly Registered Domain vs Established Domain
+        if is_new_domain and not is_social_wrapper and domain and domain != "Not Specified":
+            score += 25 if (domain_age_days is not None and domain_age_days < 30) else 15
+            reasons.append(f"🌐 Newly registered domain ({domain_age_fmt}): '{domain}'. High frequency in ephemeral scam campaigns.")
+        elif whois_info.get("status") == "verified" and domain_age_days is not None and domain_age_days > 365 and not is_social_wrapper:
+            if not has_payment and not has_impersonation and not safe_browsing_flag:
+                score -= 10
+                reasons.append(f"✅ Established employer domain reference: {domain} ({domain_age_fmt})")
+
+        # Domain Mismatch
+        if domain_match is False and not is_social_wrapper:
+            score += 20
+            reasons.append(f"⚠️ Domain discrepancy: Job advertisement is associated with '{domain}', but recruiter contact uses a different domain.")
+
+        # Suspicious Informal Channels & Unrealistic Work Promises
+        if has_suspicious_channels:
+            num_suspicious = len(suspicious_terms)
+            if num_suspicious >= 3:
+                score += 40
+                reasons.append(f"📱 High-risk informal channels & unrealistic work promises ({num_suspicious} signals): {', '.join(suspicious_terms[:4])}.")
+            elif num_suspicious >= 2:
+                score += 25
+                reasons.append(f"📱 Informal recruitment channel & unrealistic terms: {', '.join(suspicious_terms[:3])}.")
+            else:
+                score += 15
+                reasons.append(f"📱 Informal recruitment channel / unrealistic terms: {', '.join(suspicious_terms[:2])}.")
+
+        # Artificial Urgency
+        if has_urgency:
+            score += 10
+            reasons.append(f"⏰ Artificial urgency / pressure tactics detected: {', '.join(urgency_terms[:2])}.")
+
+        # Invalid / Dummy Phone
+        if is_invalid_phone:
+            score += 15
+            reasons.append("📞 Contact phone number is invalid, dummy, or malformed.")
+
+        # Bound calibration
+        if has_payment:
+            score = max(75, score)
+        elif has_impersonation or safe_browsing_flag:
+            score = max(55, score)
+        elif not has_payment and not has_impersonation and not safe_browsing_flag and not is_new_domain and not has_suspicious_channels and not has_urgency and not is_invalid_phone:
+            # Clean vacancy
+            score = min(score, 18)
+            if not reasons:
+                reasons.append("✅ No upfront fee demands, disposable domains, or impersonation flags detected.")
+
+        score = max(5, min(98, score))
+        risk_level = cls.score_to_risk_level(score)
+
+        # Sub-scores
+        fin_risk = 95 if has_payment else 5
+        imp_risk = 85 if has_impersonation else (50 if (claimed_brand and free_email) else (20 if free_email else 10))
+        if domain and domain != "Not Specified" and not is_social_wrapper:
+            dom_risk = max(5, min(95, 100 - int(trust_score)))
+        elif is_social_wrapper:
+            dom_risk = 20
+        else:
+            dom_risk = 15
+        urg_risk = 80 if has_urgency else 5
+
+        sub_scores = {
+            "financial_fee_risk": fin_risk,
+            "impersonation_risk": imp_risk,
+            "domain_reputation_risk": dom_risk,
+            "urgency_pressure_risk": urg_risk
+        }
+
+        return (score, risk_level, sub_scores, reasons)
+
+    @staticmethod
+    def score_to_risk_level(score: Union[int, float, str]) -> str:
+        """Converts numeric scam probability score into standard human-readable risk category."""
+        if str(score).upper() == "N/A":
+            return "Not a Job Advertisement"
+        try:
+            num = int(score)
+            if num >= 80:
+                return "Severe Risk"
+            elif num >= 60:
+                return "High Risk"
+            elif num >= 40:
+                return "Moderate Risk"
+            elif num >= 20:
+                return "Low / Moderate Risk"
+            else:
+                return "Low Apparent Risk"
+        except Exception:
+            return "Low Apparent Risk"
+
     def _call_gemini_ai(
         self,
         prompt: str,
         image_bytes: Optional[bytes] = None,
         mime_type: str = "image/png"
     ) -> Optional[dict]:
-        """Call active Google Gemini AI models."""
+        """Call active Google Gemini AI models with temperature 0.0 for deterministic reasoning."""
         gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
         if not gemini_key:
             return None
@@ -90,7 +269,7 @@ class ReasoningAgent:
 
             payload = {
                 "contents": [{"parts": parts}],
-                "generationConfig": {"temperature": 0.15, "maxOutputTokens": 4096}
+                "generationConfig": {"temperature": 0.0, "maxOutputTokens": 4096}
             }
 
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
@@ -120,7 +299,7 @@ class ReasoningAgent:
         return None
 
     def _call_deepseek_ai(self, prompt: str) -> Optional[dict]:
-        """Call DeepSeek AI via Hugging Face Router as secondary reasoning provider."""
+        """Call DeepSeek AI via Hugging Face Router as secondary reasoning provider with temperature 0.0."""
         api_key = getattr(settings, "DEEPSEEK_V4_API_KEY", "") or getattr(settings, "HF_TOKEN", "") or ""
         if not api_key:
             return None
@@ -132,7 +311,7 @@ class ReasoningAgent:
             payload = {
                 "model": model_name,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.15,
+                "temperature": 0.0,
                 "max_tokens": 4096,
             }
             try:
@@ -156,9 +335,13 @@ class ReasoningAgent:
         linguistic_data: dict,
         verification_data: dict,
         target_lang_name: str,
-        language: str
+        language: str,
+        calc_score: Union[int, str],
+        calc_risk: str,
+        calc_sub_scores: dict,
+        calc_reasons: list
     ) -> str:
-        """Build structured reasoning prompt."""
+        """Build structured reasoning prompt with calibrated score anchor."""
         content_type = intake_data.get("content_type", "job_poster")
         is_job_poster = intake_data.get("is_job_poster", True)
         specific_category = intake_data.get("specific_category") or intake_data.get("poster_type") or "Document"
@@ -177,8 +360,21 @@ class ReasoningAgent:
         evidence_list.extend(linguistic_data.get("evidence_items") or [])
         evidence_list.extend(verification_data.get("evidence_items") or [])
 
+        formatted_score_val = f'"{calc_score}"' if isinstance(calc_score, str) else str(calc_score)
+
         return f"""You are SAFE-HIRE's Senior Recruitment Fraud & Poster Intelligence Reasoning Agent.
 Analyze the structured intelligence below and produce a rigorous, evidence-based security audit report.
+
+[CALCULATED MULTI-AGENT COMPOSITE SCORE & DETERMINISTIC GROUND TRUTH]:
+- Authoritative Quantitative Scam Probability Score: {calc_score}/100
+- Authoritative Risk Level: {calc_risk}
+- Sub-Score Breakdown:
+  * Financial Fee Risk: {calc_sub_scores.get('financial_fee_risk', 0)}/100
+  * Impersonation Risk: {calc_sub_scores.get('impersonation_risk', 0)}/100
+  * Domain Reputation Risk: {calc_sub_scores.get('domain_reputation_risk', 0)}/100
+  * Urgency Pressure Risk: {calc_sub_scores.get('urgency_pressure_risk', 0)}/100
+- Key Multi-Agent Findings:
+{json.dumps(calc_reasons, indent=2)}
 
 [SUBMISSION INTEL & CLASSIFICATION]:
 - Input Source: {intake_data.get('source', 'text')}
@@ -219,20 +415,16 @@ CRITICAL INSTRUCTIONS & RULES:
 2. UNREADABLE / POOR QUALITY CONTENT:
    - If text is unreadable or OCR failed, set "content_type": "unclear", "scam_score": "N/A", "risk_level": "Unable to Determine".
 
-3. JOB RECRUITMENT CONTENT & DOMAIN REPUTATION:
-   - Compute an evidence-based scam probability score (0 to 100).
-   - NEVER assume a job vacancy is safe because it was submitted via LinkedIn, Facebook, or a URL shortener. The platform domain (e.g. linkedin.com) is only a host wrapper, NOT proof that the hiring company is legitimate.
-   - If WHOIS registration data is unavailable for the employer domain, state that registration age is unavailable rather than assuming 0 days or fabricated age.
-   - If there is a domain mismatch (e.g. company domain is different from contact email domain), highlight this discrepancy as a risk factor.
-   - A score of 0-20 represents "Low Apparent Risk" (no major red flags found). NEVER claim "100% Guaranteed Safe" or "0% Scam Guaranteed".
-   - If there are fee demands, set scam_score >= 75 ("Severe Risk").
-   - If there is brand impersonation with generic free email, set scam_score >= 65 ("High Risk").
+3. SCAM SCORE GROUND TRUTH & REPRODUCIBILITY:
+   - You MUST set "scam_score": {formatted_score_val} and "risk_level": "{calc_risk}" in your output JSON.
+   - You MUST set "sub_scores" matching the pre-calculated sub-scores above.
+   - Do NOT guess or alter the numerical scam score. Your role is to provide deep qualitative reasoning, explanation, verified facts vs inferences, and actionable safety recommendations in {target_lang_name}.
 
 4. SEPARATE OBSERVED FACTS FROM AI INFERENCES & STRICT ACCURACY ON CONTACTS:
    - "verified_facts": Things directly observable in the submission or confirmed by verification services.
    - "ai_inferences": Deductions or risk interpretations made by the model.
    - NEVER state that an email, website domain, or phone number is "verified" or "authentic" if none was provided in the input, or if it failed formatting checks.
-   - Free email providers (@gmail.com, @yahoo.com) are NEVER company website domains. Emphasize that reputable large corporations use corporate domain email addresses.
+   - Free email providers (@gmail.com, @yahoo.com) are NEVER company website domains.
    - If a phone number is malformed, too short, or a fake/dummy sequence, explicitly cite it as a warning or scam red flag.
 
 5. FORMAT THE "explanation" FIELD AS A RICH MULTI-SECTION AUDIT IN {target_lang_name}:
@@ -240,7 +432,7 @@ CRITICAL INSTRUCTIONS & RULES:
 [2-3 sentence overview of the submission, employer domain, and entities]
 
 🎯 SCAM RISK VERDICT:
-[Clear verdict explaining the risk level, why it was assigned, and the conclusion]
+[Clear verdict explaining the risk level ({calc_risk}), why it was assigned, and the conclusion]
 
 🔍 DETAILED EVIDENCE & RED FLAGS:
 [Bullet points analyzing upfront fees, employer domain reputation, email consistency, urgency, and channels]
@@ -252,18 +444,18 @@ Return ONLY a raw JSON object with this exact structure (no markdown fences outs
 {{
   "content_type": "job_poster | not_job_poster | unclear",
   "is_job_poster": true or false,
-  "scam_score": <integer 0-100 or "N/A">,
-  "risk_level": "Severe Risk | High Risk | Moderate Risk | Low Apparent Risk | Not a Job Advertisement | Unable to Determine",
-  "confidence_score": <integer 80-99>,
+  "scam_score": {formatted_score_val},
+  "risk_level": "{calc_risk}",
+  "confidence_score": 95,
   "verified_facts": ["fact 1", "fact 2"],
   "ai_inferences": ["inference 1", "inference 2"],
   "reasons": ["finding 1", "finding 2", "finding 3"],
   "explanation": "<Full rich explanation in target language>",
   "sub_scores": {{
-    "financial_fee_risk": <integer 0-100>,
-    "impersonation_risk": <integer 0-100>,
-    "domain_reputation_risk": <integer 0-100>,
-    "urgency_pressure_risk": <integer 0-100>
+    "financial_fee_risk": {calc_sub_scores.get('financial_fee_risk', 0)},
+    "impersonation_risk": {calc_sub_scores.get('impersonation_risk', 0)},
+    "domain_reputation_risk": {calc_sub_scores.get('domain_reputation_risk', 0)},
+    "urgency_pressure_risk": {calc_sub_scores.get('urgency_pressure_risk', 0)}
   }},
   "recommendations": [
     "Actionable safety recommendation 1",
@@ -294,28 +486,63 @@ Return ONLY a raw JSON object with this exact structure (no markdown fences outs
         target_lang_name = lang_map.get(language, "English")
         mime_type = intake_data.get("mime_type") or "image/png"
 
-        # Check if intake already decisively determined it's unreadable
+        # 0. Check if intake already decisively determined it's unreadable
         if intake_data.get("is_unreadable") is True:
             return self._build_unreadable_result(intake_data, language, target_lang_name)
 
-        # Build prompt
-        prompt = self._build_prompt(intake_data, linguistic_data, verification_data, target_lang_name, language)
+        # 1. Compute Authoritative Deterministic Score & Sub-scores
+        calc_score, calc_risk, calc_sub_scores, calc_reasons = self.calculate_deterministic_scam_score(
+            intake_data, linguistic_data, verification_data
+        )
 
-        # 1. Primary Reasoning: Google Gemini AI
+        # 2. Build Prompt Grounded with Deterministic Anchor
+        prompt = self._build_prompt(
+            intake_data,
+            linguistic_data,
+            verification_data,
+            target_lang_name,
+            language,
+            calc_score,
+            calc_risk,
+            calc_sub_scores,
+            calc_reasons
+        )
+
+        # 3. Primary Reasoning: Google Gemini AI
         ai_res = self._call_gemini_ai(prompt, image_bytes, mime_type)
 
-        # 2. Secondary Reasoning: DeepSeek AI (text-only)
+        # 4. Secondary Reasoning: DeepSeek AI (text-only)
         if not ai_res:
             logger.info("Gemini reasoning unavailable. Trying DeepSeek AI...")
             ai_res = self._call_deepseek_ai(prompt)
 
-        # If AI generated response, validate and normalize
+        # If AI generated response, validate and normalize with deterministic score anchor
         if ai_res and isinstance(ai_res, dict) and ("scam_score" in ai_res or "risk_level" in ai_res or "explanation" in ai_res):
-            return self._normalize_ai_response(ai_res, intake_data, linguistic_data, verification_data, language)
+            return self._normalize_ai_response(
+                ai_res,
+                intake_data,
+                linguistic_data,
+                verification_data,
+                language,
+                calc_score,
+                calc_risk,
+                calc_sub_scores,
+                calc_reasons
+            )
 
-        # 3. Dynamic Rule Engine Fallback (guaranteed uptime when all AI APIs are offline)
+        # 5. Dynamic Rule Engine Fallback (guaranteed uptime when all AI APIs are offline)
         logger.warning("All AI reasoning APIs unavailable. Using dynamic evidence synthesis engine.")
-        return self._dynamic_evidence_synthesis(intake_data, linguistic_data, verification_data, language, target_lang_name)
+        return self._dynamic_evidence_synthesis(
+            intake_data,
+            linguistic_data,
+            verification_data,
+            language,
+            target_lang_name,
+            calc_score,
+            calc_risk,
+            calc_sub_scores,
+            calc_reasons
+        )
 
     def _normalize_ai_response(
         self,
@@ -323,9 +550,13 @@ Return ONLY a raw JSON object with this exact structure (no markdown fences outs
         intake_data: dict,
         linguistic_data: dict,
         verification_data: dict,
-        language: str
+        language: str,
+        calc_score: Union[int, str] = 15,
+        calc_risk: str = "Low Apparent Risk",
+        calc_sub_scores: dict = None,
+        calc_reasons: list = None
     ) -> dict:
-        """Validates, sanitizes, and normalizes AI reasoning response."""
+        """Validates, sanitizes, and normalizes AI reasoning response with 100% deterministic score anchor."""
         intake_is_job = intake_data.get("is_job_poster", True)
         content_type = ai_res.get("content_type") or intake_data.get("content_type", "job_poster")
         is_job = ai_res.get("is_job_poster")
@@ -335,25 +566,20 @@ Return ONLY a raw JSON object with this exact structure (no markdown fences outs
             is_job = True
             content_type = "job_poster"
 
-        raw_score = ai_res.get("scam_score")
-        if not is_job or content_type == "not_job_poster" or str(raw_score).upper() == "N/A":
+        if not is_job or content_type == "not_job_poster" or str(calc_score).upper() == "N/A":
             final_score = "N/A"
             final_risk = "Not a Job Advertisement" if not is_job else (ai_res.get("risk_level") or "Not a Job Advertisement")
         else:
-            try:
-                final_score = max(0, min(100, int(raw_score)))
-                final_risk = ai_res.get("risk_level") or self._score_to_risk_level(final_score)
-            except Exception:
-                final_score = 25
-                final_risk = "Low Apparent Risk"
+            final_score = calc_score
+            final_risk = calc_risk
 
-        sub_scores = ai_res.get("sub_scores")
-        if not isinstance(sub_scores, dict):
-            sub_scores = self._compute_sub_scores(linguistic_data, verification_data, is_job)
+        sub_scores = calc_sub_scores or self._compute_sub_scores(linguistic_data, verification_data, is_job)
 
-        reasons = ai_res.get("reasons") or ai_res.get("breakdown_signals") or []
-        if not isinstance(reasons, list):
-            reasons = [str(reasons)]
+        raw_reasons = ai_res.get("reasons") or ai_res.get("breakdown_signals") or []
+        if not isinstance(raw_reasons, list):
+            raw_reasons = [str(raw_reasons)]
+
+        combined_reasons = list(dict.fromkeys((calc_reasons or []) + raw_reasons))
 
         recs = ai_res.get("recommendations") or []
         if not isinstance(recs, list) or len(recs) == 0:
@@ -370,14 +596,14 @@ Return ONLY a raw JSON object with this exact structure (no markdown fences outs
             "content_type": content_type,
             "is_job_poster": is_job,
             "scam_score": final_score,
-            "confidence_score": ai_res.get("confidence_score", 95),
+            "confidence_score": 95,
             "risk_level": final_risk,
             "explanation": explanation,
-            "breakdown_signals": reasons,
+            "breakdown_signals": combined_reasons,
             "recommendations": recs,
             "sub_scores": sub_scores,
             "verified_facts": ai_res.get("verified_facts") or intake_data.get("verified_facts") or [],
-            "ai_inferences": ai_res.get("ai_inferences") or []
+            "ai_inferences": ai_res.get("ai_inferences") or combined_reasons
         }
 
     def _build_unreadable_result(self, intake_data: dict, language: str, target_lang_name: str) -> dict:
@@ -411,18 +637,6 @@ Please upload a higher-resolution, clearer image or document of the job vacancy.
             "ai_inferences": ["Image quality insufficient for automated fraud analysis"]
         }
 
-    def _score_to_risk_level(self, score: int) -> str:
-        if score >= 81:
-            return "Severe Risk"
-        elif score >= 61:
-            return "High Risk"
-        elif score >= 41:
-            return "Moderate Risk"
-        elif score >= 21:
-            return "Low / Moderate Risk"
-        else:
-            return "Low Apparent Risk"
-
     def _compute_sub_scores(self, linguistic_data: dict, verification_data: dict, is_job: bool) -> dict:
         if not is_job:
             return {"financial_fee_risk": 0, "impersonation_risk": 0, "domain_reputation_risk": 0, "urgency_pressure_risk": 0}
@@ -446,7 +660,11 @@ Please upload a higher-resolution, clearer image or document of the job vacancy.
         linguistic_data: dict,
         verification_data: dict,
         language: str,
-        target_lang_name: str
+        target_lang_name: str,
+        calc_score: Union[int, str] = 15,
+        calc_risk: str = "Low Apparent Risk",
+        calc_sub_scores: dict = None,
+        calc_reasons: list = None
     ) -> dict:
         """Dynamic rule-based evidence synthesis engine (input-dependent, no static templates)."""
         content_type = intake_data.get("content_type", "job_poster")
@@ -454,10 +672,12 @@ Please upload a higher-resolution, clearer image or document of the job vacancy.
         specific_category = intake_data.get("specific_category") or intake_data.get("poster_type") or "Document"
         poster_summary = intake_data.get("poster_summary") or "Content analyzed."
         cleaned_snippet = (intake_data.get("cleaned_text") or "").replace("\n", " ").strip()[:300]
+        domain = verification_data.get("domain") or "Not Specified"
+        is_social_wrapper = bool(verification_data.get("is_social_wrapper"))
+        claimed_brand = linguistic_data.get("claimed_brand") or intake_data.get("claimed_brand") or ""
 
         # 1. Non-Job Content Case
-        if not is_job or content_type == "not_job_poster":
-            domain = verification_data.get("domain")
+        if not is_job or content_type == "not_job_poster" or str(calc_score).upper() == "N/A":
             explanation = f"""📋 POSTER SUMMARY:
 • Classification: {specific_category}
 • Analyzed Content: {poster_summary}
@@ -495,73 +715,9 @@ Please submit a genuine recruitment flyer or job vacancy URL if you wish to veri
                 "ai_inferences": [f"Content matches {specific_category}"]
             }
 
-        # 2. Job Recruitment Case — Evidence-Based Scoring Calculation
-        has_payment = bool(linguistic_data.get("has_payment_demand"))
-        payment_terms = linguistic_data.get("matched_payment") or []
-        has_impersonation = bool(linguistic_data.get("has_impersonation_risk"))
-        impersonation_flags = linguistic_data.get("impersonation_flags") or []
-        has_urgency = bool(linguistic_data.get("has_urgency_tactics"))
-        urgency_terms = linguistic_data.get("matched_urgency") or []
-        has_suspicious_channels = bool(linguistic_data.get("has_suspicious_channels"))
-        suspicious_terms = linguistic_data.get("matched_suspicious_terms") or []
-        claimed_brand = linguistic_data.get("claimed_brand") or intake_data.get("claimed_brand") or ""
-        free_email = linguistic_data.get("free_email") or ""
-        domain = verification_data.get("domain") or "Not Specified"
-        is_social_wrapper = bool(verification_data.get("is_social_wrapper"))
-        domain_match = verification_data.get("domain_match")
-        trust_score = verification_data.get("verification_trust_score", 75)
-        is_new_domain = bool((verification_data.get("whois_info") or {}).get("is_new_domain"))
-        domain_age_fmt = (verification_data.get("whois_info") or {}).get("domain_age_formatted", "Unavailable")
-        safe_browsing_flag = bool((verification_data.get("safe_browsing") or {}).get("flagged"))
-
-        # Base evidence score calculation
-        score = 10  # Baseline low risk
-        reasons = []
-
-        if has_payment:
-            score += 55
-            reasons.append(f"⚠️ Upfront fee / deposit demanded: {', '.join(payment_terms[:3])}. Legitimate employers never charge candidates.")
-
-        if has_impersonation:
-            score += 30
-            reasons.append(f"🎭 Brand impersonation detected: {'; '.join(impersonation_flags[:2])}")
-
-        if safe_browsing_flag:
-            score += 45
-            reasons.append(f"🌐 Threat detected on URL: Safe Browsing flagged the destination link.")
-
-        if is_new_domain and not is_social_wrapper:
-            score += 20
-            reasons.append(f"🌐 Newly registered domain ({domain_age_fmt}): '{domain}'. High frequency in ephemeral scam campaigns.")
-
-        if domain_match is False:
-            score += 20
-            reasons.append(f"⚠️ Domain discrepancy: Job advertisement is associated with '{domain}', but recruiter contact uses a different domain.")
-
-        if has_suspicious_channels:
-            score += 15
-            reasons.append(f"📱 Informal recruitment channel: {', '.join(suspicious_terms[:2])} without corporate domain presence.")
-
-        if has_urgency:
-            score += 10
-            reasons.append(f"⏰ Artificial urgency / pressure tactics detected: {', '.join(urgency_terms[:2])}.")
-
-        # If brand claimed but domain missing
-        if claimed_brand and domain == "Not Specified" and free_email:
-            score += 15
-            reasons.append(f"🏢 Recruiter claims '{claimed_brand}' but uses free email without verifiable company domain.")
-
-        if is_social_wrapper and domain != "Not Specified":
-            reasons.append(f"ℹ️ Submitted via {verification_data.get('social_platform', 'Social Platform')} ({domain}). Note: Wrapper platform, not employer's standalone domain.")
-
-        # If clean verified posting
-        if score <= 15:
-            reasons.append("✅ No upfront fee demands, disposable domains, or impersonation flags detected.")
-            if domain and domain != "Not Specified" and not is_social_wrapper:
-                reasons.append(f"✅ Established employer domain reference: {domain} ({domain_age_fmt})")
-
-        score = max(5, min(98, score))
-        risk_level = self._score_to_risk_level(score)
+        # 2. Job Recruitment Case
+        reasons = calc_reasons or ["Analysis completed."]
+        sub_scores = calc_sub_scores or self._compute_sub_scores(linguistic_data, verification_data, is_job)
 
         explanation = f"""📋 POSTER SUMMARY:
 • Extracted Snippet: \"{cleaned_snippet}\"
@@ -569,8 +725,8 @@ Please submit a genuine recruitment flyer or job vacancy URL if you wish to veri
 • Employer Domain: {domain} ({'Social Platform' if is_social_wrapper else verification_data.get('domain_source_label', 'Identified Domain')})
 
 🎯 SCAM RISK VERDICT:
-Risk Level: {risk_level} (Estimated Risk Score: {score}/100)
-{('Critical fraud indicators detected in this posting.' if score >= 60 else 'No decisive scam indicators found based on available evidence.')}
+Risk Level: {calc_risk} (Scam Probability Score: {calc_score}/100)
+{('Critical fraud indicators detected in this posting.' if (isinstance(calc_score, int) and calc_score >= 60) else 'No decisive scam indicators found based on available evidence.')}
 
 🔍 DETAILED EVIDENCE & RED FLAGS:
 """ + "\n".join(f"• {r}" for r in reasons) + f"""
@@ -581,21 +737,16 @@ Verify the offer directly on the official career portal of {claimed_brand or 'th
         return {
             "content_type": "job_poster",
             "is_job_poster": True,
-            "scam_score": score,
-            "confidence_score": 90,
-            "risk_level": risk_level,
+            "scam_score": calc_score,
+            "confidence_score": 95,
+            "risk_level": calc_risk,
             "explanation": explanation,
             "breakdown_signals": reasons,
             "recommendations": [
                 f"Verify the recruiter identity on the official career portal of {claimed_brand or 'the company'}.",
                 "Never pay registration fees, security deposits, or uniform charges for any job."
             ],
-            "sub_scores": {
-                "financial_fee_risk": 95 if has_payment else 5,
-                "impersonation_risk": 85 if has_impersonation else 10,
-                "domain_reputation_risk": max(0, 100 - int(trust_score)),
-                "urgency_pressure_risk": 75 if has_urgency else 5
-            },
+            "sub_scores": sub_scores,
             "verified_facts": intake_data.get("verified_facts") or [],
             "ai_inferences": reasons
         }

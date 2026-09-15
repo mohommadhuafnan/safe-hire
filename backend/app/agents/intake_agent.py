@@ -293,7 +293,7 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                                 ]
                             }
                         ],
-                        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1500}
+                        "generationConfig": {"temperature": 0.0, "maxOutputTokens": 1500}
                     }
                     gemini_timeout = getattr(settings, "GEMINI_TIMEOUT", 15) or 15
                     res = requests.post(url, json=payload, headers=gemini_headers, timeout=gemini_timeout)

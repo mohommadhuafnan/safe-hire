@@ -464,6 +464,112 @@ class GeminiAPIClient {
     }
 
     /**
+     * Compute a 100% deterministic scam score from extracted text & entities
+     */
+    static calculateDeterministicScamScore({ isJob = true, text = "", domain = "", hasWhois = false, isNewDomain = false, registeredDays = null }) {
+        if (!isJob) {
+            return {
+                score: "N/A",
+                riskLevel: "Not a Job Advertisement",
+                subScores: { financial_fee_risk: 0, impersonation_risk: 0, domain_reputation_risk: 0, urgency_pressure_risk: 0 },
+                reasons: ["Non-recruitment content — scam probability scoring is not applicable."]
+            };
+        }
+
+        const lower = (text || "").toLowerCase();
+        const feeTerms = [
+            "registration fee", "processing fee", "refundable deposit", "security fee", "security deposit",
+            "buy kit", "training fee", "laptop fee", "pay first", "send money", "id card charge", "interview fee",
+            "uniform fee", "application fee", "joining fee", "service charge", "pay lkr", "pay rs", "pay inr",
+            "pay $", "pay usd", "advance payment", "transfer fee", "fee required", "small deposit", "gpay", "phonepe",
+            "paytm", "easycash", "bkash", "nagad", "ගාස්තුව", "තැන්පතු මුදල", "ලියාපදිංචි ගාස්තු", "ලියාපදිංචි මුදල",
+            "கட்டணம்", "முன்பணம்", "பதிவு கட்டணம்", "फीस", "पंजीकरण शुल्क", "নিবন্ধন ফি"
+        ];
+        const urgencyTerms = [
+            "offer expires today", "instant selection", "urgent hiring pay now", "guaranteed job in 24 hours",
+            "immediate hiring", "apply immediately", "spot selection", "urgent requirement", "වහාම අයදුම් කරන්න",
+            "ක්ෂණික බඳවාගැනීම්", "உடனடி வேலை", "அவசர ஆட்சேர்ப்பு", "तुरंत भर्ती", "জরুরী নিয়োগ"
+        ];
+        const suspiciousChannels = [
+            "telegram", "t.me", "whatsapp only", "dm on telegram", "inbox me", "contact on whatsapp",
+            "no interview", "copy paste job", "typing job", "data entry", "earn $", "earn 1000", "earn weekly", "earn daily",
+            "work 2 hours", "work from home 2 hours", "guaranteed income", "no qualification required", "direct joining",
+            "no experience required", "instant selection", "quick cash", "daily payout", "weekly payout"
+        ];
+        const freeEmailDomains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "rediffmail.com", "yandex.com", "protonmail.com"];
+        const corporateBrands = ["google", "amazon", "microsoft", "dialog", "virtusa", "wso2", "tcs", "infosys", "unilever", "hayleys", "john keells", "sbi", "boc", "sampath bank", "hcl", "wipro", "accenture", "ibm", "nestle", "brandix", "peoples bank", "commercial bank"];
+
+        const hasFee = feeTerms.some(t => lower.includes(t));
+        const hasUrgency = urgencyTerms.some(t => lower.includes(t));
+        const matchedChannels = suspiciousChannels.filter(t => lower.includes(t));
+        const hasFreeEmail = freeEmailDomains.some(d => lower.includes(`@${d}`) || lower.includes(d));
+        const hasBrand = corporateBrands.some(b => lower.includes(b));
+        const hasImpersonation = hasBrand && hasFreeEmail;
+
+        let score = 10;
+        const reasons = [];
+
+        if (hasFee) {
+            score += 60;
+            reasons.push("⚠️ Upfront fee or deposit demanded. Legitimate employers never charge candidates.");
+        }
+        if (hasImpersonation) {
+            score += 30;
+            reasons.push("🎭 Brand impersonation detected: Corporate brand claimed with free generic email.");
+        } else if (hasBrand && (!domain || domain === "Not Specified") && hasFreeEmail) {
+            score += 20;
+            reasons.push("🏢 Recruiter claims a corporate entity without verifiable company domain.");
+        }
+        if (isNewDomain) {
+            score += (registeredDays !== null && registeredDays < 30) ? 25 : 15;
+            reasons.push("🌐 Newly registered domain (< 90 days). High frequency in ephemeral scam campaigns.");
+        } else if (hasWhois && registeredDays !== null && registeredDays > 365 && !hasFee && !hasImpersonation) {
+            score -= 10;
+            reasons.push("✅ Established employer domain registration history.");
+        }
+        if (matchedChannels.length >= 3) {
+            score += 40;
+            reasons.push(`📱 High-risk informal channels & unrealistic work promises (${matchedChannels.length} signals): ${matchedChannels.slice(0, 3).join(', ')}.`);
+        } else if (matchedChannels.length >= 2) {
+            score += 25;
+            reasons.push(`📱 Informal recruitment channel & unrealistic terms: ${matchedChannels.slice(0, 2).join(', ')}.`);
+        } else if (matchedChannels.length >= 1) {
+            score += 15;
+            reasons.push(`📱 Informal recruitment channel / unrealistic terms: ${matchedChannels.slice(0, 2).join(', ')}.`);
+        }
+        if (hasUrgency) {
+            score += 10;
+            reasons.push("⏰ Artificial urgency / pressure tactics detected.");
+        }
+
+        if (hasFee) {
+            score = Math.max(75, score);
+        } else if (hasImpersonation) {
+            score = Math.max(55, score);
+        } else if (!hasFee && !hasImpersonation && !isNewDomain && !hasChannel && !hasUrgency) {
+            score = Math.min(score, 18);
+            if (reasons.length === 0) reasons.push("✅ No upfront fee demands, disposable domains, or impersonation flags detected.");
+        }
+
+        score = Math.max(5, Math.min(98, score));
+
+        let riskLevel = "Low Apparent Risk";
+        if (score >= 80) riskLevel = "Severe Risk";
+        else if (score >= 60) riskLevel = "High Risk";
+        else if (score >= 40) riskLevel = "Moderate Risk";
+        else if (score >= 20) riskLevel = "Low / Moderate Risk";
+
+        const subScores = {
+            financial_fee_risk: hasFee ? 95 : 5,
+            impersonation_risk: hasImpersonation ? 85 : (hasFreeEmail ? 20 : 10),
+            domain_reputation_risk: isNewDomain ? 80 : 15,
+            urgency_pressure_risk: hasUrgency ? 80 : 5
+        };
+
+        return { score, riskLevel, subScores, reasons };
+    }
+
+    /**
      * Standalone client-side AI analysis engine using Gemini 2.0 Flash Vision API when backend API is offline or unreachable.
      */
     async analyzeSubmission({ inputType = "text", text = "", url = "", file = null, language = "en" }) {
@@ -580,7 +686,10 @@ Return ONLY a valid JSON object matching this exact key structure (no markdown f
                         const res = await fetch(restUrl, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ contents: [{ parts }] })
+                            body: JSON.stringify({
+                                contents: [{ parts }],
+                                generationConfig: { temperature: 0.0, maxOutputTokens: 3000 }
+                            })
                         });
 
                         if (res.ok) {
@@ -595,8 +704,6 @@ Return ONLY a valid JSON object matching this exact key structure (no markdown f
                                 if (recKeywords.some(t => combinedCheck.includes(t))) {
                                     isNotJob = false;
                                 }
-                                const finalScore = isNotJob ? "N/A" : (parsed.scam_score !== undefined ? parsed.scam_score : 15);
-                                const finalRisk = isNotJob ? "Not a Job Advertisement" : (parsed.risk_level || "Low Apparent Risk");
 
                                 if (!domain && parsed) {
                                     domain = GeminiAPIClient.cleanDomain(parsed.website || parsed.company_website || parsed.email);
@@ -606,6 +713,21 @@ Return ONLY a valid JSON object matching this exact key structure (no markdown f
                                     }
                                 }
                                 const liveWhois = domain ? await GeminiAPIClient.fetchWhoisData(domain) : null;
+                                const isNewDom = Boolean(liveWhois?.is_new_domain);
+                                const regDays = liveWhois?.registered_days ?? null;
+
+                                const calculatedResult = GeminiAPIClient.calculateDeterministicScamScore({
+                                    isJob: !isNotJob,
+                                    text: combinedCheck,
+                                    domain: domain,
+                                    hasWhois: Boolean(liveWhois),
+                                    isNewDomain: isNewDom,
+                                    registeredDays: regDays
+                                });
+
+                                const finalScore = calculatedResult.score;
+                                const finalRisk = calculatedResult.riskLevel;
+                                const finalSubScores = calculatedResult.subScores;
 
                                 let explanation = parsed.explanation_text || parsed.explanation || "Analysis completed.";
                                 if (isNotJob && !explanation.includes("POSTER SUMMARY")) {
@@ -616,7 +738,7 @@ Return ONLY a valid JSON object matching this exact key structure (no markdown f
                                     is_job_poster: !isNotJob,
                                     pipeline_stopped_stage: isNotJob ? 1 : 5,
                                     scam_score: finalScore,
-                                    confidence_score: isNotJob ? 95 : (parsed.confidence_score || 95),
+                                    confidence_score: isNotJob ? 95 : 95,
                                     risk_level: finalRisk,
                                     explanation_text: explanation,
                                     language: language,
@@ -639,34 +761,24 @@ Return ONLY a valid JSON object matching this exact key structure (no markdown f
                                         "Verify recruiter identities directly on official company career portals.",
                                         "Never send money or pay registration fees for job applications."
                                     ]),
-                                    sub_scores: isNotJob ? {
-                                        financial_fee_risk: 0,
-                                        impersonation_risk: 0,
-                                        domain_reputation_risk: 0,
-                                        urgency_pressure_risk: 0
-                                    } : (parsed.sub_scores || {
-                                        financial_fee_risk: 10,
-                                        impersonation_risk: 10,
-                                        domain_reputation_risk: 10,
-                                        urgency_pressure_risk: 10
-                                    }),
+                                    sub_scores: finalSubScores,
                                     breakdown_signals: isNotJob ? [
                                         `Category: ${parsed.specificCategory || 'Non-Recruitment Media'}`,
                                         "Scam Probability: N/A (Non-Recruitment Content)",
                                         "AI Classification Complete"
-                                    ] : (parsed.breakdown_signals || [
+                                    ] : (calculatedResult.reasons || [
                                         `Poster Type: ${parsed.poster_type || 'Job Advertisement'}`,
                                         `Scam Risk Assessment Complete`
                                     ])
                                 };
                             }
                         }
-                    } catch (mErr) {
-                        console.warn(`Client-side Gemini Vision notice for model ${gModel}:`, mErr);
+                    } catch (err) {
+                        // Try next model
                     }
                 }
             } catch (visionErr) {
-                console.warn("Client-side Gemini Vision fallback execution notice:", visionErr);
+                // Fall back to rule engine
             }
         }
 
@@ -751,25 +863,21 @@ Please analyze a genuine recruitment posting or job vacancy URL to receive a com
         }
 
         // Job Poster Scam Analysis (Fallback)
-        const feeTerms = ["fee", "deposit", "payment", "registration", "charge", "lkr", "usd", "$", "රු."];
-        const urgencyTerms = ["urgent", "immediately", "fast", "today only", "ක්ෂණික"];
-        const suspiciousChannels = ["telegram", "whatsapp", "t.me", "wa.me"];
+        const liveWhois = domain ? await GeminiAPIClient.fetchWhoisData(domain) : null;
+        const calculatedResult = GeminiAPIClient.calculateDeterministicScamScore({
+            isJob: true,
+            text: combinedText,
+            domain: domain,
+            hasWhois: Boolean(liveWhois),
+            isNewDomain: Boolean(liveWhois?.is_new_domain),
+            registeredDays: liveWhois?.registered_days ?? null
+        });
 
-        const hasFee = feeTerms.some(t => combinedText.includes(t));
-        const hasUrgency = urgencyTerms.some(t => combinedText.includes(t));
-        const hasChannel = suspiciousChannels.some(t => combinedText.includes(t));
-
-        let score = 25;
-        if (hasFee) score += 55;
-        if (hasUrgency) score += 15;
-        if (hasChannel) score += 10;
-        score = Math.min(100, score);
-
-        let riskLevel = "Low Risk";
-        if (score > 80) riskLevel = "Severe Risk";
-        else if (score > 60) riskLevel = "High Risk";
-        else if (score > 40) riskLevel = "Medium Risk";
-        else if (score > 20) riskLevel = "Low Risk";
+        const score = calculatedResult.score;
+        const riskLevel = calculatedResult.riskLevel;
+        const hasFee = calculatedResult.subScores.financial_fee_risk > 50;
+        const hasUrgency = calculatedResult.subScores.urgency_pressure_risk > 50;
+        const hasChannel = Boolean(combinedText.includes("telegram") || combinedText.includes("whatsapp"));
 
         let explanationText = "";
         if (language === 'ta') {
@@ -838,8 +946,6 @@ ${hasFee ? "• ⚠️ CRITICAL: Fee or payment terms detected. Legitimate emplo
 ✅ SAFETY CONCLUSION & ADVICE:
 Verify job offers directly on official corporate career portals before sending documents or making payments.`;
         }
-
-        const liveWhois = domain ? await GeminiAPIClient.fetchWhoisData(domain) : null;
 
         return {
             id: 'report_' + Date.now().toString(36),

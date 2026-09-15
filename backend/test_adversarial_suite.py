@@ -208,80 +208,80 @@ async def run_suite():
 
     # 1. Genuine job poster: is_job_poster = True, score <= 25
     if res_a['intake_data'].get('is_job_poster') is True and (res_a['scam_score'] != "N/A" and int(res_a['scam_score']) <= 25):
-        print("✅ TEST A PASSED: Genuine job poster correctly identified as Job Content with Low Apparent Risk")
+        print("[PASS] TEST A: Genuine job poster correctly identified as Job Content with Low Apparent Risk")
         assertions_passed += 1
     else:
-        print(f"❌ TEST A FAILED: Expected Low Risk, got {res_a['scam_score']}, is_job={res_a['intake_data'].get('is_job_poster')}")
+        print(f"[FAIL] TEST A: Expected Low Risk, got {res_a['scam_score']}, is_job={res_a['intake_data'].get('is_job_poster')}")
 
     # 2. Obvious fake poster: is_job_poster = True, score >= 60
     if res_b['intake_data'].get('is_job_poster') is True and (res_b['scam_score'] != "N/A" and int(res_b['scam_score']) >= 50):
-        print("✅ TEST B PASSED: Fake poster detected with High/Severe Scam Score")
+        print("[PASS] TEST B: Fake poster detected with High/Severe Scam Score")
         assertions_passed += 1
     else:
-        print(f"❌ TEST B FAILED: Expected High Score, got {res_b['scam_score']}")
+        print(f"[FAIL] TEST B: Expected High Score, got {res_b['scam_score']}")
 
     # 3. Upfront fee scam: score >= 65, fee detected
     if res_c['scam_score'] != "N/A" and int(res_c['scam_score']) >= 65 and res_c['linguistic_data'].get('has_payment_demand'):
-        print("✅ TEST C PASSED: Fee demand detected & flagged with Critical Scam Score")
+        print("[PASS] TEST C: Fee demand detected & flagged with Critical Scam Score")
         assertions_passed += 1
     else:
-        print(f"❌ TEST C FAILED: Expected Fee Flag & High Score, got {res_c['scam_score']}, fee={res_c['linguistic_data'].get('has_payment_demand')}")
+        print(f"[FAIL] TEST C: Expected Fee Flag & High Score, got {res_c['scam_score']}, fee={res_c['linguistic_data'].get('has_payment_demand')}")
 
     # 4. Brand impersonation: Google + Gmail flagged
     if res_d['scam_score'] != "N/A" and int(res_d['scam_score']) >= 50 and res_d['linguistic_data'].get('has_impersonation_risk'):
-        print("✅ TEST D PASSED: Brand impersonation correctly flagged (Google + Gmail)")
+        print("[PASS] TEST D: Brand impersonation correctly flagged (Google + Gmail)")
         assertions_passed += 1
     else:
-        print(f"❌ TEST D FAILED: Expected Impersonation Flag, got {res_d['scam_score']}, impersonation={res_d['linguistic_data'].get('has_impersonation_risk')}")
+        print(f"[FAIL] TEST D: Expected Impersonation Flag, got {res_d['scam_score']}, impersonation={res_d['linguistic_data'].get('has_impersonation_risk')}")
 
     # 5. Food / Restaurant: is_job_poster = False, score = N/A
     if res_e['intake_data'].get('is_job_poster') is False and str(res_e['scam_score']).upper() == "N/A":
-        print("✅ TEST E PASSED: Restaurant ad classified as NOT A JOB POSTER (Score: N/A)")
+        print("[PASS] TEST E: Restaurant ad classified as NOT A JOB POSTER (Score: N/A)")
         assertions_passed += 1
     else:
-        print(f"❌ TEST E FAILED: Expected is_job=False and Score=N/A, got is_job={res_e['intake_data'].get('is_job_poster')}, score={res_e['scam_score']}")
+        print(f"[FAIL] TEST E: Expected is_job=False and Score=N/A, got is_job={res_e['intake_data'].get('is_job_poster')}, score={res_e['scam_score']}")
 
     # 6. Graduation banner: is_job_poster = False, score = N/A
     if res_f['intake_data'].get('is_job_poster') is False and str(res_f['scam_score']).upper() == "N/A":
-        print("✅ TEST F PASSED: Graduation flyer classified as NOT A JOB POSTER (Score: N/A)")
+        print("[PASS] TEST F: Graduation flyer classified as NOT A JOB POSTER (Score: N/A)")
         assertions_passed += 1
     else:
-        print(f"❌ TEST F FAILED: Expected is_job=False and Score=N/A, got is_job={res_f['intake_data'].get('is_job_poster')}, score={res_f['scam_score']}")
+        print(f"[FAIL] TEST F: Expected is_job=False and Score=N/A, got is_job={res_f['intake_data'].get('is_job_poster')}, score={res_f['scam_score']}")
 
     # 7. Photography studio: is_job_poster = False, score = N/A
     if res_g['intake_data'].get('is_job_poster') is False and str(res_g['scam_score']).upper() == "N/A":
-        print("✅ TEST G PASSED: Photography portfolio classified as NOT A JOB POSTER (Score: N/A)")
+        print("[PASS] TEST G: Photography portfolio classified as NOT A JOB POSTER (Score: N/A)")
         assertions_passed += 1
     else:
-        print(f"❌ TEST G FAILED: Expected is_job=False and Score=N/A, got {res_g['scam_score']}")
+        print(f"[FAIL] TEST G: Expected is_job=False and Score=N/A, got {res_g['scam_score']}")
 
     # 8. Unreadable image: score = N/A, risk = Unable to Determine or Not a Job
     if str(res_h['scam_score']).upper() == "N/A":
-        print("✅ TEST H PASSED: Blank/Unreadable image handled without fabricating false text (Score: N/A)")
+        print("[PASS] TEST H: Blank/Unreadable image handled without fabricating false text (Score: N/A)")
         assertions_passed += 1
     else:
-        print(f"❌ TEST H FAILED: Expected N/A, got {res_h['scam_score']}")
+        print(f"[FAIL] TEST H: Expected N/A, got {res_h['scam_score']}")
 
     # 9. Suspicious URL: score >= 40
     if res_i['scam_score'] != "N/A" and int(res_i['scam_score']) >= 30:
-        print("✅ TEST I PASSED: Suspicious URL verified & flagged")
+        print("[PASS] TEST I: Suspicious URL verified & flagged")
         assertions_passed += 1
     else:
-        print(f"❌ TEST I FAILED: Expected Suspicious Flag, got {res_i['scam_score']}")
+        print(f"[FAIL] TEST I: Expected Suspicious Flag, got {res_i['scam_score']}")
 
     # 10. Sinhala scam poster: fee detected, score >= 60
     if res_j['linguistic_data'].get('has_payment_demand') and (res_j['scam_score'] != 'N/A' and int(res_j['scam_score']) >= 60):
-        print("✅ TEST J PASSED: Sinhala scam vacancy analyzed with fee demand flagged (Score >= 60)")
+        print("[PASS] TEST J: Sinhala scam vacancy analyzed with fee demand flagged (Score >= 60)")
         assertions_passed += 1
     else:
-        print(f"❌ TEST J FAILED: Expected Sinhala fee detection, got {res_j['scam_score']}, fee={res_j['linguistic_data'].get('has_payment_demand')}")
+        print(f"[FAIL] TEST J: Expected Sinhala fee detection, got {res_j['scam_score']}, fee={res_j['linguistic_data'].get('has_payment_demand')}")
 
     # 11. Tamil scam poster: fee detected, score >= 60
     if res_k['linguistic_data'].get('has_payment_demand') and (res_k['scam_score'] != 'N/A' and int(res_k['scam_score']) >= 60):
-        print("✅ TEST K PASSED: Tamil scam vacancy analyzed with fee demand flagged (Score >= 60)")
+        print("[PASS] TEST K: Tamil scam vacancy analyzed with fee demand flagged (Score >= 60)")
         assertions_passed += 1
     else:
-        print(f"❌ TEST K FAILED: Expected Tamil fee detection, got {res_k['scam_score']}, fee={res_k['linguistic_data'].get('has_payment_demand')}")
+        print(f"[FAIL] TEST K: Expected Tamil fee detection, got {res_k['scam_score']}, fee={res_k['linguistic_data'].get('has_payment_demand')}")
 
     print("\n" + "="*80)
     print(f"TOTAL RESULT: {assertions_passed} / {total_assertions} TEST CASES PASSED SUCCESSFULLY")
