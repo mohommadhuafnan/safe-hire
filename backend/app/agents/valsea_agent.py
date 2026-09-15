@@ -103,27 +103,41 @@ class ValseaTranslationAgent:
     ) -> Optional[Dict[str, Any]]:
         """
         Translates all report components concurrently using Valsea AI translation endpoint.
+        Returns None if Valsea API key is missing or translation fails so fallback models execute.
         """
+        if not self.api_key:
+            return None
+
         valsea_target = VALSEA_LANG_MAP.get(target_lang.lower().strip())
         if not valsea_target:
             return None
 
         from concurrent.futures import ThreadPoolExecutor
 
-        with ThreadPoolExecutor(max_workers=6) as executor:
-            fut_exp = executor.submit(self.translate_text, explanation_text, target_lang) if explanation_text else None
-            fut_recs = [executor.submit(self.translate_text, rec, target_lang) for rec in (recommendations or [])]
-            fut_sigs = [executor.submit(self.translate_text, sig, target_lang) for sig in (breakdown_signals or [])]
+        try:
+            with ThreadPoolExecutor(max_workers=6) as executor:
+                fut_exp = executor.submit(self.translate_text, explanation_text, target_lang) if explanation_text else None
+                fut_recs = [executor.submit(self.translate_text, rec, target_lang) for rec in (recommendations or [])]
+                fut_sigs = [executor.submit(self.translate_text, sig, target_lang) for sig in (breakdown_signals or [])]
 
-            translated_exp = fut_exp.result() if fut_exp else explanation_text
-            translated_recs = [f.result() or r for f, r in zip(fut_recs, recommendations or [])]
-            translated_sigs = [f.result() or s for f, s in zip(fut_sigs, breakdown_signals or [])]
+                translated_exp = fut_exp.result() if fut_exp else None
+                translated_recs = [f.result() for f in fut_recs]
+                translated_sigs = [f.result() for f in fut_sigs]
 
-        return {
-            "explanation_text": translated_exp or explanation_text,
-            "recommendations": translated_recs,
-            "breakdown_signals": translated_sigs,
-            "target_language": target_lang
-        }
+            # Only return success if explanation_text was actually translated by Valsea
+            if not translated_exp:
+                logger.info(f"Valsea translation returned empty for target '{target_lang}', using fallback.")
+                return None
+
+            return {
+                "explanation_text": translated_exp,
+                "recommendations": [tr or r for tr, r in zip(translated_recs, recommendations or [])],
+                "breakdown_signals": [ts or s for ts, s in zip(translated_sigs, breakdown_signals or [])],
+                "target_language": target_lang
+            }
+        except Exception as e:
+            logger.warning(f"Valsea concurrent translation error: {e}")
+            return None
 
 valsea_translator = ValseaTranslationAgent()
+

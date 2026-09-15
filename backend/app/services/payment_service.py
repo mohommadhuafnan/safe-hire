@@ -215,7 +215,17 @@ class PaymentService:
         user_id = str(user.get("id") or user.get("_id") or "")
         user_email = user.get("email", "")
         
-        sub = await PaymentService.get_or_create_subscription(user_id, user_email)
+        try:
+            sub = await PaymentService.get_or_create_subscription(user_id, user_email)
+        except Exception as sub_err:
+            logger.warning(f"Subscription check DB notice (falling back to user tier): {sub_err}")
+            sub = {
+                "plan": user.get("tier") or user.get("plan") or "free_trial",
+                "status": "active",
+                "scans_used": 0,
+                "scans_limit": 25,
+                "days_remaining": 7
+            }
         plan_id = sub.get("plan", "free_trial")
         status = sub.get("status", "active")
         scans_used = int(sub.get("scans_used", 0))

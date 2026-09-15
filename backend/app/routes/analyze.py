@@ -233,9 +233,10 @@ async def translate_report_endpoint(
             "target_language": req.target_language
         }
 
-    prompt = f"""You are a professional security audit report translator.
-Translate the following security audit report components natively into {target_lang_name} ({req.target_language}).
-Keep all markdown symbols, emojis (📋, 🎯, 🔍, 💡, ✅, 🌐), headers, numbers, bullet points, and formatting structure intact.
+    prompt = f"""You are an expert security audit report translator.
+Translate the following security audit report components accurately and natively into {target_lang_name} ({req.target_language}).
+The input components may currently be written in English, Sinhala, Tamil, Hindi, Bengali, or another language. Translate all text completely into {target_lang_name}.
+Keep all markdown formatting symbols (###, **, -, 1.), emojis (📋, 🎯, 🔍, 💡, ✅, 🌐), headers, numbers, and bullet points intact.
 
 Input Data to Translate:
 1. explanation_text:

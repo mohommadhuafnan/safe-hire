@@ -11,7 +11,7 @@
       radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.15) 0px, transparent 50%),
       radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.12) 0px, transparent 50%);
     background-attachment: fixed;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', 'Noto Sans Sinhala', 'Noto Sans Tamil', 'Noto Sans Devanagari', 'Noto Sans Bengali', system-ui, -apple-system, sans-serif;
   }
 
   body.light {
@@ -22,6 +22,7 @@
       radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.08) 0px, transparent 50%),
       radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
     background-attachment: fixed;
+    font-family: 'Inter', 'Noto Sans Sinhala', 'Noto Sans Tamil', 'Noto Sans Devanagari', 'Noto Sans Bengali', system-ui, -apple-system, sans-serif;
   }
 }
 
