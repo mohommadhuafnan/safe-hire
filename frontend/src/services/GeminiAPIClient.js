@@ -306,6 +306,21 @@ class GeminiAPIClient {
     static async fetchWhoisData(targetDomain) {
         if (!targetDomain) return null;
 
+        const clean = String(targetDomain).trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].split('?')[0].split(':')[0];
+        const ignoredPlatforms = [
+            'linkedin.com', 'lnkd.in', 'facebook.com', 'fb.com', 'fb.me',
+            'instagram.com', 'instagr.am', 'twitter.com', 'x.com', 't.co',
+            'tiktok.com', 'telegram.org', 'telegram.me', 't.me',
+            'whatsapp.com', 'wa.me', 'youtube.com', 'youtu.be',
+            'reddit.com', 'pinterest.com', 'threads.net', 'snapchat.com',
+            'bit.ly', 'tinyurl.com', 'ow.ly', 'buff.ly', 'is.gd', 'cutt.ly', 'goo.gl', 'qr.ae', 'rb.gy', 'rebrand.ly',
+            'gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'icloud.com', 'aol.com', 'mail.com', 'proton.me', 'protonmail.com'
+        ];
+
+        if (ignoredPlatforms.includes(clean) || ignoredPlatforms.some(p => clean.endsWith('.' + p))) {
+            return null;
+        }
+
         // 1. Primary: APILayer WHOIS API if client key available
         try {
             const apikey = (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env.VITE_APILAYER_KEY || import.meta.env.APILAYER_KEY)) || "nIvPeI99eWBDMSArYAf2YcrshDCOVvJ3";

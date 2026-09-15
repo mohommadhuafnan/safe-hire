@@ -101,30 +101,31 @@ const StructuredExplanationView = ({ text }) => {
 
 const extractDomainFromResult = (res, currentActiveTab, currentInputUrl) => {
   if (!res) return '';
+
+  // If content is not a job poster, no domain age is applicable
+  if (res.is_job_poster === false || res.risk_level === 'Not a Job Advertisement' || res.content_type === 'not_job_poster') {
+    return '';
+  }
+
+  // If backend classified the domain source as none or social wrapper without an employer domain
+  if (res.domain_source === 'none' || res.verification_data?.domain_source === 'none') {
+    return '';
+  }
+
   let targetDomain =
     res.primary_domain ||
     res.verification_data?.primary_domain ||
     res.intake_data?.primary_domain ||
     res.verification_data?.domain ||
     res.verification_data?.whois_info?.domain ||
-    res.intake_data?.domain ||
-    res.intake_data?.metadata_extracted?.domains?.[0] ||
-    res.input_url ||
-    (currentActiveTab === 'url' ? currentInputUrl?.trim() : '') ||
     '';
 
-  // Fallback domain extraction from OCR/explanation text
-  if (!targetDomain && res.explanation_text) {
-    const m = res.explanation_text.match(/https?:\/\/([^\s"'<>]+)/i) ||
-      res.explanation_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) ||
-      res.explanation_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
-    if (m) targetDomain = m[1] || m[0];
+  // Fallback domain extraction strictly from poster OCR / job text
+  if (!targetDomain && res.intake_data?.poster_domains?.[0]) {
+    targetDomain = res.intake_data.poster_domains[0];
   }
-  if (!targetDomain && res.intake_data?.extracted_text) {
-    const m = res.intake_data.extracted_text.match(/https?:\/\/([^\s"'<>]+)/i) ||
-      res.intake_data.extracted_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) ||
-      res.intake_data.extracted_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
-    if (m) targetDomain = m[1] || m[0];
+  if (!targetDomain && res.intake_data?.metadata_extracted?.domains?.[0]) {
+    targetDomain = res.intake_data.metadata_extracted.domains[0];
   }
 
   let cleanDom = (targetDomain || '')
@@ -144,11 +145,25 @@ const extractDomainFromResult = (res, currentActiveTab, currentInputUrl) => {
   // Strip trailing punctuation
   cleanDom = cleanDom.replace(/[.,;:()\[\]{}'"]+$/, '').trim();
 
+  // Known Social Platforms & Shorteners to NEVER treat as employer domains
+  const ignoredPlatforms = [
+    'linkedin.com', 'lnkd.in', 'facebook.com', 'fb.com', 'fb.me',
+    'instagram.com', 'instagr.am', 'twitter.com', 'x.com', 't.co',
+    'tiktok.com', 'telegram.org', 'telegram.me', 't.me',
+    'whatsapp.com', 'wa.me', 'youtube.com', 'youtu.be',
+    'reddit.com', 'pinterest.com', 'threads.net', 'snapchat.com',
+    'bit.ly', 'tinyurl.com', 'ow.ly', 'buff.ly', 'is.gd', 'cutt.ly', 'goo.gl', 'qr.ae', 'rb.gy', 'rebrand.ly',
+    'gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'icloud.com', 'aol.com', 'mail.com', 'proton.me', 'protonmail.com'
+  ];
+
+  if (ignoredPlatforms.includes(cleanDom) || ignoredPlatforms.some(p => cleanDom.endsWith('.' + p))) {
+    return '';
+  }
+
   const isRealDomain = Boolean(
     cleanDom &&
     !['not specified', 'n/a', 'none', 'null', 'verified url', ''].includes(cleanDom) &&
-    cleanDom.includes('.') &&
-    !['gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'icloud.com', 'aol.com', 'mail.com', 'proton.me', 'protonmail.com'].includes(cleanDom)
+    cleanDom.includes('.')
   );
 
   return isRealDomain ? cleanDom : '';

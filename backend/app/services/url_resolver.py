@@ -322,23 +322,35 @@ class URLResolver:
                         "is_social_wrapper": False
                     }
 
-        # 4. Fallback: Wrapper / Social Platform Domain
+        # 4. Fallback: Wrapper / Social Platform Domain (Do NOT treat platform as employer domain for WHOIS)
         fallback_dom = URLResolver.clean_domain_string(submitted_domain or resolved_domain or (poster_domains[0] if poster_domains else ""))
         if fallback_dom:
             root = URLResolver.extract_root_domain(fallback_dom)
             cat = URLResolver.classify_domain(root)
             social_name = URLResolver.SOCIAL_PLATFORMS.get(root)
-            label = f"Social Platform ({social_name})" if social_name else ("URL Shortener" if cat == "URL_SHORTENER" else "Submitted Platform")
+            
+            if social_name or cat in ("SOCIAL_PLATFORM", "URL_SHORTENER"):
+                # No employer domain in poster/text: do NOT query or display platform domain age
+                return {
+                    "primary_domain": "",
+                    "full_hostname": fallback_dom,
+                    "domain_source": "none",
+                    "domain_source_label": f"No Domain in Poster (Hosted on {social_name or 'Platform'})",
+                    "domain_source_priority": 5,
+                    "domain_category": cat,
+                    "is_social_wrapper": True,
+                    "social_platform": social_name or "Platform"
+                }
 
             return {
                 "primary_domain": root,
                 "full_hostname": fallback_dom,
-                "domain_source": "social_platform" if social_name else "submitted_url",
-                "domain_source_label": label,
+                "domain_source": "submitted_url",
+                "domain_source_label": "Submitted Web URL",
                 "domain_source_priority": 4,
                 "domain_category": cat,
-                "is_social_wrapper": True,
-                "social_platform": social_name
+                "is_social_wrapper": False,
+                "social_platform": None
             }
 
         # None found
@@ -346,7 +358,7 @@ class URLResolver:
             "primary_domain": "",
             "full_hostname": "",
             "domain_source": "none",
-            "domain_source_label": "No Domain Found",
+            "domain_source_label": "No Domain Found in Poster",
             "domain_source_priority": 5,
             "domain_category": "UNKNOWN",
             "is_social_wrapper": False

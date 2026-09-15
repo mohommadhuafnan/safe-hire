@@ -20,7 +20,9 @@ import { parseExplanationSections } from '../services/reportExporter';
 
 const AgentBreakdown = ({ result }) => {
   const { t } = useTranslation();
-  const [openAgent, setOpenAgent] = useState('agent-2');
+  const isNonJob = result.is_job_poster === false || result.risk_level === 'Not a Job Advertisement' || result.content_type === 'not_job_poster';
+
+  const [openAgent, setOpenAgent] = useState(isNonJob ? 'agent-1' : 'agent-2');
 
   if (!result) return null;
 
@@ -99,8 +101,10 @@ const AgentBreakdown = ({ result }) => {
       number: '1',
       title: t('agents.agent_1_title', 'Intake Agent (OCR & Entity Mining)'),
       icon: FileSearch,
-      summary: `${t('agents.extracted_lang', 'Extracted Language')}: ${result.language?.toUpperCase() || 'EN'}`,
-      badge: t('agents.agent_1_badge', 'Processed'),
+      summary: isNonJob 
+        ? `Classification: ${intakeData.specific_category || intakeData.posterType || 'Non-Job Media'}`
+        : `${t('agents.extracted_lang', 'Extracted Language')}: ${result.language?.toUpperCase() || 'EN'}`,
+      badge: isNonJob ? 'Non-Job Media' : t('agents.agent_1_badge', 'Processed'),
       content: (
         <div className="space-y-3 text-xs text-slate-300">
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
@@ -110,14 +114,25 @@ const AgentBreakdown = ({ result }) => {
 
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
             <span>{t('agents.ingestion_status', 'Ingestion Processing Status')}:</span>
-            <span className="font-semibold text-emerald-400">{t('agents.ingestion_text_extracted', 'Text & Metadata Extracted')}</span>
+            <span className={`font-semibold ${isNonJob ? 'text-amber-400' : 'text-emerald-400'}`}>
+              {isNonJob ? `Classified: ${intakeData.specific_category || 'Non-Job Content'}` : t('agents.ingestion_text_extracted', 'Text & Metadata Extracted')}
+            </span>
           </div>
 
-          {(intakeData?.ocr_text || result.risk_factors?.ocr_text) && (
+          {isNonJob && (
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200">
+              <span className="font-semibold block mb-1">Non-Job Media Notice:</span>
+              <p className="text-[11px] leading-relaxed">
+                {intakeData.poster_summary || 'The uploaded media is not a recruitment advertisement. Pipeline execution safely halted at Stage 1.'}
+              </p>
+            </div>
+          )}
+
+          {(intakeData?.ocr_text || result.risk_factors?.ocr_text || intakeData?.extracted_text) && (
             <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
               <span className="font-semibold block mb-1 text-slate-200">{t('agents.ocr_extracted_text', 'OCR Screenshot Extracted Text')}:</span>
               <p className="text-[11px] text-slate-400 font-mono leading-relaxed bg-slate-950 p-2 rounded border border-slate-800/80 whitespace-pre-wrap max-h-48 overflow-y-auto">
-                "{intakeData?.ocr_text || result.risk_factors?.ocr_text}"
+                "{intakeData?.ocr_text || result.risk_factors?.ocr_text || intakeData?.extracted_text}"
               </p>
             </div>
           )}
@@ -129,9 +144,17 @@ const AgentBreakdown = ({ result }) => {
       number: '2',
       title: t('agents.agent_2_title', 'Linguistic Risk Agent (EMSCAD NLP)'),
       icon: AlertTriangle,
-      summary: `${t('agents.linguistic_score', 'Linguistic Risk Score')}: ${riskFactors.linguistic_score || 0}/100`,
-      badge: (riskFactors.linguistic_score || 0) > 40 ? t('agents.agent_2_badge_risk', 'Risk Signals') : t('agents.agent_2_badge_clean', 'Clean Text'),
-      content: (
+      summary: isNonJob 
+        ? 'Skipped (Content is not a job vacancy)' 
+        : `${t('agents.linguistic_score', 'Linguistic Risk Score')}: ${riskFactors.linguistic_score || 0}/100`,
+      badge: isNonJob 
+        ? 'Skipped' 
+        : ((riskFactors.linguistic_score || 0) > 40 ? t('agents.agent_2_badge_risk', 'Risk Signals') : t('agents.agent_2_badge_clean', 'Clean Text')),
+      content: isNonJob ? (
+        <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-400">
+          Stage skipped: The uploaded media was identified as non-recruitment content. Linguistic fee extraction is only evaluated on job advertisements.
+        </div>
+      ) : (
         <div className="space-y-3 text-xs">
           {/* Payment Demand Indicator */}
           <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
@@ -245,13 +268,21 @@ const AgentBreakdown = ({ result }) => {
       number: '3',
       title: t('agents.agent_3_title', 'Verification Agent (WHOIS & Safe Browsing)'),
       icon: Globe,
-      summary: hasRealDomain
-        ? `${t('agents.domain_trust', 'Domain Trust Rating')}: ${verificationData.verification_trust_score || 80}/100`
-        : t('agents.no_domain_provided', 'No Website Domain Provided'),
-      badge: hasRealDomain
-        ? (verificationData.verification_trust_score > 60 ? t('agents.agent_3_badge_trusted', 'Trusted Domain') : t('agents.agent_3_badge_suspicious', 'Suspicious Web Record'))
-        : 'N/A',
-      content: (() => {
+      summary: isNonJob 
+        ? 'Skipped (Content is not a job vacancy)'
+        : (hasRealDomain
+          ? `${t('agents.domain_trust', 'Domain Trust Rating')}: ${verificationData.verification_trust_score || 80}/100`
+          : t('agents.no_domain_provided', 'No Website Domain Provided')),
+      badge: isNonJob 
+        ? 'Skipped' 
+        : (hasRealDomain
+          ? (verificationData.verification_trust_score > 60 ? t('agents.agent_3_badge_trusted', 'Trusted Domain') : t('agents.agent_3_badge_suspicious', 'Suspicious Web Record'))
+          : 'N/A'),
+      content: isNonJob ? (
+        <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-400">
+          Stage skipped: Domain WHOIS age and verification checks are only evaluated for active employment vacancies and job poster URLs.
+        </div>
+      ) : (() => {
         const primaryDomain = verificationData.primary_domain || verificationData.domain || result.primary_domain || intakeData.primary_domain || rawDomain;
         const domainSourceLabel = verificationData.domain_source_label || result.domain_source_label || intakeData.domain_source_label || (hasRealDomain ? 'Extracted Domain' : 'No Domain Found');
         const isSocialWrapper = Boolean(verificationData.is_social_wrapper || result.is_social_wrapper || intakeData.is_social_wrapper);
@@ -376,34 +407,18 @@ const AgentBreakdown = ({ result }) => {
               <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-1">
                 <div className="flex items-center space-x-2 text-slate-300 font-semibold">
                   <Info className="w-4 h-4 text-sky-400" />
-                  <span>{t('agents.no_domain_provided', 'No Website Domain Provided')}</span>
+                  <span>{t('agents.no_domain_detected', 'No Application Domain Identified')}</span>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  {t('agents.no_domain_desc', 'No employer website URL was detected in the submitted job listing. Domain WHOIS registry and Safe Browsing audits apply only when an employer website URL is provided.')}
+                  No company website link was found in the poster or job description.
                 </p>
               </div>
             )}
 
-            {/* Abstract API Email Validation Card */}
-            {verificationData.email_validation && verificationData.email_validation.email && (
-              <div className={`p-3 rounded-lg border space-y-2 ${
-                verificationData.email_validation.is_high_risk 
-                  ? 'bg-rose-500/10 border-rose-500/30' 
-                  : 'bg-slate-900/90 border-slate-800'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-200 flex items-center">
-                    📧 {t('agents.abstract_email_validation', 'Abstract API Email Validation')}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                    verificationData.email_validation.is_high_risk
-                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  }`}>
-                    {verificationData.email_validation.deliverability || 'DELIVERABLE'}
-                  </span>
-                </div>
-
+            {/* Recruiter Email Verification */}
+            {verificationData.email_validation && verificationData.email_validation.status !== 'not_applicable' && (
+              <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2 mt-2">
+                <span className="font-semibold text-slate-200 block">{t('agents.email_deliverability', 'Recruiter Email Deliverability & Domain Check')}</span>
                 <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1">
                   <div className="p-2 rounded bg-slate-950/80 border border-slate-800">
                     <span className="text-slate-400 block text-[10px]">{t('agents.contact_email', 'Contact Email')}:</span>
@@ -447,9 +462,15 @@ const AgentBreakdown = ({ result }) => {
       number: '4',
       title: t('agents.agent_4_title', 'Reasoning Agent (Deep AI Engine)'),
       icon: BrainCircuit,
-      summary: t('agents.reasoning_summary', 'AI Explainable Rationale Synthesized'),
-      badge: t('agents.agent_4_badge', 'Deep AI'),
-      content: (() => {
+      summary: isNonJob 
+        ? 'Skipped (Content is not a job vacancy)' 
+        : t('agents.reasoning_summary', 'AI Explainable Rationale Synthesized'),
+      badge: isNonJob ? 'Skipped' : t('agents.agent_4_badge', 'Deep AI'),
+      content: isNonJob ? (
+        <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-400">
+          Stage skipped: The uploaded media was classified as non-recruitment content. AI scam scoring is only evaluated on job vacancies.
+        </div>
+      ) : (() => {
         const parsedSections = parseExplanationSections(result.explanation_text || '');
         return (
           <div className="space-y-3">
@@ -509,9 +530,15 @@ const AgentBreakdown = ({ result }) => {
       number: '5',
       title: t('agents.agent_5_title', 'Recommendation Agent'),
       icon: ShieldCheck,
-      summary: `${result.recommendations?.length || 0} ${t('agents.tailored_items', 'Tailored Safety Action Items')}`,
-      badge: t('agents.agent_5_badge', 'Action Plan'),
-      content: (
+      summary: isNonJob 
+        ? '0 Tailored Safety Action Items' 
+        : `${result.recommendations?.length || 0} ${t('agents.tailored_items', 'Tailored Safety Action Items')}`,
+      badge: isNonJob ? 'N/A' : t('agents.agent_5_badge', 'Action Plan'),
+      content: isNonJob ? (
+        <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-400">
+          No recruitment fraud guidance is required for non-job media.
+        </div>
+      ) : (
         <ul className="space-y-2 text-xs">
           {result.recommendations?.map((rec, idx) => (
             <li key={idx} className={`flex items-start space-x-2 p-2.5 rounded-lg border text-slate-200 ${

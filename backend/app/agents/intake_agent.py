@@ -468,11 +468,46 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
         root_domain = resolution.get("root_domain") or URLResolver.extract_root_domain(domain)
         embedded_links = []
 
+        poster_domains_from_url = []
+        image_text_from_url = ""
+
         try:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 SAFE-HIRE/1.0 AI Scam Verification Engine"
             }
             response = requests.get(target_url, headers=headers, timeout=12)
+            content_type_header = response.headers.get("Content-Type", "").lower()
+
+            # Case A: URL directly points to an Image (e.g. flyer/poster image link)
+            if any(ext in target_url.lower() for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]) or "image/" in content_type_header:
+                img_bytes = response.content
+                if img_bytes and len(img_bytes) > 100:
+                    ocr_t, ocr_s = IntakeAgent.extract_text_from_image(img_bytes)
+                    if ocr_t:
+                        image_text_from_url = ocr_t
+                        urls_in_img = re.findall(r'https?://[^\s"\'<>]+', ocr_t)
+                        www_in_img = re.findall(r'\bwww\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b', ocr_t, re.IGNORECASE)
+                        dom_in_img = re.findall(r'\b[a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev)\b', ocr_t, re.IGNORECASE)
+                        for d in urls_in_img + www_in_img + dom_in_img:
+                            c = URLResolver.clean_domain_string(d)
+                            if c and URLResolver.classify_domain(c) == "EMPLOYER_DOMAIN":
+                                poster_domains_from_url.append(c)
+
+                    return {
+                        "text": f"Direct Poster Image URL: {target_url}\nExtracted Poster Text: {image_text_from_url}",
+                        "domain": domain,
+                        "root_domain": root_domain,
+                        "status": "success",
+                        "title": "Direct Job Poster Image",
+                        "resolved_url": target_url,
+                        "redirect_chain": resolution.get("redirect_chain", [url]),
+                        "social_platform": resolution.get("social_platform"),
+                        "domain_category": resolution.get("domain_category"),
+                        "embedded_employer_links": embedded_links[:5],
+                        "poster_domains": list(set(poster_domains_from_url)),
+                        "poster_text": image_text_from_url
+                    }
+
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, "html.parser")
 
@@ -485,6 +520,33 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                             if clean_href_dom not in embedded_links:
                                 embedded_links.append(clean_href_dom)
 
+                # Look for embedded poster/banner image on the webpage (og:image or twitter:image)
+                candidate_img_url = ""
+                og_img = soup.find("meta", attrs={"property": "og:image"}) or soup.find("meta", attrs={"name": "twitter:image"})
+                if og_img and og_img.get("content"):
+                    candidate_img_url = og_img["content"].strip()
+                if not candidate_img_url:
+                    first_img = soup.find("img", src=True)
+                    if first_img and first_img.get("src", "").startswith("http"):
+                        candidate_img_url = first_img["src"].strip()
+
+                if candidate_img_url and candidate_img_url.startswith("http") and not any(s in candidate_img_url.lower() for s in ["logo", "icon", "avatar", "favicon", "pixel"]):
+                    try:
+                        img_res = requests.get(candidate_img_url, headers=headers, timeout=4.0)
+                        if img_res.status_code == 200 and len(img_res.content) > 5000:
+                            img_text, _ = IntakeAgent.extract_text_from_image(img_res.content)
+                            if img_text:
+                                image_text_from_url = img_text
+                                urls_in_img = re.findall(r'https?://[^\s"\'<>]+', img_text)
+                                www_in_img = re.findall(r'\bwww\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b', img_text, re.IGNORECASE)
+                                dom_in_img = re.findall(r'\b[a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev)\b', img_text, re.IGNORECASE)
+                                for d in urls_in_img + www_in_img + dom_in_img:
+                                    c = URLResolver.clean_domain_string(d)
+                                    if c and URLResolver.classify_domain(c) == "EMPLOYER_DOMAIN":
+                                        poster_domains_from_url.append(c)
+                    except Exception as img_fetch_err:
+                        logger.info(f"Page poster image fetch notice: {img_fetch_err}")
+
                 for element in soup(["script", "style", "nav", "footer", "header", "noscript"]):
                     element.extract()
                 text = soup.get_text(separator=" ", strip=True)
@@ -496,6 +558,9 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                     meta_desc = meta_tag["content"].strip()
 
                 combined_content = f"Page Title: {title}\nMeta Description: {meta_desc}\nPage Body: {text[:2500]}"
+                if image_text_from_url:
+                    combined_content += f"\n[IMAGE / POSTER TEXT FROM PAGE]:\n{image_text_from_url}"
+
                 return {
                     "text": combined_content,
                     "domain": domain,
@@ -506,7 +571,9 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                     "redirect_chain": resolution.get("redirect_chain", [url]),
                     "social_platform": resolution.get("social_platform"),
                     "domain_category": resolution.get("domain_category"),
-                    "embedded_employer_links": embedded_links[:5]
+                    "embedded_employer_links": embedded_links[:5],
+                    "poster_domains": list(set(poster_domains_from_url)),
+                    "poster_text": image_text_from_url
                 }
         except Exception as e:
             logger.warning(f"URL deep scraping notice for {target_url}: {e}")
@@ -521,7 +588,9 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
             "redirect_chain": resolution.get("redirect_chain", [url]),
             "social_platform": resolution.get("social_platform"),
             "domain_category": resolution.get("domain_category"),
-            "embedded_employer_links": []
+            "embedded_employer_links": [],
+            "poster_domains": list(set(poster_domains_from_url)),
+            "poster_text": image_text_from_url
         }
 
     @staticmethod
@@ -656,6 +725,8 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
             redirect_chain = url_res.get("redirect_chain") or [input_url.strip()]
             url_social_platform = url_res.get("social_platform")
             url_embedded_domains = url_res.get("embedded_employer_links") or []
+            if url_res.get("poster_domains"):
+                poster_domains.extend(url_res["poster_domains"])
             source = "url" if not input_text and not image_bytes else "mixed"
 
         # Collect Priority 1: Poster Domains (from Vision AI website/QR and OCR)

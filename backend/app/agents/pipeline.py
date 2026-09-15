@@ -67,6 +67,111 @@ class AgentPipeline:
 
         logger.info(f"[{request_id}] Stage 1 COMPLETE: content_type={content_type}, is_job={is_job_poster}, domain={domain}, ocr_status={ocr_status}, lang={final_lang}")
 
+        # --- EARLY TERMINATION: If uploaded content is NOT a job poster, STOP immediately after Stage 1 ---
+        if not is_job_poster or content_type == "not_job_poster":
+            category_desc = intake_res.get("specific_category") or "Non-Recruitment Content"
+            summary_desc = intake_res.get("poster_summary") or "The uploaded content does not appear to contain an active employment vacancy or recruitment advertisement."
+            logger.info(f"[{request_id}] Non-Job Content Detected ('{category_desc}'). Halting 5-agent pipeline at Stage 1.")
+
+            explanation_text = (
+                f"🚫 **Non-Job Content Detected**: The uploaded image/poster is not a recruitment or job vacancy advertisement. "
+                f"It was identified as: **{category_desc}**.\n\n"
+                f"{summary_desc}\n\n"
+                f"SAFE-HIRE is designed specifically to analyze and verify job advertisements and recruitment offers for fraud and scam risk. "
+                f"Pipeline execution stopped at Stage 1 because standard scam probability scoring only applies to recruitment offers."
+            )
+
+            # Translate explanation to target language if non-English
+            if final_lang and final_lang.lower() not in ["en", "english"]:
+                try:
+                    from app.agents.valsea_agent import valsea_translator
+                    valsea_res = valsea_translator.translate_report_components(
+                        explanation_text,
+                        [],
+                        [],
+                        final_lang
+                    )
+                    if valsea_res and valsea_res.get("explanation_text"):
+                        explanation_text = valsea_res.get("explanation_text")
+                except Exception as valsea_err:
+                    logger.info(f"[{request_id}] Valsea translation notice: {valsea_err}")
+
+            return {
+                "request_id": request_id,
+                "intake_data": intake_res,
+                "linguistic_data": {
+                    "status": "skipped",
+                    "reason": "Stage skipped — Content is not a job advertisement",
+                    "linguistic_score": 0
+                },
+                "verification_data": {
+                    "status": "skipped",
+                    "domain": "",
+                    "primary_domain": "",
+                    "domain_source": "none",
+                    "domain_source_label": "Not Applicable",
+                    "domain_source_priority": 5,
+                    "is_social_wrapper": False,
+                    "whois_info": {
+                        "status": "not_applicable",
+                        "domain": "",
+                        "creation_date": "N/A",
+                        "registered_days": None,
+                        "domain_years": None,
+                        "domain_age_formatted": "N/A",
+                        "is_new_domain": False,
+                        "whois_status": "Not Applicable for Non-Job Content",
+                        "api_verified": False
+                    },
+                    "safe_browsing": {
+                        "status": "not_applicable",
+                        "flagged": False,
+                        "threat_types": [],
+                        "details": "Not Applicable for Non-Job Content"
+                    },
+                    "email_validation": None,
+                    "phone_validation": None,
+                    "verification_trust_score": 100,
+                    "evidence_items": []
+                },
+                "reasoning_data": {
+                    "is_job_posting": False,
+                    "scam_score": "N/A",
+                    "risk_level": "Not a Job Advertisement",
+                    "confidence_score": 99,
+                    "explanation": explanation_text,
+                    "verdict": "NOT_JOB_POSTING",
+                    "pipeline_stopped_stage": 1
+                },
+                "recommendations": [],
+                "scam_score": "N/A",
+                "confidence_score": 99,
+                "sub_scores": {
+                    "financial_fee_risk": 0,
+                    "impersonation_risk": 0,
+                    "domain_reputation_risk": 0,
+                    "urgency_pressure_risk": 0
+                },
+                "breakdown_signals": [],
+                "risk_level": "Not a Job Advertisement",
+                "language": final_lang,
+                "explanation_text": explanation_text,
+                "verified_facts": [f"Classified as: {category_desc}"],
+                "ai_inferences": ["Uploaded media is non-recruitment material."],
+                "input_url": input_url or "",
+                "primary_domain": "",
+                "domain_source": "none",
+                "domain_source_label": "Not Applicable",
+                "domain_source_priority": 5,
+                "is_social_wrapper": False,
+                "social_platform": None,
+                "resolved_url": input_url,
+                "redirect_chain": [],
+                "is_job_poster": False,
+                "content_type": "not_job_poster",
+                "pipeline_stopped_stage": 1
+            }
+
         # --- STAGE 2: Linguistic Risk Agent ---
         logger.info(f"[{request_id}] Stage 2: Linguistic Risk Agent executing...")
         linguistic_res = self.linguistic_agent.analyze(cleaned_text, final_lang) or {}

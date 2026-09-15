@@ -725,15 +725,37 @@ class VerificationAgent:
                         target_domain = c_clean
                         break
 
-        # Check if domain was categorized as a social wrapper
+        # Check if domain was categorized as a social wrapper or URL shortener
         if not is_social_wrapper and target_domain:
             cat = URLResolver.classify_domain(target_domain)
-            if cat == "SOCIAL_PLATFORM":
+            if cat in ("SOCIAL_PLATFORM", "URL_SHORTENER"):
                 is_social_wrapper = True
                 social_platform = social_platform or URLResolver.SOCIAL_PLATFORMS.get(URLResolver.extract_root_domain(target_domain))
 
-        whois_res = self.check_whois(target_domain)
-        safe_browsing_res = self.check_safe_browsing(target_domain)
+        # Only perform WHOIS analysis if a genuine employer/company domain was identified
+        if is_social_wrapper or not target_domain:
+            effective_employer_domain = ""
+            whois_res = {
+                "status": "not_applicable",
+                "domain": "",
+                "creation_date": "N/A",
+                "registered_days": None,
+                "domain_years": None,
+                "domain_age_formatted": "N/A (No Domain in Poster)",
+                "is_new_domain": False,
+                "whois_status": f"No standalone employer domain specified in poster" + (f" (Hosted on {social_platform})" if social_platform else ""),
+                "api_verified": False
+            }
+            safe_browsing_res = self.check_safe_browsing(target_domain) if target_domain else {
+                "status": "not_applicable",
+                "flagged": False,
+                "threat_types": [],
+                "details": "No external employer domain provided"
+            }
+        else:
+            effective_employer_domain = target_domain
+            whois_res = self.check_whois(target_domain)
+            safe_browsing_res = self.check_safe_browsing(target_domain)
 
         target_emails = emails or re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text or "")
         email_validation_res = self.validate_email(target_emails[0]) if target_emails else None
@@ -742,32 +764,30 @@ class VerificationAgent:
         trust_rating = 70  # Baseline neutral trust rating
 
         # Domain evidence
-        if target_domain:
-            if is_social_wrapper:
-                # Do NOT grant trust rating points for LinkedIn/Facebook's age to an employer!
+        if is_social_wrapper:
+            evidence_items.append({
+                "category": "domain_whois",
+                "indicator": "social_platform_domain",
+                "severity": "low",
+                "evidence": f"Input URL is hosted on a social platform ({social_platform or 'Social Media'}). Employer's standalone company domain was not specified in the poster/posting."
+            })
+        elif effective_employer_domain:
+            if whois_res.get("is_new_domain"):
+                trust_rating -= 35
                 evidence_items.append({
                     "category": "domain_whois",
-                    "indicator": "social_platform_domain",
-                    "severity": "low",
-                    "evidence": f"Domain '{target_domain}' belongs to a social media platform ({social_platform or 'Social Media'}). Employer's standalone company domain was not specified."
+                    "indicator": "new_domain_registration",
+                    "severity": "high",
+                    "evidence": f"Employer domain '{effective_employer_domain}' was registered recently ({whois_res.get('domain_age_formatted', '< 90 days')}) or uses a high-risk TLD"
                 })
-            else:
-                if whois_res.get("is_new_domain"):
-                    trust_rating -= 35
-                    evidence_items.append({
-                        "category": "domain_whois",
-                        "indicator": "new_domain_registration",
-                        "severity": "high",
-                        "evidence": f"Employer domain '{target_domain}' was registered recently ({whois_res.get('domain_age_formatted', '< 90 days')}) or uses a high-risk TLD"
-                    })
-                elif whois_res.get("status") == "verified":
-                    trust_rating += 15
-                    evidence_items.append({
-                        "category": "domain_whois",
-                        "indicator": "established_domain",
-                        "severity": "low",
-                        "evidence": f"Employer domain '{target_domain}' has an established registry history ({whois_res.get('domain_age_formatted', 'Active')})"
-                    })
+            elif whois_res.get("status") == "verified":
+                trust_rating += 15
+                evidence_items.append({
+                    "category": "domain_whois",
+                    "indicator": "established_domain",
+                    "severity": "low",
+                    "evidence": f"Employer domain '{effective_employer_domain}' has an established registry history ({whois_res.get('domain_age_formatted', 'Active')})"
+                })
 
                 if safe_browsing_res.get("flagged"):
                     trust_rating -= 40
@@ -843,8 +863,8 @@ class VerificationAgent:
         trust_rating = max(5, min(95, trust_rating))
 
         return {
-            "domain": target_domain or "",
-            "primary_domain": target_domain or "",
+            "domain": "" if is_social_wrapper else (effective_employer_domain or ""),
+            "primary_domain": "" if is_social_wrapper else (effective_employer_domain or ""),
             "domain_source": domain_source,
             "domain_source_label": domain_source_label,
             "domain_source_priority": domain_source_priority,
