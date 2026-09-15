@@ -613,6 +613,8 @@ Return ONLY a valid JSON object matching this exact key structure (no markdown f
                                 }
 
                                 return {
+                                    is_job_poster: !isNotJob,
+                                    pipeline_stopped_stage: isNotJob ? 1 : 5,
                                     scam_score: finalScore,
                                     confidence_score: isNotJob ? 95 : (parsed.confidence_score || 95),
                                     risk_level: finalRisk,
@@ -708,6 +710,8 @@ Please analyze a genuine recruitment posting or job vacancy URL to receive a com
 
             return {
                 id: 'report_' + Date.now().toString(36),
+                is_job_poster: false,
+                pipeline_stopped_stage: 1,
                 scam_score: "N/A",
                 confidence_score: 100,
                 risk_level: "Not a Job Advertisement",

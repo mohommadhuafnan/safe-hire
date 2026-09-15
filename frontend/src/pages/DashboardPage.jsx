@@ -229,6 +229,17 @@ const DashboardPage = () => {
 
   const detectedWhois = result?.verification_data?.whois_info || {};
 
+  const isNonJob = Boolean(
+    result && (
+      result.is_job_poster === false ||
+      result.risk_level === 'Not a Job Advertisement' ||
+      result.content_type === 'not_job_poster' ||
+      result.pipeline_stopped_stage === 1 ||
+      result.reasoning_data?.pipeline_stopped_stage === 1 ||
+      result.intake_data?.is_job_poster === false
+    )
+  );
+
   // Auto-enrich WHOIS domain age if domain is detected but whois creation date or days are not yet loaded
   React.useEffect(() => {
     if (!result || !detectedDomain) return;
@@ -341,14 +352,19 @@ const DashboardPage = () => {
     setAnalyzing(true);
     setCurrentStep(1);
 
-    // Simulate step progress for visual feedback
+    // Controlled visual step progression across agents:
+    // Stage 1 (Intake & OCR/Vision) runs initial ingestion.
+    // If backend takes longer (for genuine job posters), it steps through 2, 3, 4.
+    // It will never jump to 5 before the backend finishes.
+    let currentProgress = 1;
     const stepInterval = setInterval(() => {
-      setCurrentStep((prev) => {
-        if (prev < 5) return prev + 1;
+      currentProgress += 1;
+      if (currentProgress <= 4) {
+        setCurrentStep(currentProgress);
+      } else {
         clearInterval(stepInterval);
-        return prev;
-      });
-    }, 600);
+      }
+    }, 1400);
 
     try {
       const formData = new FormData();
@@ -364,7 +380,21 @@ const DashboardPage = () => {
       });
 
       clearInterval(stepInterval);
-      setCurrentStep(5);
+
+      const isNonJobResult = Boolean(
+        response.data?.is_job_poster === false ||
+        response.data?.risk_level === 'Not a Job Advertisement' ||
+        response.data?.content_type === 'not_job_poster' ||
+        response.data?.pipeline_stopped_stage === 1 ||
+        response.data?.reasoning_data?.pipeline_stopped_stage === 1 ||
+        response.data?.intake_data?.is_job_poster === false
+      );
+
+      if (isNonJobResult) {
+        setCurrentStep(1);
+      } else {
+        setCurrentStep(5);
+      }
       setResult(response.data);
     } catch (err) {
       clearInterval(stepInterval);
@@ -392,7 +422,18 @@ const DashboardPage = () => {
           if (!fallbackRes.id) {
             fallbackRes.id = 'report_' + Date.now().toString(36);
           }
-          setCurrentStep(5);
+          const isNonJobFallback = Boolean(
+            fallbackRes.is_job_poster === false ||
+            fallbackRes.risk_level === 'Not a Job Advertisement' ||
+            fallbackRes.content_type === 'not_job_poster' ||
+            fallbackRes.pipeline_stopped_stage === 1 ||
+            fallbackRes.intake_data?.is_job_poster === false
+          );
+          if (isNonJobFallback) {
+            setCurrentStep(1);
+          } else {
+            setCurrentStep(5);
+          }
           setResult(fallbackRes);
         }
       } catch (fallbackErr) {
@@ -799,327 +840,508 @@ const DashboardPage = () => {
             document.body
           )}
 
-          {/* FULL ANALYZED REPORT DISPLAY PANEL (BOTTOM LEFT) */}
+          {/* RESULT PANELS (BOTTOM LEFT: 7 COLS) */}
           {result && (
-            <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-indigo-500/30 bg-slate-900/80 space-y-6 animate-fade-in shadow-2xl">
-
-              {/* REPORT HEADER BAR */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-                <div className="flex items-center space-x-3">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20 flex-shrink-0">
-                    <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-sky-400" />
+            isNonJob ? (
+              /* NON-JOB CONTENT VERDICT CARD (STREAMLINED & CONCISE - NO UNNECESSARY REPORT SECTIONS) */
+              <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-amber-500/30 bg-slate-900/90 space-y-6 animate-fade-in shadow-2xl">
+                
+                {/* Header Bar */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/10">
+                      <AlertTriangle className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-base sm:text-lg font-extrabold text-slate-100 tracking-tight">
+                          {t('dashboard.non_job_title', 'Non-Job Content Classification')}
+                        </h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          STAGE 1 INTAKE
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Pipeline Halted at Stage 1 • 0 Tokens Consumed for LLM Reasoning
+                      </p>
                     </div>
                   </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h3 className="text-base sm:text-lg font-extrabold text-slate-100 tracking-tight">
-                        {t('dashboard.full_report_title', 'Full AI Audit Report & Verification Certificate')}
-                      </h3>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        {t('dashboard.verified_badge', 'VERIFIED')}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {t('dashboard.analyzed_on', 'Analyzed on')} {new Date(result.created_at || Date.now()).toLocaleString()} • {t('dashboard.target_user', 'Target')}: {user?.full_name || 'Student'}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="flex items-center space-x-2 w-full sm:w-auto">
-                  {/* Language Selector inside Report Header */}
-                  <div className="flex items-center space-x-1.5 bg-slate-950 border border-slate-800 rounded-2xl px-3 py-2 text-xs text-slate-200">
-                    <Globe className="w-3.5 h-3.5 text-sky-400" />
-                    <select
-                      value={i18n.language}
-                      onChange={(e) => handleLanguageChange(e.target.value)}
-                      className="bg-transparent border-none outline-none text-slate-200 cursor-pointer text-xs font-semibold"
+                  <div className="flex items-center space-x-2 w-full sm:w-auto">
+                    <button
+                      onClick={handleResetScan}
+                      className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition"
                     >
-                      <option value="en" className="bg-slate-900">English (EN)</option>
-                      <option value="si" className="bg-slate-900">සිංහල (SI)</option>
-                      <option value="ta" className="bg-slate-900">தமிழ் (TA)</option>
-                      <option value="hi" className="bg-slate-900">हिंदी (HI)</option>
-                      <option value="bn" className="bg-slate-900">বাংলা (BN)</option>
-                    </select>
+                      <RotateCcw className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{t('dashboard.new_scan', 'Start New Scan')}</span>
+                    </button>
                   </div>
-
-                  <button
-                    onClick={handleResetScan}
-                    className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition"
-                    title={t('dashboard.new_scan', 'Start New Scan')}
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 text-sky-400" />
-                    <span>{t('dashboard.new_scan', 'New Scan')}</span>
-                  </button>
-
-                  <button
-                    onClick={() => exportAnalysisReport(result, user, i18n.language)}
-                    className="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl btn-primary font-bold text-xs shadow-md transition hover:scale-105"
-                  >
-                    <Download className="w-4 h-4 text-white" />
-                    <span>{t('dashboard.download_report')}</span>
-                  </button>
-
-                  <button
-                    onClick={() => openAIModal({
-                      title: `Gemini 3.6 Flash Deep AI Audit (Report #${(result.id || 'REPORT').slice(-6)})`,
-                      initialPrompt: `Provide an in-depth security breakdown and safety advice for this job verification report:\nScam Score: ${result.scam_score}/100\nRisk Level: ${result.risk_level}\nExplanation: "${result.explanation_text}"`,
-                      category: 'full_report_audit',
-                      contextData: result
-                    })}
-                    className="p-2.5 rounded-2xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-sky-300 hover:text-white transition"
-                    title="Interactive Gemini AI Chat Audit"
-                  >
-                    <Sparkles className="w-4 h-4 animate-pulse" />
-                  </button>
                 </div>
-              </div>
 
-              {/* NOT A JOB ADVERTISEMENT OR LOW RISK EVIDENCE BANNERS */}
-              {(result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A' || result.risk_level === 'Unable to Determine') ? (
-                <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/30 flex items-start space-x-3 text-sky-300">
-                  <AlertCircle className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-bold text-sky-200 text-xs sm:text-sm uppercase tracking-wider">
-                      {result.risk_level === 'Unable to Determine' ? '⚠️ UNREADABLE / INSUFFICIENT EVIDENCE' : '⚠️ NOT A JOB ADVERTISEMENT'}
+                {/* Main Alert Verdict Banner */}
+                <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900/60 to-slate-950 border border-amber-500/30 space-y-2.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider">
+                      ⚠️ Not a Job Advertisement
+                    </span>
+                    <span className="text-xs text-slate-300 font-mono">
+                      Category: <strong className="text-amber-200">{result.intake_data?.specific_category || result.intake_data?.poster_type || 'Non-Recruitment Media'}</strong>
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+                    {result.intake_data?.poster_summary || 'The SAFE-HIRE Intake Agent analyzed this upload and determined that it does not contain a job vacancy, recruitment offer, or employment contract.'}
+                  </p>
+                </div>
+
+                {/* Media Evidence & Extracted Text Box */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-2">
+                      <ImageIcon className="w-4 h-4 text-sky-400" />
+                      <span>Intake Evidence & Multimodal OCR Extraction</span>
                     </h4>
-                    <p className="text-xs text-sky-300/90 mt-1 leading-relaxed">
-                      {result.intake_data?.poster_summary || 'The SAFE-HIRE 5-Agent AI pipeline determined that this content does not appear to contain an active recruitment vacancy. A standard recruitment scam score cannot be meaningfully calculated for non-job media.'}
-                    </p>
-                  </div>
-                </div>
-              ) : (typeof result.scam_score === 'number' && result.scam_score <= 20) && (
-                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start space-x-3 text-emerald-300">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-bold text-emerald-200 text-xs sm:text-sm uppercase tracking-wider">✅ LOW APPARENT RISK RECRUITMENT CONTENT</h4>
-                    <p className="text-xs text-emerald-300/90 mt-1 leading-relaxed">
-                      No critical upfront fee demands, company impersonation flags, or known scam signals were detected based on available evidence. Always verify offers directly on official corporate career channels.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* LIVE URL & WHOIS DOMAIN SECURITY AUDIT CARD */}
-              {detectedDomain && (
-                <div className="p-5 rounded-2xl bg-slate-950/90 border border-indigo-500/30 space-y-4 shadow-lg">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center space-x-2">
-                      <Globe className="w-4 h-4 text-sky-400" />
-                      <span>{t('dashboard.domain_security_title', 'Live URL & WHOIS Domain Security Audit')}</span>
-                    </h4>
-                    <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800">
-                      {t('dashboard.whois_live_audit', 'WHOIS LIVE AUDIT')}
+                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      STAGE 1 OCR
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Redirect Chain Display */}
-                    {((result.redirect_chain && result.redirect_chain.length > 1) || (result.intake_data?.redirect_chain && result.intake_data.redirect_chain.length > 1)) && (
-                      <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 sm:col-span-2 space-y-1.5">
-                        <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                          <ArrowRight className="w-3 h-3 text-cyan-400" />
-                          <span>URL Redirect Chain (Expanded Shortener Destination)</span>
-                        </span>
-                        <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono text-slate-300">
-                          {(result.redirect_chain || result.intake_data?.redirect_chain || []).map((stepUrl, sIdx, arr) => (
-                            <React.Fragment key={sIdx}>
-                              <span className={`px-2 py-0.5 rounded ${sIdx === arr.length - 1 ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'} truncate max-w-[280px]`} title={stepUrl}>
-                                {stepUrl}
-                              </span>
-                              {sIdx < arr.length - 1 && <span className="text-cyan-400 font-bold">➔</span>}
-                            </React.Fragment>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Social Platform Wrapper Warning */}
-                    {(result.is_social_wrapper || result.intake_data?.is_social_wrapper || result.verification_data?.is_social_wrapper) && (
-                      <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/30 sm:col-span-2 text-xs text-amber-200 flex items-start space-x-2">
-                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-bold block">Social Platform Wrapper ({result.social_platform || result.intake_data?.social_platform || 'Social Media'})</span>
-                          <span className="text-[11px] text-amber-300/80 leading-relaxed">
-                            Input URL is hosted on a social platform ({detectedDomain}). Domain age of the hosting platform is not treated as the employer's credibility score.
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Domain vs Recruiter Email Mismatch */}
-                    {result.verification_data?.domain_match === false && result.verification_data?.domain_match_details && (
-                      <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-500/30 sm:col-span-2 text-xs text-rose-200 flex items-start space-x-2">
-                        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-bold block">Domain / Contact Discrepancy</span>
-                          <span className="text-[11px] text-rose-300/80 leading-relaxed">{result.verification_data.domain_match_details}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.target_domain', 'Target Domain / URL')}</span>
-                        {(result.domain_source_label || result.intake_data?.domain_source_label || result.verification_data?.domain_source_label) && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/50 font-medium">
-                            {result.domain_source_label || result.intake_data?.domain_source_label || result.verification_data?.domain_source_label}
-                          </span>
-                        )}
-                      </div>
-                      <span className="font-semibold text-slate-200 text-xs font-mono truncate block">
-                        {detectedDomain}
-                      </span>
+                  {previewUrl && (
+                    <div className="flex justify-center p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                      <img src={previewUrl} alt="Analyzed Media" className="max-h-48 rounded-lg object-contain" />
                     </div>
+                  )}
 
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.domain_age', 'Domain Age')}</span>
-                      <span className={`font-semibold text-xs block ${detectedWhois.is_new_domain ? 'text-rose-400 font-bold' : (detectedWhois?.status === 'unavailable' || detectedWhois?.domain_age_formatted === 'Unavailable' ? 'text-amber-400' : 'text-emerald-400')}`}>
-                        {detectedWhois?.domain_age_formatted || (
-                          detectedWhois.registered_days !== undefined && detectedWhois.registered_days !== null
-                            ? (detectedWhois.domain_years !== undefined && detectedWhois.domain_years !== null && detectedWhois.domain_years > 0
-                              ? `${detectedWhois.domain_years}+ ${detectedWhois.domain_years === 1 ? 'Year' : 'Years'} Old (${detectedWhois.registered_days} Days)`
-                              : `${detectedWhois.registered_days} ${t('dashboard.registered_days_suffix', 'Days (Registered)')}`
-                            )
-                            : (detectedWhois?.status === 'unavailable' || detectedWhois?.domain_age_formatted === 'Unavailable'
-                              ? 'Unavailable'
-                              : (detectedWhois?.whois_status ? detectedWhois.whois_status.split('•')[0].trim() : (detectedWhois.status === 'verified' ? 'Established Record' : 'Active Domain Record'))
-                            )
-                        )}
-                      </span>
+                  {(result.intake_data?.ocr_text || result.intake_data?.extracted_text || result.risk_factors?.ocr_text) ? (
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] text-slate-400 font-medium">Extracted Text Content:</span>
+                      <p className="text-[11px] text-slate-300 font-mono leading-relaxed bg-slate-900/80 p-3 rounded-xl border border-slate-800/80 max-h-36 overflow-y-auto whitespace-pre-wrap">
+                        {result.intake_data?.ocr_text || result.intake_data?.extracted_text || result.risk_factors?.ocr_text}
+                      </p>
                     </div>
-
-                    {/* Domain Registration Date (Created On) */}
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registration_date', 'Domain Registration Date')}</span>
-                      <span className="font-semibold text-slate-200 text-xs font-mono block">
-                        {detectedWhois.creation_date && detectedWhois.creation_date !== 'N/A' && !isNaN(new Date(detectedWhois.creation_date).getTime())
-                          ? new Date(detectedWhois.creation_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-                          : (detectedWhois.registered_days
-                            ? new Date(Date.now() - detectedWhois.registered_days * 86400000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-                            : (detectedWhois.status === 'unavailable' ? 'Unavailable' : 'Live Record Verified')
-                          )}
-                      </span>
-                    </div>
-
-                    {/* Expiration Date if Available */}
-                    {detectedWhois.expiration_date && detectedWhois.expiration_date !== 'N/A' && !isNaN(new Date(detectedWhois.expiration_date).getTime()) && (
-                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.expiration_date', 'Domain Expiry Date')}</span>
-                        <span className="font-semibold text-slate-200 text-xs font-mono block">
-                          {new Date(detectedWhois.expiration_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registrar', 'Registrar')}</span>
-                      <span className="font-semibold text-slate-200 text-xs truncate block">
-                        {detectedWhois.registrar || (detectedWhois.status === 'unavailable' ? 'Unavailable' : 'ICANN Accredited Registrar')}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.safe_browsing', 'Safe Browsing')}</span>
-                      <span className={`font-semibold text-xs truncate block ${result.verification_data?.safe_browsing?.flagged ? 'text-rose-400' : 'text-emerald-400'}`}>
-                        {result.verification_data?.safe_browsing?.status || 'Clean / Unflagged'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 sm:col-span-2">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.whois_security_status', 'WHOIS Domain Security Status')}</span>
-                      <span className={`font-semibold text-xs block ${detectedWhois.is_new_domain ? 'text-rose-400 font-bold' : (detectedWhois.status === 'unavailable' ? 'text-amber-400' : 'text-emerald-400')}`}>
-                        {detectedWhois.whois_status || (detectedWhois.status === 'unavailable' ? '⚠️ WHOIS registration details could not be verified' : (detectedWhois.is_new_domain ? '⚠️ Newly registered domain (< 90 days)' : '✅ Established active domain record'))}
-                      </span>
-                    </div>
-                  </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">
+                      No textual job vacancy information was identified on this media.
+                    </p>
+                  )}
                 </div>
-              )}
 
-              {/* REASONING EXPLANATION CARD (LEFT SIDE PANEL) */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-2">
-                    <BrainCircuit className="w-4 h-4 text-indigo-400" />
-                    <span>{t('dashboard.reasoning_explanation', 'Reasoning Explanation')}</span>
-                  </h4>
-                  <span className="text-[10px] font-mono text-sky-400 bg-sky-500/10 px-2.5 py-0.5 rounded-full border border-sky-500/20">
-                    {t('dashboard.ai_audit_rationale', 'AI AUDIT RATIONALE')}
-                  </span>
-                </div>
-                {isTranslatingReport ? (
-                  <div className="flex items-center space-x-2 py-6 justify-center text-xs text-sky-400 font-semibold animate-pulse bg-slate-900/90 rounded-xl border border-slate-800/80">
-                    <Sparkles className="w-4 h-4 text-sky-400 animate-spin" />
-                    <span>Translating report to {targetLanguage.toUpperCase()}...</span>
+                {/* Why SAFE-HIRE Halted & Scope Notice */}
+                <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 space-y-2.5">
+                  <div className="flex items-center space-x-2 text-indigo-300 text-xs font-bold uppercase tracking-wider">
+                    <Shield className="w-4 h-4 text-indigo-400" />
+                    <span>Why Was The Verification Pipeline Halted?</span>
                   </div>
-                ) : (
-                  <StructuredExplanationView text={result.explanation_text} />
-                )}
-              </div>
-
-              {/* STUDENT SAFETY ACTION PLAN */}
-              {result.recommendations && result.recommendations.length > 0 && (
-                <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-3">
-                  <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>{t('dashboard.tailored_student_safety_recommendations', 'Tailored Student Safety Recommendations')}</span>
-                  </h4>
-                  <ul className="space-y-2">
-                    {result.recommendations.map((rec, idx) => (
-                      <li key={idx} className="flex items-start space-x-2.5 text-xs text-slate-200 leading-relaxed font-sans">
-                        <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" />
-                        <span className="font-medium text-slate-200">{rec}</span>
-                      </li>
-                    ))}
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    SAFE-HIRE's 5-Agent Pipeline is engineered specifically to detect <strong>job recruitment scams, fee fraud, and fake employers</strong>. Because no job vacancy was detected in this submission:
+                  </p>
+                  <ul className="text-xs text-slate-300 space-y-1.5 list-disc pl-5">
+                    <li><strong>Stage 2 (Linguistic Risk):</strong> Skipped — No job text urgency to analyze.</li>
+                    <li><strong>Stage 3 (Verification & WHOIS):</strong> Skipped — No employer domain to verify.</li>
+                    <li><strong>Stage 4 (Reasoning Agent):</strong> Skipped — Conserving AI tokens.</li>
+                    <li><strong>Stage 5 (Recommendation Agent):</strong> Skipped — Standard advice not applicable.</li>
                   </ul>
                 </div>
-              )}
 
-              {/* VERIFICATION SIGNATURE FOOTER */}
-              <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] text-slate-400 gap-2">
-                <div className="flex items-center space-x-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>{t('dashboard.verified_by_engine', 'Verified by SAFE-HIRE Agentic AI Engine')}</span>
-                </div>
-                <div className="flex items-center space-x-2 font-mono text-[10px] text-slate-500">
-                  <span>{t('dashboard.report_hash', 'Report Hash')}: {result.id || 'CERT-SECURE'}</span>
+                {/* Scan a Real Job Ad Action Button */}
+                <div className="pt-2">
+                  <button
+                    onClick={handleResetScan}
+                    className="w-full flex items-center justify-center space-x-2 px-5 py-3 rounded-2xl btn-primary font-bold text-xs shadow-lg transition hover:scale-[1.01]"
+                  >
+                    <FileText className="w-4 h-4 text-white" />
+                    <span>Scan a Real Job Ad or Recruiter Message</span>
+                  </button>
                 </div>
               </div>
+            ) : (
+              /* GENUINE JOB VACANCY FULL AUDIT REPORT & CERTIFICATE */
+              <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-indigo-500/30 bg-slate-900/80 space-y-6 animate-fade-in shadow-2xl">
 
-            </div>
+                {/* REPORT HEADER BAR */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20 flex-shrink-0">
+                      <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-sky-400" />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-base sm:text-lg font-extrabold text-slate-100 tracking-tight">
+                          {t('dashboard.full_report_title', 'Full AI Audit Report & Verification Certificate')}
+                        </h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          {t('dashboard.verified_badge', 'VERIFIED')}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {t('dashboard.analyzed_on', 'Analyzed on')} {new Date(result.created_at || Date.now()).toLocaleString()} • {t('dashboard.target_user', 'Target')}: {user?.full_name || 'Student'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 w-full sm:w-auto">
+                    {/* Language Selector inside Report Header */}
+                    <div className="flex items-center space-x-1.5 bg-slate-950 border border-slate-800 rounded-2xl px-3 py-2 text-xs text-slate-200">
+                      <Globe className="w-3.5 h-3.5 text-sky-400" />
+                      <select
+                        value={i18n.language}
+                        onChange={(e) => handleLanguageChange(e.target.value)}
+                        className="bg-transparent border-none outline-none text-slate-200 cursor-pointer text-xs font-semibold"
+                      >
+                        <option value="en" className="bg-slate-900">English (EN)</option>
+                        <option value="si" className="bg-slate-900">සිංහල (SI)</option>
+                        <option value="ta" className="bg-slate-900">தமிழ் (TA)</option>
+                        <option value="hi" className="bg-slate-900">हिंदी (HI)</option>
+                        <option value="bn" className="bg-slate-900">বাংলা (BN)</option>
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={handleResetScan}
+                      className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition"
+                      title={t('dashboard.new_scan', 'Start New Scan')}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{t('dashboard.new_scan', 'New Scan')}</span>
+                    </button>
+
+                    <button
+                      onClick={() => exportAnalysisReport(result, user, i18n.language)}
+                      className="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl btn-primary font-bold text-xs shadow-md transition hover:scale-105"
+                    >
+                      <Download className="w-4 h-4 text-white" />
+                      <span>{t('dashboard.download_report')}</span>
+                    </button>
+
+                    <button
+                      onClick={() => openAIModal({
+                        title: `Gemini 3.6 Flash Deep AI Audit (Report #${(result.id || 'REPORT').slice(-6)})`,
+                        initialPrompt: `Provide an in-depth security breakdown and safety advice for this job verification report:\nScam Score: ${result.scam_score}/100\nRisk Level: ${result.risk_level}\nExplanation: "${result.explanation_text}"`,
+                        category: 'full_report_audit',
+                        contextData: result
+                      })}
+                      className="p-2.5 rounded-2xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-sky-300 hover:text-white transition"
+                      title="Interactive Gemini AI Chat Audit"
+                    >
+                      <Sparkles className="w-4 h-4 animate-pulse" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* LOW RISK RECRUITMENT BANNER */}
+                {(typeof result.scam_score === 'number' && result.scam_score <= 20) && (
+                  <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start space-x-3 text-emerald-300">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-bold text-emerald-200 text-xs sm:text-sm uppercase tracking-wider">✅ LOW APPARENT RISK RECRUITMENT CONTENT</h4>
+                      <p className="text-xs text-emerald-300/90 mt-1 leading-relaxed">
+                        No critical upfront fee demands, company impersonation flags, or known scam signals were detected based on available evidence. Always verify offers directly on official corporate career channels.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* LIVE URL & WHOIS DOMAIN SECURITY AUDIT CARD */}
+                {detectedDomain && (
+                  <div className="p-5 rounded-2xl bg-slate-950/90 border border-indigo-500/30 space-y-4 shadow-lg">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center space-x-2">
+                        <Globe className="w-4 h-4 text-sky-400" />
+                        <span>{t('dashboard.domain_security_title', 'Live URL & WHOIS Domain Security Audit')}</span>
+                      </h4>
+                      <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800">
+                        {t('dashboard.whois_live_audit', 'WHOIS LIVE AUDIT')}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Redirect Chain Display */}
+                      {((result.redirect_chain && result.redirect_chain.length > 1) || (result.intake_data?.redirect_chain && result.intake_data.redirect_chain.length > 1)) && (
+                        <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 sm:col-span-2 space-y-1.5">
+                          <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                            <ArrowRight className="w-3 h-3 text-cyan-400" />
+                            <span>URL Redirect Chain (Expanded Shortener Destination)</span>
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono text-slate-300">
+                            {(result.redirect_chain || result.intake_data?.redirect_chain || []).map((stepUrl, sIdx, arr) => (
+                              <React.Fragment key={sIdx}>
+                                <span className={`px-2 py-0.5 rounded ${sIdx === arr.length - 1 ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'} truncate max-w-[280px]`} title={stepUrl}>
+                                  {stepUrl}
+                                </span>
+                                {sIdx < arr.length - 1 && <span className="text-cyan-400 font-bold">➔</span>}
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Social Platform Wrapper Warning */}
+                      {(result.is_social_wrapper || result.intake_data?.is_social_wrapper || result.verification_data?.is_social_wrapper) && (
+                        <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/30 sm:col-span-2 text-xs text-amber-200 flex items-start space-x-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold block">Social Platform Wrapper ({result.social_platform || result.intake_data?.social_platform || 'Social Media'})</span>
+                            <span className="text-[11px] text-amber-300/80 leading-relaxed">
+                              Input URL is hosted on a social platform ({detectedDomain}). Domain age of the hosting platform is not treated as the employer's credibility score.
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Domain vs Recruiter Email Mismatch */}
+                      {result.verification_data?.domain_match === false && result.verification_data?.domain_match_details && (
+                        <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-500/30 sm:col-span-2 text-xs text-rose-200 flex items-start space-x-2">
+                          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold block">Domain / Contact Discrepancy</span>
+                            <span className="text-[11px] text-rose-300/80 leading-relaxed">{result.verification_data.domain_match_details}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.target_domain', 'Target Domain / URL')}</span>
+                          {(result.domain_source_label || result.intake_data?.domain_source_label || result.verification_data?.domain_source_label) && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/50 font-medium">
+                              {result.domain_source_label || result.intake_data?.domain_source_label || result.verification_data?.domain_source_label}
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-semibold text-slate-200 text-xs font-mono truncate block">
+                          {detectedDomain}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.domain_age', 'Domain Age')}</span>
+                        <span className={`font-semibold text-xs block ${detectedWhois.is_new_domain ? 'text-rose-400 font-bold' : (detectedWhois?.status === 'unavailable' || detectedWhois?.domain_age_formatted === 'Unavailable' ? 'text-amber-400' : 'text-emerald-400')}`}>
+                          {detectedWhois?.domain_age_formatted || (
+                            detectedWhois.registered_days !== undefined && detectedWhois.registered_days !== null
+                              ? (detectedWhois.domain_years !== undefined && detectedWhois.domain_years !== null && detectedWhois.domain_years > 0
+                                ? `${detectedWhois.domain_years}+ ${detectedWhois.domain_years === 1 ? 'Year' : 'Years'} Old (${detectedWhois.registered_days} Days)`
+                                : `${detectedWhois.registered_days} ${t('dashboard.registered_days_suffix', 'Days (Registered)')}`
+                              )
+                              : (detectedWhois?.status === 'unavailable' || detectedWhois?.domain_age_formatted === 'Unavailable'
+                                ? 'Unavailable'
+                                : (detectedWhois?.whois_status ? detectedWhois.whois_status.split('•')[0].trim() : (detectedWhois.status === 'verified' ? 'Established Record' : 'Active Domain Record'))
+                              )
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Domain Registration Date (Created On) */}
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registration_date', 'Domain Registration Date')}</span>
+                        <span className="font-semibold text-slate-200 text-xs font-mono block">
+                          {detectedWhois.creation_date && detectedWhois.creation_date !== 'N/A' && !isNaN(new Date(detectedWhois.creation_date).getTime())
+                            ? new Date(detectedWhois.creation_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                            : (detectedWhois.registered_days
+                              ? new Date(Date.now() - detectedWhois.registered_days * 86400000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                              : (detectedWhois.status === 'unavailable' ? 'Unavailable' : 'Live Record Verified')
+                            )}
+                        </span>
+                      </div>
+
+                      {/* Expiration Date if Available */}
+                      {detectedWhois.expiration_date && detectedWhois.expiration_date !== 'N/A' && !isNaN(new Date(detectedWhois.expiration_date).getTime()) && (
+                        <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.expiration_date', 'Domain Expiry Date')}</span>
+                          <span className="font-semibold text-slate-200 text-xs font-mono block">
+                            {new Date(detectedWhois.expiration_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.registrar', 'Registrar')}</span>
+                        <span className="font-semibold text-slate-200 text-xs truncate block">
+                          {detectedWhois.registrar || (detectedWhois.status === 'unavailable' ? 'Unavailable' : 'ICANN Accredited Registrar')}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.safe_browsing', 'Safe Browsing')}</span>
+                        <span className={`font-semibold text-xs truncate block ${result.verification_data?.safe_browsing?.flagged ? 'text-rose-400' : 'text-emerald-400'}`}>
+                          {result.verification_data?.safe_browsing?.status || 'Clean / Unflagged'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 sm:col-span-2">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase block">{t('dashboard.whois_security_status', 'WHOIS Domain Security Status')}</span>
+                        <span className={`font-semibold text-xs block ${detectedWhois.is_new_domain ? 'text-rose-400 font-bold' : (detectedWhois.status === 'unavailable' ? 'text-amber-400' : 'text-emerald-400')}`}>
+                          {detectedWhois.whois_status || (detectedWhois.status === 'unavailable' ? '⚠️ WHOIS registration details could not be verified' : (detectedWhois.is_new_domain ? '⚠️ Newly registered domain (< 90 days)' : '✅ Established active domain record'))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* REASONING EXPLANATION CARD (LEFT SIDE PANEL) */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-2">
+                      <BrainCircuit className="w-4 h-4 text-indigo-400" />
+                      <span>{t('dashboard.reasoning_explanation', 'Reasoning Explanation')}</span>
+                    </h4>
+                    <span className="text-[10px] font-mono text-sky-400 bg-sky-500/10 px-2.5 py-0.5 rounded-full border border-sky-500/20">
+                      {t('dashboard.ai_audit_rationale', 'AI AUDIT RATIONALE')}
+                    </span>
+                  </div>
+                  {isTranslatingReport ? (
+                    <div className="flex items-center space-x-2 py-6 justify-center text-xs text-sky-400 font-semibold animate-pulse bg-slate-900/90 rounded-xl border border-slate-800/80">
+                      <Sparkles className="w-4 h-4 text-sky-400 animate-spin" />
+                      <span>Translating report to {targetLanguage.toUpperCase()}...</span>
+                    </div>
+                  ) : (
+                    <StructuredExplanationView text={result.explanation_text} />
+                  )}
+                </div>
+
+                {/* STUDENT SAFETY ACTION PLAN */}
+                {result.recommendations && result.recommendations.length > 0 && (
+                  <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-3">
+                    <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center space-x-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>{t('dashboard.tailored_student_safety_recommendations', 'Tailored Student Safety Recommendations')}</span>
+                    </h4>
+                    <ul className="space-y-2">
+                      {result.recommendations.map((rec, idx) => (
+                        <li key={idx} className="flex items-start space-x-2.5 text-xs text-slate-200 leading-relaxed font-sans">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" />
+                          <span className="font-medium text-slate-200">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* VERIFICATION SIGNATURE FOOTER */}
+                <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] text-slate-400 gap-2">
+                  <div className="flex items-center space-x-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>{t('dashboard.verified_by_engine', 'Verified by SAFE-HIRE Agentic AI Engine')}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 font-mono text-[10px] text-slate-500">
+                    <span>{t('dashboard.report_hash', 'Report Hash')}: {result.id || 'CERT-SECURE'}</span>
+                  </div>
+                </div>
+
+              </div>
+            )
           )}
         </div>
 
         {/* RESULTS CARD DISPLAY (5 COLS) */}
         <div className="lg:col-span-5 flex flex-col space-y-6">
           {result ? (
-            <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 animate-fade-in">
+            isNonJob ? (
+              /* NON-JOB RIGHT PANEL: PIPELINE EXECUTION STATUS & 0-TOKEN SUMMARY */
+              <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-slate-800 space-y-5 animate-fade-in shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="text-base font-bold text-slate-100 flex items-center space-x-2">
+                    <Cpu className="w-4 h-4 text-sky-400" />
+                    <span>5-Agent Execution Trace</span>
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-mono font-bold">
+                    HALTED AT STAGE 1
+                  </span>
+                </div>
 
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                <h2 className="text-lg font-bold text-slate-100">{t('dashboard.results_title')}</h2>
-                <span className="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-sky-400">
-                  ID: #{(result.id || 'REPORT').slice(-6)}
-                </span>
-              </div>
+                {/* 5-Agent Status Breakdown */}
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      <div>
+                        <span className="font-bold text-slate-200 block">1. Intake & Multimodal OCR</span>
+                        <span className="text-[10px] text-emerald-300/80">Classified: Non-Job Media</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">
+                      COMPLETED
+                    </span>
+                  </div>
 
-              {/* SCAM GAUGE */}
-              <ScamGauge score={result.scam_score} riskLevel={result.risk_level} />
+                  {[
+                    { step: '2. Linguistic Risk Agent', desc: 'EMSCAD Urgency & Fee Detection' },
+                    { step: '3. Verification Agent', desc: 'WHOIS Domain & Safe Browsing' },
+                    { step: '4. Reasoning Agent (Gemini AI)', desc: 'Scam Probability Rating' },
+                    { step: '5. Recommendation Agent', desc: 'Student Safety Guidance' }
+                  ].map((agent, idx) => (
+                    <div key={idx} className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between text-xs opacity-75">
+                      <div className="flex items-center space-x-2.5">
+                        <div className="w-4 h-4 rounded-full border border-slate-700 flex items-center justify-center text-[9px] text-slate-500 flex-shrink-0">
+                          -
+                        </div>
+                        <div>
+                          <span className="font-semibold text-slate-400 block">{agent.step}</span>
+                          <span className="text-[10px] text-slate-500">{agent.desc}</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-medium text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 flex-shrink-0">
+                        SKIPPED
+                      </span>
+                    </div>
+                  ))}
+                </div>
 
-              {/* 5-AGENT BREAKDOWN ACCORDION */}
-              <AgentBreakdown result={result} />
+                {/* Token & System Efficiency Card */}
+                <div className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800/90 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-medium">Scam Probability Rating:</span>
+                    <span className="font-bold text-slate-300 font-mono">N/A (Non-Job Media)</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-medium">Pipeline Stages Run:</span>
+                    <span className="font-bold text-sky-400 font-mono">1 of 5 Stages</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs border-t border-slate-800/60 pt-2">
+                    <span className="text-slate-400 font-medium">LLM Reasoning Tokens:</span>
+                    <span className="font-bold text-emerald-400 font-mono">100% Conserved</span>
+                  </div>
+                </div>
 
-              {/* ACTION BUTTONS */}
-              <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+                {/* Action button */}
                 <button
-                  onClick={() => exportAnalysisReport(result, user, i18n.language)}
-                  className="w-full flex items-center justify-center space-x-2 px-5 py-3 rounded-xl btn-primary font-bold text-xs shadow-md transition hover:scale-[1.02]"
+                  onClick={handleResetScan}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition"
                 >
-                  <Download className="w-4 h-4 text-white" />
-                  <span>{t('dashboard.download_report')}</span>
+                  <RotateCcw className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Scan Another Document</span>
                 </button>
               </div>
+            ) : (
+              /* GENUINE JOB RESULTS CARD WITH GAUGE & BREAKDOWN */
+              <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 animate-fade-in">
 
-            </div>
+                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                  <h2 className="text-lg font-bold text-slate-100">{t('dashboard.results_title')}</h2>
+                  <span className="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-sky-400">
+                    ID: #{(result.id || 'REPORT').slice(-6)}
+                  </span>
+                </div>
+
+                {/* SCAM GAUGE */}
+                <ScamGauge score={result.scam_score} riskLevel={result.risk_level} />
+
+                {/* 5-AGENT BREAKDOWN ACCORDION */}
+                <AgentBreakdown result={result} />
+
+                {/* ACTION BUTTONS */}
+                <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+                  <button
+                    onClick={() => exportAnalysisReport(result, user, i18n.language)}
+                    className="w-full flex items-center justify-center space-x-2 px-5 py-3 rounded-xl btn-primary font-bold text-xs shadow-md transition hover:scale-[1.02]"
+                  >
+                    <Download className="w-4 h-4 text-white" />
+                    <span>{t('dashboard.download_report')}</span>
+                  </button>
+                </div>
+
+              </div>
+            )
           ) : (
             <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-sky-500/30 shadow-2xl relative overflow-hidden bg-slate-950/85 backdrop-blur-2xl animate-fade-in h-full flex flex-col justify-between">
               {/* Background ambient glow */}
