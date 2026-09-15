@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '../context/ThemeContext';
-import { ShieldCheck, LogOut, User, Globe, History, LayoutDashboard, Menu, X, Crown, ArrowRight, ChevronDown, Check, Sun, Moon } from 'lucide-react';
+import { ShieldCheck, LogOut, User, Globe, History, LayoutDashboard, Menu, X, Crown, ArrowRight, ChevronDown, Check } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { t, i18n } = useTranslation();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSystemDefault, setIsSystemDefault] = useState(
@@ -48,15 +46,8 @@ const Navbar = () => {
 
         <nav className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-[68px] flex items-center justify-between">
           
-          {/* Brand Logo & macOS Controls */}
+          {/* Brand Logo */}
           <div className="flex items-center space-x-3">
-            {/* macOS Window Controls Dots */}
-            <div className="hidden sm:flex items-center space-x-1.5 pr-3 border-r border-slate-800/90">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block shadow-sm shadow-rose-500/50" />
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block shadow-sm shadow-amber-500/50" />
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block shadow-sm shadow-emerald-500/50" />
-            </div>
-
             <Link to="/" className="flex items-center space-x-2.5 group">
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900 border border-indigo-500/30 p-1 shadow-md shadow-indigo-500/20 group-hover:border-indigo-400/60 group-hover:scale-105 transition-all duration-300 flex items-center justify-center overflow-hidden">
                 <img src="/images/logo.png" alt="SAFE-HIRE AI Logo" className="w-full h-full object-contain" />
@@ -124,20 +115,6 @@ const Navbar = () => {
                 })}
               </div>
             </div>
-
-            {/* Theme Mode Toggle Button */}
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all duration-200 shadow-sm"
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              aria-label="Toggle Theme Mode"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-amber-400" />
-              ) : (
-                <Moon className="w-4 h-4 text-slate-300" />
-              )}
-            </button>
 
             {/* Pricing Navigation Link */}
             <Link
@@ -276,20 +253,6 @@ const Navbar = () => {
                   <option value="hi">हिंदी (HI)</option>
                   <option value="bn">বাংলা (BN)</option>
                 </select>
-              </div>
-
-              {/* Theme Mode Toggle (Mobile) */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/90 border border-white/10 text-xs">
-                <span className="flex items-center text-slate-300 font-medium">
-                  {theme === 'dark' ? <Moon className="w-4 h-4 mr-2 text-indigo-400" /> : <Sun className="w-4 h-4 mr-2 text-amber-400" />}
-                  Theme Mode:
-                </span>
-                <button
-                  onClick={toggleTheme}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition"
-                >
-                  {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
-                </button>
               </div>
 
               {/* Main Nav Actions */}
