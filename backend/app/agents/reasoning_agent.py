@@ -57,10 +57,10 @@ class ReasoningAgent:
 
     GEMINI_MODELS = [
         "gemini-flash-lite-latest",
+        "gemini-3.1-flash-lite-preview",
+        "gemini-flash-latest",
         "gemini-3.5-flash",
         "gemini-3.6-flash",
-        "gemini-flash-latest",
-        "gemini-3.1-flash-lite-preview",
         "gemini-3.7-flash",
         "gemini-3.8-flash",
     ]
@@ -78,7 +78,7 @@ class ReasoningAgent:
         verification_data: dict
     ) -> tuple[Union[int, str], str, dict, list]:
         """
-        Calculates a 100% reproducible and deterministic scam probability score based on
+        Calculates a 100% reproducible and dynamic scam probability score based on
         mathematically weighted multi-agent evidence from Stages 1, 2, and 3.
         """
         intake_data = intake_data or {}
@@ -112,6 +112,7 @@ class ReasoningAgent:
         payment_terms = linguistic_data.get("matched_payment") or []
         has_impersonation = bool(linguistic_data.get("has_impersonation_risk"))
         impersonation_flags = linguistic_data.get("impersonation_flags") or []
+        has_generic_email = bool(linguistic_data.get("has_generic_email"))
         has_urgency = bool(linguistic_data.get("has_urgency_tactics"))
         urgency_terms = linguistic_data.get("matched_urgency") or []
         has_suspicious_channels = bool(linguistic_data.get("has_suspicious_channels"))
@@ -132,26 +133,29 @@ class ReasoningAgent:
         phone_val = verification_data.get("phone_validation") or {}
         is_invalid_phone = bool(phone_val.get("is_valid") is False)
 
-        score = 10  # Baseline low risk for standard employment advertisement
+        score = 15  # Baseline neutral score for standard employment advertisement
         reasons = []
 
         # Upfront Payment / Registration Fee (Critical Red Flag)
         if has_payment:
-            score += 60
+            score += 65
             reasons.append(f"⚠️ Upfront fee / deposit demanded: {', '.join(payment_terms[:3])}. Legitimate employers never charge candidates.")
 
         # Safe Browsing Threat (Critical Red Flag)
         if safe_browsing_flag:
-            score += 45
+            score += 50
             reasons.append("🌐 Threat detected on URL: Safe Browsing flagged the destination link for security threats.")
 
         # Brand Impersonation & Free Webmail Mismatch
         if has_impersonation:
-            score += 30
-            reasons.append(f"🎭 Brand impersonation detected: {'; '.join(impersonation_flags[:2])}")
+            score += 35
+            reasons.append(f"🎭 Corporate brand impersonation: '{claimed_brand.upper()}' claimed with generic webmail (@{free_email}).")
         elif claimed_brand and free_email and (not domain or domain == "Not Specified" or is_social_wrapper):
-            score += 20
+            score += 25
             reasons.append(f"🏢 Recruiter claims '{claimed_brand}' but uses free email (@{free_email}) without verifiable company domain.")
+        elif has_generic_email and (not domain or domain == "Not Specified" or is_social_wrapper):
+            score += 12
+            reasons.append(f"📧 Contact via generic webmail provider (@{free_email}).")
 
         # Disposable Email
         if is_disposable_email:
@@ -161,10 +165,11 @@ class ReasoningAgent:
         # Newly Registered Domain vs Established Domain
         if is_new_domain and not is_social_wrapper and domain and domain != "Not Specified":
             score += 25 if (domain_age_days is not None and domain_age_days < 30) else 15
-            reasons.append(f"🌐 Newly registered domain ({domain_age_fmt}): '{domain}'. High frequency in ephemeral scam campaigns.")
+            reasons.append(f"🌐 Newly registered domain ({domain_age_fmt}): '{domain}'. Ephemeral domains carry elevated fraud risk.")
         elif whois_info.get("status") == "verified" and domain_age_days is not None and domain_age_days > 365 and not is_social_wrapper:
             if not has_payment and not has_impersonation and not safe_browsing_flag:
-                score -= 10
+                deduction = 10 if domain_age_days > 1000 else 5
+                score -= deduction
                 reasons.append(f"✅ Established employer domain reference: {domain} ({domain_age_fmt})")
 
         # Domain Mismatch
@@ -176,7 +181,7 @@ class ReasoningAgent:
         if has_suspicious_channels:
             num_suspicious = len(suspicious_terms)
             if num_suspicious >= 3:
-                score += 40
+                score += 35
                 reasons.append(f"📱 High-risk informal channels & unrealistic work promises ({num_suspicious} signals): {', '.join(suspicious_terms[:4])}.")
             elif num_suspicious >= 2:
                 score += 25
@@ -195,23 +200,24 @@ class ReasoningAgent:
             score += 15
             reasons.append("📞 Contact phone number is invalid, dummy, or malformed.")
 
-        # Bound calibration
+        # Dynamic Bound calibration
         if has_payment:
-            score = max(75, score)
+            score = max(80, min(98, score))
         elif has_impersonation or safe_browsing_flag:
-            score = max(55, score)
-        elif not has_payment and not has_impersonation and not safe_browsing_flag and not is_new_domain and not has_suspicious_channels and not has_urgency and not is_invalid_phone:
+            score = max(60, min(95, score))
+        elif not has_payment and not has_impersonation and not safe_browsing_flag and not is_new_domain and not has_suspicious_channels and not has_urgency and not is_invalid_phone and not has_generic_email:
             # Clean vacancy
-            score = min(score, 18)
+            score = max(5, min(15, score))
             if not reasons:
                 reasons.append("✅ No upfront fee demands, disposable domains, or impersonation flags detected.")
+        else:
+            score = max(5, min(98, score))
 
-        score = max(5, min(98, score))
         risk_level = cls.score_to_risk_level(score)
 
         # Sub-scores
         fin_risk = 95 if has_payment else 5
-        imp_risk = 85 if has_impersonation else (50 if (claimed_brand and free_email) else (20 if free_email else 10))
+        imp_risk = 85 if has_impersonation else (50 if (claimed_brand and free_email) else (25 if has_generic_email else 10))
         if domain and domain != "Not Specified" and not is_social_wrapper:
             dom_risk = max(5, min(95, 100 - int(trust_score)))
         elif is_social_wrapper:

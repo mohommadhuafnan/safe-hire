@@ -506,29 +506,35 @@ class GeminiAPIClient {
         const hasBrand = corporateBrands.some(b => lower.includes(b));
         const hasImpersonation = hasBrand && hasFreeEmail;
 
-        let score = 10;
+        let score = 15;
         const reasons = [];
 
         if (hasFee) {
-            score += 60;
+            score += 65;
             reasons.push("⚠️ Upfront fee or deposit demanded. Legitimate employers never charge candidates.");
         }
         if (hasImpersonation) {
-            score += 30;
-            reasons.push("🎭 Brand impersonation detected: Corporate brand claimed with free generic email.");
+            score += 35;
+            reasons.push("🎭 Corporate brand impersonation detected: Corporate brand claimed with free generic email.");
         } else if (hasBrand && (!domain || domain === "Not Specified") && hasFreeEmail) {
-            score += 20;
+            score += 25;
             reasons.push("🏢 Recruiter claims a corporate entity without verifiable company domain.");
+        } else if (hasFreeEmail && (!domain || domain === "Not Specified")) {
+            score += 12;
+            reasons.push("📧 Contact via generic webmail provider.");
         }
+
         if (isNewDomain) {
             score += (registeredDays !== null && registeredDays < 30) ? 25 : 15;
             reasons.push("🌐 Newly registered domain (< 90 days). High frequency in ephemeral scam campaigns.");
         } else if (hasWhois && registeredDays !== null && registeredDays > 365 && !hasFee && !hasImpersonation) {
-            score -= 10;
-            reasons.push("✅ Established employer domain registration history.");
+            const deduction = registeredDays > 1000 ? 10 : 5;
+            score -= deduction;
+            reasons.append?.("✅ Established employer domain registration history.") || reasons.push("✅ Established employer domain registration history.");
         }
+
         if (matchedChannels.length >= 3) {
-            score += 40;
+            score += 35;
             reasons.push(`📱 High-risk informal channels & unrealistic work promises (${matchedChannels.length} signals): ${matchedChannels.slice(0, 3).join(', ')}.`);
         } else if (matchedChannels.length >= 2) {
             score += 25;
@@ -537,21 +543,22 @@ class GeminiAPIClient {
             score += 15;
             reasons.push(`📱 Informal recruitment channel / unrealistic terms: ${matchedChannels.slice(0, 2).join(', ')}.`);
         }
+
         if (hasUrgency) {
             score += 10;
             reasons.push("⏰ Artificial urgency / pressure tactics detected.");
         }
 
         if (hasFee) {
-            score = Math.max(75, score);
+            score = Math.max(80, Math.min(98, score));
         } else if (hasImpersonation) {
-            score = Math.max(55, score);
-        } else if (!hasFee && !hasImpersonation && !isNewDomain && !hasChannel && !hasUrgency) {
-            score = Math.min(score, 18);
+            score = Math.max(60, Math.min(95, score));
+        } else if (!hasFee && !hasImpersonation && !isNewDomain && matchedChannels.length === 0 && !hasUrgency && !hasFreeEmail) {
+            score = Math.max(5, Math.min(15, score));
             if (reasons.length === 0) reasons.push("✅ No upfront fee demands, disposable domains, or impersonation flags detected.");
+        } else {
+            score = Math.max(5, Math.min(98, score));
         }
-
-        score = Math.max(5, Math.min(98, score));
 
         let riskLevel = "Low Apparent Risk";
         if (score >= 80) riskLevel = "Severe Risk";
@@ -561,7 +568,7 @@ class GeminiAPIClient {
 
         const subScores = {
             financial_fee_risk: hasFee ? 95 : 5,
-            impersonation_risk: hasImpersonation ? 85 : (hasFreeEmail ? 20 : 10),
+            impersonation_risk: hasImpersonation ? 85 : (hasBrand ? 45 : (hasFreeEmail ? 25 : 10)),
             domain_reputation_risk: isNewDomain ? 80 : 15,
             urgency_pressure_risk: hasUrgency ? 80 : 5
         };

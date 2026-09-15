@@ -45,10 +45,10 @@ class IntakeAgent:
 
     GEMINI_VISION_MODELS = [
         "gemini-flash-lite-latest",
+        "gemini-3.1-flash-lite-preview",
+        "gemini-flash-latest",
         "gemini-3.5-flash",
         "gemini-3.6-flash",
-        "gemini-flash-latest",
-        "gemini-3.1-flash-lite-preview",
         "gemini-3.7-flash",
         "gemini-3.8-flash",
     ]
@@ -258,7 +258,7 @@ CRITICAL INSTRUCTIONS:
 
 3. Provide a DETAILED 2-4 sentence dynamic summary ("posterSummary") in {target_lang_name} analyzing what this specific image depicts, organizations/institutions/brands visible, dates, offers, contacts, and explicitly explain why it is or is not a job recruitment offer. DO NOT use a generic or canned template.
 
-4. Extract any structured details present in the image (or empty string if not present).
+4. Extract any structured details present in the image (or empty string / false if not present).
 
 Return ONLY a raw JSON object with this exact structure (no markdown formatting outside JSON):
 {{
@@ -275,7 +275,12 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
   "phone": "Contact phone if visible, else empty string",
   "address": "Physical location or address if visible, else empty string",
   "posterText": "All visible text transcribed from the image",
-  "qrCode": "QR code URL or content if visible, else empty string"
+  "qrCode": "QR code URL or content if visible, else empty string",
+  "hasFeeDemand": true or false,
+  "feeDetails": "Specific registration fee or deposit amount mentioned if any",
+  "hasInformalChannel": true or false,
+  "hasUnrealisticPromise": true or false,
+  "hasUrgency": true or false
 }}"""
 
         # 1. Primary: Google Gemini Multimodal Vision API (active models)
@@ -397,12 +402,14 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
             "নিয়োগ", "চাকরি", "আবেদন", "বেতন", "কাজের"
         ]
         non_job_keywords = [
-            "restaurant menu", "food menu", "lunch menu", "dinner menu", "pizza menu",
+            "restaurant menu", "food menu", "lunch menu", "dinner menu", "pizza menu", "pizzeria", "bistro",
+            "pizza festival", "thin crust", "pasta", "dine-in", "takeaway", "authentic cuisine", "delicious",
+            "reserve your table", "happy hour", "buy 1 get 1", "combo deal", "flat 30% off", "flat 20% off",
             "happy birthday", "wedding ceremony", "wedding invitation", "wedding photography",
             "graduation ceremony", "congratulations graduates", "convocation ceremony", "degree conferment",
             "music festival", "music concert", "movie poster", "film festival",
             "car for sale", "vehicle for sale", "house for rent", "property for lease",
-            "50% off", "discount coupon", "clearance promo"
+            "50% off", "discount coupon", "clearance promo", "special discount", "sale offer"
         ]
 
         has_recruitment = any(kw in ocr_lower for kw in recruitment_keywords)
@@ -707,6 +714,14 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                     combined_text += f"Category: {specific_category}\n"
                 if poster_summary:
                     combined_text += f"Visual Summary: {poster_summary}\n"
+                if vision_res.get("hasFeeDemand") or vision_res.get("feeDetails"):
+                    combined_text += f"Fee Demand: {vision_res.get('feeDetails') or 'Registration Fee / Deposit'}\n"
+                if vision_res.get("hasInformalChannel"):
+                    combined_text += "Contact Channel: Telegram / WhatsApp application\n"
+                if vision_res.get("hasUnrealisticPromise"):
+                    combined_text += "Work Offer: High compensation / minimal qualifications / data entry typing\n"
+                if vision_res.get("hasUrgency"):
+                    combined_text += "Urgency: Immediate hiring / apply today\n"
 
         # Candidate domain lists for 4-tier selection
         poster_domains = []
