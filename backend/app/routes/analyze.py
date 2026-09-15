@@ -6,6 +6,7 @@ from app.auth import get_current_user
 from app.agents.pipeline import pipeline_runner
 from app.database import get_db
 from app.models.result import AnalysisResultResponse
+from app.services.payment_service import PaymentService
 
 router = APIRouter(prefix="/api/analyze", tags=["Scam Analysis"])
 
@@ -21,6 +22,23 @@ async def analyze_submission(
     import logging
     logger = logging.getLogger("safe_hire.analyze")
     
+    # 0. Enforce Subscription Quota & Language Access Gate
+    effective_lang = target_language or current_user.get("preferred_language", "en")
+    access_check = await PaymentService.check_user_access(current_user, effective_lang)
+    if not access_check.get("allowed"):
+        logger.warning(f"Scan blocked for user {current_user.get('id')}: {access_check.get('error_code')} - {access_check.get('reason')}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error_code": access_check.get("error_code"),
+                "message": access_check.get("reason"),
+                "plan": access_check.get("plan"),
+                "scans_used": access_check.get("scans_used"),
+                "scans_limit": access_check.get("scans_limit"),
+                "days_remaining": access_check.get("days_remaining")
+            }
+        )
+
     image_bytes = None
     filename = ""
     if image:
@@ -50,7 +68,7 @@ async def analyze_submission(
             image_bytes=image_bytes,
             filename=filename,
             input_url=input_url or "",
-            target_language=target_language or current_user.get("preferred_language", "en")
+            target_language=effective_lang
         ) or {}
 
         scam_score = pipeline_res.get("scam_score")
@@ -116,6 +134,12 @@ async def analyze_submission(
 
         final_scam_score = scam_score if (scam_score == "N/A" or isinstance(scam_score, str)) else int(scam_score)
 
+        # Atomically increment scans_used in MongoDB
+        try:
+            await PaymentService.increment_scan_count(current_user.get("id"))
+        except Exception as cnt_err:
+            logger.warning(f"Notice incrementing scan count: {cnt_err}")
+
         return AnalysisResultResponse(
             id=result_id,
             submission_id=submission_id,
@@ -163,6 +187,18 @@ async def translate_report_endpoint(
     from app.agents.valsea_agent import valsea_translator
     import logging
     logger = logging.getLogger("safe_hire.translate")
+
+    # Access check for translation
+    access_check = await PaymentService.check_user_access(current_user, req.target_language or "en")
+    if not access_check.get("allowed") and access_check.get("error_code") == "LANGUAGE_NOT_SUPPORTED":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error_code": "LANGUAGE_NOT_SUPPORTED",
+                "message": "Multilingual translations (Sinhala, Tamil, etc.) require the Pro Plan.",
+                "plan": access_check.get("plan")
+            }
+        )
 
     # --- Stage 1: Primary Valsea AI Translation ---
     try:

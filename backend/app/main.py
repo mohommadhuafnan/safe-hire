@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import init_db
-from app.routes import auth, user, analyze, history, chat
+from app.routes import auth, user, analyze, history, chat, subscriptions, payments
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("safe_hire.main")
@@ -45,3 +45,5 @@ app.include_router(user.router)
 app.include_router(analyze.router)
 app.include_router(history.router)
 app.include_router(chat.router)
+app.include_router(subscriptions.router)
+app.include_router(payments.router)

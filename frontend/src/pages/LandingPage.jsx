@@ -1103,162 +1103,162 @@ const LandingPage = () => {
         {/* PRICING CARDS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
 
-          {/* TIER 1: STARTER PLAN */}
+          {/* TIER 1: BASIC PLAN */}
           <div className="glass-card p-8 rounded-3xl border border-slate-800 flex flex-col justify-between space-y-6 scroll-reveal-scale reveal-delay-100">
             <div className="space-y-4">
               <div className="inline-block p-3 rounded-2xl bg-indigo-500/10 text-indigo-400">
                 <ShieldCheck className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold text-slate-100">{t('landing.starter_title', 'Starter Plan')}</h3>
-              <p className="text-xs text-slate-400">{t('landing.starter_desc', 'Ideal for students verifying occasional job offers and internship emails.')}</p>
+              <h3 className="text-xl font-bold text-slate-100">{t('landing.basic_title', 'Basic Plan')}</h3>
+              <p className="text-xs text-slate-400">{t('landing.basic_desc', 'Essential protection for regular job applicants and interns.')}</p>
 
               <div className="pt-2">
                 <div className="flex items-baseline space-x-1">
                   <span className="text-xs text-slate-400 font-medium">LKR</span>
                   <span className="text-4xl font-extrabold text-slate-100">
-                    {billingCycle === 'annual' ? '799.00' : '999.00'}
+                    {billingCycle === 'annual' ? '9,990' : '990'}
                   </span>
-                  <span className="text-xs text-slate-400">{billingCycle === 'annual' ? t('landing.per_month', '/month') : t('landing.per_1_month', '/1 month')}</span>
+                  <span className="text-xs text-slate-400">{billingCycle === 'annual' ? '/year' : '/month'}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 block mt-1">
-                  {billingCycle === 'annual' ? `${t('landing.billed_annual_note', 'Billed annually')} (LKR 9,588/yr)` : `${t('landing.billed_monthly_note', 'Billed monthly')} (LKR 999/mo)`}
+                  {billingCycle === 'annual' ? 'Billed annually (LKR 9,990/yr)' : 'Billed monthly (LKR 990/mo)'}
                 </span>
               </div>
 
               <ul className="space-y-2.5 text-xs text-slate-300 pt-4 border-t border-slate-800">
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.starter_feat_1', '50 AI Scam Verifications / Month')}</span>
+                  <span>100 AI Scam Verifications / Month</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.starter_feat_2', 'Text & Job Link URL Analysis')}</span>
+                  <span>5-Agent Core Analysis Pipeline</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.starter_feat_3', 'English & Sinhala Language Support')}</span>
+                  <span>Domain WHOIS & Safe Browsing Audit</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.starter_feat_4', 'Basic Risk Explanation Report')}</span>
+                  <span>English Language Scam Detection</span>
                 </li>
               </ul>
             </div>
 
             <button
-              onClick={() => handlePlanSelect({ name: t('landing.starter_title', 'Starter Plan'), price: billingCycle === 'annual' ? 'LKR 799.00/mo' : 'LKR 999.00/mo' })}
-              className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 font-bold text-xs transition"
+              onClick={() => navigate('/pricing')}
+              className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 font-bold text-xs transition cursor-pointer"
             >
-              {t('landing.starter_btn', 'Select Starter')} (LKR {billingCycle === 'annual' ? '799.00' : '999.00'})
+              Get Basic Plan (LKR {billingCycle === 'annual' ? '9,990/yr' : '990/mo'})
             </button>
           </div>
 
-          {/* TIER 2: PRO STUDENT PLAN (POPULAR) */}
+          {/* TIER 2: PRO PLAN (MOST POPULAR) */}
           <div className="glass-pricing-popular p-8 rounded-3xl relative flex flex-col justify-between space-y-6 transform md:-translate-y-2 scroll-reveal-scale reveal-delay-200">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 text-xs font-extrabold shadow-lg flex items-center space-x-1">
               <Crown className="w-3.5 h-3.5" />
-              <span>{t('landing.pro_badge', 'MOST POPULAR VALUE')}</span>
+              <span>MOST POPULAR VALUE</span>
             </div>
 
             <div className="space-y-4 pt-2">
               <div className="inline-block p-3 rounded-2xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                 <Sparkles className="w-6 h-6" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-100">{t('landing.pro_title', 'Pro Student Plan')}</h3>
-              <p className="text-xs text-slate-300">{t('landing.pro_desc', 'Complete 5-agent AI protection with OCR image screenshot analysis.')}</p>
+              <h3 className="text-2xl font-bold text-slate-100">Pro Plan</h3>
+              <p className="text-xs text-slate-300">Complete multilingual protection with Valsea AI native translation engine.</p>
 
               <div className="pt-2">
                 <div className="flex items-baseline space-x-1">
                   <span className="text-xs text-indigo-300 font-medium">LKR</span>
                   <span className="text-4xl font-extrabold text-white">
-                    {billingCycle === 'annual' ? '1,599.00' : '1,999.00'}
+                    {billingCycle === 'annual' ? '34,990' : '3,490'}
                   </span>
-                  <span className="text-xs text-slate-300">{billingCycle === 'annual' ? t('landing.per_month', '/month') : t('landing.per_1_month', '/1 month')}</span>
+                  <span className="text-xs text-slate-300">{billingCycle === 'annual' ? '/year' : '/month'}</span>
                 </div>
                 <span className="text-[10px] text-indigo-300 block mt-1">
-                  {billingCycle === 'annual' ? `${t('landing.billed_annual_note', 'Billed annually')} (LKR 19,188/yr)` : `${t('landing.billed_monthly_note', 'Billed monthly')} (LKR 1,999/mo)`}
+                  {billingCycle === 'annual' ? 'Billed annually (LKR 34,990/yr)' : 'Billed monthly (LKR 3,490/mo)'}
                 </span>
               </div>
 
               <ul className="space-y-2.5 text-xs text-slate-200 pt-4 border-t border-indigo-500/20">
                 <li className="flex items-center space-x-2 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span><strong>{t('landing.pro_feat_1', 'UNLIMITED AI Scam Verifications')}</strong></span>
+                  <span><strong>3,000 AI Scam Verifications / Month</strong></span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.pro_feat_2', 'AI OCR Poster & Screenshot Scans')}</span>
+                  <span>Multilingual Engine (Sinhala, Tamil, English, etc.)</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.pro_feat_3', 'WHOIS Domain & Safe Browsing Check')}</span>
+                  <span>Valsea AI Translation Engine Access</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.pro_feat_4', 'All 5 Languages (EN, SI, TA, HI, BN)')}</span>
+                  <span>Priority 5-Agent Pipeline & OCR Analysis</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.pro_feat_5', 'Downloadable PDF Safety Reports')}</span>
+                  <span>Instant Security PDF Audit Downloads</span>
                 </li>
               </ul>
             </div>
 
             <button
-              onClick={() => handlePlanSelect({ name: t('landing.pro_title', 'Pro Student Plan'), price: billingCycle === 'annual' ? 'LKR 1,599.00/mo' : 'LKR 1,999.00/mo' })}
-              className="w-full py-4 rounded-xl btn-primary font-extrabold text-xs shadow-xl hover:scale-[1.02] transition"
+              onClick={() => navigate('/pricing')}
+              className="w-full py-4 rounded-xl btn-primary font-extrabold text-xs shadow-xl hover:scale-[1.02] transition cursor-pointer"
             >
-              {t('landing.pro_btn', 'Get Pro Plan')} (LKR {billingCycle === 'annual' ? '1,599.00' : '1,999.00'})
+              Get Pro Plan (LKR {billingCycle === 'annual' ? '34,990/yr' : '3,490/mo'})
             </button>
           </div>
 
-          {/* TIER 3: ENTERPRISE PLAN */}
+          {/* TIER 3: ORGANIZATION / CAMPUS */}
           <div className="glass-card p-8 rounded-3xl border border-slate-800 flex flex-col justify-between space-y-6 scroll-reveal-scale reveal-delay-300">
             <div className="space-y-4">
               <div className="inline-block p-3 rounded-2xl bg-amber-500/10 text-amber-400">
                 <Crown className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold text-slate-100">{t('landing.enterprise_title', 'Enterprise Plan')}</h3>
-              <p className="text-xs text-slate-400">{t('landing.enterprise_desc', 'For university career centers, graduate batches, and recruitment teams.')}</p>
+              <h3 className="text-xl font-bold text-slate-100">Organization / Campus</h3>
+              <p className="text-xs text-slate-400">For universities, campus career centers, and recruitment teams.</p>
 
               <div className="pt-2">
                 <div className="flex items-baseline space-x-1">
                   <span className="text-xs text-slate-400 font-medium">LKR</span>
                   <span className="text-4xl font-extrabold text-slate-100">
-                    {billingCycle === 'annual' ? '1,999.00' : '2,500.00'}
+                    {billingCycle === 'annual' ? '450,000' : '45,000'}
                   </span>
-                  <span className="text-xs text-slate-400">{billingCycle === 'annual' ? t('landing.per_month', '/month') : t('landing.per_1_month', '/1 month')}</span>
+                  <span className="text-xs text-slate-400">{billingCycle === 'annual' ? '/year' : '/month'}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 block mt-1">
-                  {billingCycle === 'annual' ? `${t('landing.billed_annual_note', 'Billed annually')} (LKR 24,000/yr)` : `${t('landing.billed_monthly_note', 'Billed monthly')} (LKR 2,500/mo)`}
+                  {billingCycle === 'annual' ? 'Billed annually (LKR 450,000/yr)' : 'Billed monthly (LKR 45,000/mo)'}
                 </span>
               </div>
 
               <ul className="space-y-2.5 text-xs text-slate-300 pt-4 border-t border-slate-800">
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.enterprise_feat_1', 'Unlimited Team & Campus Accounts')}</span>
+                  <span>50,000+ Scans per Month</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.enterprise_feat_2', 'Priority 5-Agent AI Pipeline Queue')}</span>
+                  <span>Dedicated Multi-Tenant Campus API</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.enterprise_feat_3', 'Custom University Scam Analytics')}</span>
+                  <span>Custom Whitelist & Blacklist Rule Engine</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>{t('landing.enterprise_feat_4', 'Dedicated Support & API Access')}</span>
+                  <span>Bulk File & Poster Batch Auditing</span>
                 </li>
               </ul>
             </div>
 
             <button
-              onClick={() => handlePlanSelect({ name: t('landing.enterprise_title', 'Enterprise Plan'), price: billingCycle === 'annual' ? 'LKR 1,999.00/mo' : 'LKR 2,500.00/mo' })}
-              className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 font-bold text-xs transition"
+              onClick={() => navigate('/pricing')}
+              className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 font-bold text-xs transition cursor-pointer"
             >
-              {t('landing.enterprise_btn', 'Select Enterprise')} (LKR {billingCycle === 'annual' ? '1,999.00' : '2,500.00'})
+              Contact Sales / View Plans
             </button>
           </div>
 

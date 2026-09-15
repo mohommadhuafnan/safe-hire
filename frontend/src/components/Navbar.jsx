@@ -139,6 +139,15 @@ const Navbar = () => {
               )}
             </button>
 
+            {/* Pricing Navigation Link */}
+            <Link
+              to="/pricing"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200 hover:text-white bg-slate-900/90 border border-slate-800 hover:border-indigo-500/40 transition shadow-sm"
+            >
+              <Crown className="w-3.5 h-3.5 text-amber-400" />
+              <span>{t('nav.pricing', 'Pricing')}</span>
+            </Link>
+
             {/* Authenticated State */}
             {user ? (
               <div className="flex items-center space-x-2.5 pl-3 border-l border-slate-800">
@@ -299,6 +308,18 @@ const Navbar = () => {
                   </div>
 
                   <Link
+                    to="/pricing"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-slate-200 border border-white/10 transition"
+                  >
+                    <span className="flex items-center space-x-2.5">
+                      <Crown className="w-4 h-4 text-amber-400" />
+                      <span>{t('nav.pricing', 'Pricing & Plans')}</span>
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                  </Link>
+
+                  <Link
                     to="/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-slate-200 border border-white/10 transition"
@@ -332,6 +353,17 @@ const Navbar = () => {
                 </div>
               ) : (
                 <div className="space-y-3 pt-2">
+                  <Link
+                    to="/pricing"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-slate-200 border border-white/10 transition"
+                  >
+                    <span className="flex items-center space-x-2.5">
+                      <Crown className="w-4 h-4 text-amber-400" />
+                      <span>{t('nav.pricing', 'Pricing & Plans')}</span>
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                  </Link>
                   <Link
                     to="/login"
                     onClick={() => setMobileMenuOpen(false)}

@@ -59,6 +59,13 @@ class Settings(BaseSettings):
     VALSEA_API_URL: str = _clean_env_val(os.getenv("VALSEA_API_URL"), "https://api.valsea.ai/v1/translations")
     VALSEA_MODEL_NAME: str = _clean_env_val(os.getenv("VALSEA_MODEL_NAME"), "valsea-translate")
 
+    # PayHere Payment Gateway Settings
+    PAYHERE_MERCHANT_ID: str = _clean_env_val(os.getenv("PAYHERE_MERCHANT_ID"), "1228833")
+    PAYHERE_MERCHANT_SECRET: str = _clean_env_val(os.getenv("PAYHERE_MERCHANT_SECRET"), "Mzg0OTkyNTk1MzM4ODkxMzk5MjgxNDU5Mjc1MTExMjM1NDExNDk=")
+    PAYHERE_SANDBOX: bool = str(_clean_env_val(os.getenv("PAYHERE_SANDBOX"), "true")).lower() in ("true", "1", "yes")
+    FRONTEND_URL: str = _clean_env_val(os.getenv("FRONTEND_URL"), "http://localhost:5173")
+    BACKEND_PUBLIC_URL: str = _clean_env_val(os.getenv("BACKEND_PUBLIC_URL"), "https://safe-hire-core-api.onrender.com")
+
     # Firebase Settings
     FIREBASE_SERVICE_ACCOUNT_PATH: str = _clean_env_val(os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH"), "serviceAccountKey.json")
 

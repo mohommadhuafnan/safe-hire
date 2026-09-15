@@ -6,6 +6,7 @@ import { useAIModal } from '../context/AIModalContext';
 import api from '../services/api';
 import ScamGauge from '../components/ScamGauge';
 import AgentBreakdown from '../components/AgentBreakdown';
+import SubscriptionCard from '../components/SubscriptionCard';
 import { exportAnalysisReport, parseExplanationSections } from '../services/reportExporter';
 import {
   FileText,
@@ -32,7 +33,7 @@ import {
   Paperclip,
   Cpu
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import GeminiAPIClient from '../services/GeminiAPIClient';
 
@@ -349,6 +350,16 @@ const DashboardPage = () => {
       setResult(response.data);
     } catch (err) {
       clearInterval(stepInterval);
+
+      // Authoritative Plan / Quota / Language restriction from backend
+      if (err.response?.status === 403 || err.response?.data?.detail?.error_code) {
+        const detail = err.response.data?.detail;
+        const msg = typeof detail === 'object' ? (detail.message || detail.error_code) : (detail || 'Plan restriction encountered.');
+        setError(msg);
+        setAnalyzing(false);
+        return;
+      }
+
       console.warn("Backend API unavailable or error occurred. Executing client-side AI fallback engine:", err);
       try {
         const client = new GeminiAPIClient();
@@ -394,14 +405,13 @@ const DashboardPage = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-            {/* Account Tier Badge */}
-            <div className="px-3.5 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold flex items-center space-x-2">
-              <Crown className="w-4 h-4 text-amber-400 animate-pulse" />
-              <div>
-                <span className="block text-[10px] text-amber-400/80 font-mono uppercase">{t('dashboard.current_plan', 'Current Plan')}</span>
-                <span className="text-xs font-bold text-amber-300">{t('dashboard.free_tier', 'Free Tier (LKR 0)')}</span>
-              </div>
-            </div>
+            <Link
+              to="/pricing"
+              className="flex items-center space-x-2 px-4 py-2.5 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 hover:bg-indigo-600/30 text-xs font-semibold text-indigo-300 hover:text-white transition shadow-sm"
+            >
+              <Crown className="w-4 h-4 text-indigo-400" />
+              <span>{t('dashboard.pricing_plans', 'Pricing & Plans')}</span>
+            </Link>
 
             <Link
               to="/history"
@@ -413,6 +423,9 @@ const DashboardPage = () => {
           </div>
         </div>
       </div>
+
+      {/* DYNAMIC SUBSCRIPTION & QUOTA MONITOR CARD */}
+      <SubscriptionCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
 
@@ -521,9 +534,21 @@ const DashboardPage = () => {
 
             {/* ERROR ALERT */}
             {error && (
-              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center space-x-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>{error}</span>
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-rose-500/5">
+                <div className="flex items-start sm:items-center space-x-2.5">
+                  <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                  <span className="leading-relaxed">{error}</span>
+                </div>
+                {(error.toLowerCase().includes('quota') || error.toLowerCase().includes('trial') || error.toLowerCase().includes('plan') || error.toLowerCase().includes('upgrade') || error.toLowerCase().includes('pro') || error.toLowerCase().includes('sinhala') || error.toLowerCase().includes('tamil') || error.toLowerCase().includes('limit')) && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/pricing')}
+                    className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/30 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer transition flex-shrink-0"
+                  >
+                    <Crown className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Upgrade to Pro</span>
+                  </button>
+                )}
               </div>
             )}
 

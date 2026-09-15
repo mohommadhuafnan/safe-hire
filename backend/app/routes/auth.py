@@ -5,6 +5,7 @@ from app.models.user import UserRegister, UserLogin, FirebaseLoginRequest, Token
 from app.auth import hash_password, verify_password, create_access_token
 from app.firebase_app import verify_firebase_id_token
 from app.database import get_db
+from app.services.payment_service import PaymentService
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -30,6 +31,12 @@ async def register(user_in: UserRegister):
 
     res = await db["users"].insert_one(new_user)
     user_id = str(res.inserted_id)
+
+    # Initialize 7-Day Free Trial
+    try:
+        await PaymentService.get_or_create_subscription(user_id, new_user["email"])
+    except Exception as sub_err:
+        pass
 
     access_token = create_access_token(data={"sub": user_id})
 
@@ -125,6 +132,12 @@ async def firebase_login(req: FirebaseLoginRequest):
             user_id = str(res.inserted_id)
             user = new_user
             user["_id"] = res.inserted_id
+
+            # Initialize 7-Day Free Trial
+            try:
+                await PaymentService.get_or_create_subscription(user_id, email)
+            except Exception as sub_err:
+                pass
         else:
             user_id = str(user["_id"])
 
