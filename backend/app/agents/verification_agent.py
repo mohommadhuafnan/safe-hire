@@ -28,8 +28,15 @@ class VerificationAgent:
         if clean.startswith("www."):
             clean = clean[4:]
 
+        # Extract domain from email if email was provided (e.g. hr@company.com -> company.com)
+        if '@' in clean:
+            clean = clean.split('@')[-1]
+
+        # Strip any trailing punctuation (dots, commas, quotes, brackets)
+        clean = clean.strip(".,;:()[]{}'\" \t\r\n")
+
         # Free webmail providers are email services, NOT an employer's company website domain!
-        if clean in self.FREE_EMAIL_DOMAINS:
+        if clean in self.FREE_EMAIL_DOMAINS or not clean or '.' not in clean:
             return ""
 
         return clean

@@ -123,7 +123,7 @@ const extractDomainFromResult = (res, currentActiveTab, currentInputUrl) => {
     if (m) targetDomain = m[1] || m[0];
   }
 
-  const cleanDom = (targetDomain || '')
+  let cleanDom = (targetDomain || '')
     .trim()
     .toLowerCase()
     .replace(/^https?:\/\//, '')
@@ -132,12 +132,19 @@ const extractDomainFromResult = (res, currentActiveTab, currentInputUrl) => {
     .split('?')[0]
     .split(':')[0];
 
+  // Extract domain from email if email format was captured
+  if (cleanDom.includes('@')) {
+    cleanDom = cleanDom.split('@').pop() || '';
+  }
+
+  // Strip trailing punctuation
+  cleanDom = cleanDom.replace(/[.,;:()\[\]{}'"]+$/, '').trim();
+
   const isRealDomain = Boolean(
     cleanDom && 
     !['not specified', 'n/a', 'none', 'null', 'verified url', ''].includes(cleanDom) && 
     cleanDom.includes('.') && 
-    !cleanDom.endsWith('@gmail.com') && 
-    !['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'aol.com', 'mail.com'].includes(cleanDom)
+    !['gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'icloud.com', 'aol.com', 'mail.com', 'proton.me', 'protonmail.com'].includes(cleanDom)
   );
 
   return isRealDomain ? cleanDom : '';
@@ -903,12 +910,12 @@ const DashboardPage = () => {
                               ? `${detectedWhois.domain_years}+ ${detectedWhois.domain_years === 1 ? 'Year' : 'Years'} Old (${detectedWhois.registered_days}d)`
                               : `${detectedWhois.registered_days} Days Old`
                             )
-                          : (detectedWhois?.status === 'verified' ? 'Established Record' : 'Checking Domain...')}
+                          : (detectedWhois?.whois_status ? detectedWhois.whois_status.split('•')[0].trim() : (detectedWhois?.status === 'verified' ? 'Established Record' : 'Active Domain Record'))}
                       </span>
                       <span className="text-[10px] text-slate-400 font-mono block truncate mt-0.5">
                         {detectedWhois?.creation_date && detectedWhois.creation_date !== 'N/A' && !isNaN(new Date(detectedWhois.creation_date).getTime())
                           ? `Reg: ${new Date(detectedWhois.creation_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}`
-                          : (detectedWhois?.registered_days ? `Reg: ${new Date(Date.now() - detectedWhois.registered_days * 86400000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}` : 'WHOIS verified')}
+                          : (detectedWhois?.registered_days ? `Reg: ${new Date(Date.now() - detectedWhois.registered_days * 86400000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}` : (detectedWhois?.registrar ? `Registrar: ${detectedWhois.registrar}` : 'WHOIS verified'))}
                       </span>
                     </div>
                   ) : (
@@ -956,7 +963,7 @@ const DashboardPage = () => {
                               ? `${detectedWhois.domain_years}+ ${detectedWhois.domain_years === 1 ? 'Year' : 'Years'} Old (${detectedWhois.registered_days} Days)`
                               : `${detectedWhois.registered_days} ${t('dashboard.registered_days_suffix', 'Days (Registered)')}`
                             )
-                          : (detectedWhois.status === 'verified' ? 'Established Record' : 'Checking Domain WHOIS...')}
+                          : (detectedWhois?.whois_status ? detectedWhois.whois_status.split('•')[0].trim() : (detectedWhois.status === 'verified' ? 'Established Record' : 'Active Domain Record'))}
                       </span>
                     </div>
 

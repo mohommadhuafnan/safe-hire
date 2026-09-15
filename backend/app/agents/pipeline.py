@@ -60,7 +60,10 @@ class AgentPipeline:
             import re
             m = re.search(r'https?://[^\s"\'<>]+', cleaned_text) or re.search(r'\bwww\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b', cleaned_text, re.IGNORECASE) or re.search(r'\b[a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev)\b', cleaned_text, re.IGNORECASE)
             if m:
-                domain = m.group(0)
+                domain = m.group(0).strip(".,;:()[]{}'\" \t\r\n")
+
+        if domain:
+            domain = str(domain).strip(".,;:()[]{}'\" \t\r\n")
 
         logger.info(f"[{request_id}] Stage 1 COMPLETE: content_type={content_type}, is_job={is_job_poster}, domain={domain}, ocr_status={ocr_status}, lang={final_lang}")
 
