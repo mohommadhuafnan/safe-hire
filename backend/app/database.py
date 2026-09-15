@@ -107,18 +107,28 @@ db_client = None
 db = None
 is_mongo_connected = False
 
+import re
+
+def _clean_mongo_uri(uri: str) -> str:
+    if not uri:
+        return "mongodb://localhost:27017"
+    cleaned = re.sub(r'([?&])mongo_db_name=[^&]*(&?)', r'\1', uri)
+    cleaned = cleaned.replace("?&", "?").rstrip("?&")
+    return cleaned
+
 async def init_db():
     global db_client, db, is_mongo_connected
     try:
         kwargs = {"serverSelectionTimeoutMS": 5000}
-        if "mongodb+srv://" in settings.MONGO_URI:
+        clean_uri = _clean_mongo_uri(settings.MONGO_URI)
+        if "mongodb+srv://" in clean_uri:
             try:
                 import certifi
                 kwargs["tlsCAFile"] = certifi.where()
             except ImportError:
                 pass
 
-        db_client = AsyncIOMotorClient(settings.MONGO_URI, **kwargs)
+        db_client = AsyncIOMotorClient(clean_uri, **kwargs)
         # Verify connection to MongoDB Atlas or local server
         await db_client.admin.command('ping')
         db = db_client[settings.MONGO_DB_NAME]
@@ -134,14 +144,15 @@ def get_db():
     if db is None:
         try:
             kwargs = {"serverSelectionTimeoutMS": 5000}
-            if "mongodb+srv://" in settings.MONGO_URI:
+            clean_uri = _clean_mongo_uri(settings.MONGO_URI)
+            if "mongodb+srv://" in clean_uri:
                 try:
                     import certifi
                     kwargs["tlsCAFile"] = certifi.where()
                 except ImportError:
                     pass
 
-            db_client = AsyncIOMotorClient(settings.MONGO_URI, **kwargs)
+            db_client = AsyncIOMotorClient(clean_uri, **kwargs)
             db = db_client[settings.MONGO_DB_NAME]
             is_mongo_connected = True
             logger.info(f"Initialized Motor database client for {settings.MONGO_DB_NAME}")
