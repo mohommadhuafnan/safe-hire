@@ -788,8 +788,9 @@ Verify job offers directly on official corporate career portals before sending d
 
         // 1. Try backend API first
         try {
-            const token = localStorage.getItem('token') || '';
-            const res = await fetch('/api/analyze/translate-report', {
+            const backendUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || "";
+            const token = localStorage.getItem('safe_hire_token') || localStorage.getItem('token') || '';
+            const res = await fetch(`${backendUrl.replace(/\/+$/, '')}/api/analyze/translate-report`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

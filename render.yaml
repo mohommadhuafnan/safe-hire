@@ -1,0 +1,56 @@
+services:
+  # ----------------------------------------------------
+  # 1. Python FastAPI Backend (Docker Web Service)
+  # ----------------------------------------------------
+  - type: web
+    name: safe-hire-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    region: oregon
+    healthCheckPath: /api
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB_NAME
+        value: safe_hire_db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: HF_TOKEN
+        sync: false
+      - key: DEEPSEEK_V4_API_KEY
+        sync: false
+      - key: APILAYER_KEY
+        value: nIvPeI99eWBDMSArYAf2YcrshDCOVvJ3
+      - key: WHOIS_IS_API_KEY
+        value: wis_live_KyVkL7gYMiXFivIQG46K9Xe4sh5THeAPT7rqgbAb
+      - key: ABSTRACT_EMAIL_API_KEY
+        value: 65b5f7a51dcf4cf4b00176ac9e690531
+      - key: VALSEA_API_KEY
+        value: vl_7a5a9f08a2f52681eca39db60314a5bb7ac93bd9e337086d0ce121301d1e04e8.451230e514da410b8f8e2a33346f0ecf
+
+  # ----------------------------------------------------
+  # 2. React + Vite Frontend (Static Site)
+  # ----------------------------------------------------
+  - type: web
+    name: safe-hire-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: safe-hire-backend
+          property: host
