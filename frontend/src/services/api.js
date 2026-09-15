@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+let rawBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || '';
+rawBase = rawBase.trim();
+
+// Normalize Render internal service name or missing protocol
+if (rawBase === 'safe-hire-core-api' || rawBase === 'safe-hire-core-api:8000') {
+  rawBase = 'https://safe-hire-core-api.onrender.com';
+} else if (rawBase && !rawBase.startsWith('http://') && !rawBase.startsWith('https://') && !rawBase.startsWith('/')) {
+  rawBase = `https://${rawBase}`;
+}
+
+const API_BASE = rawBase.replace(/\/+$/, '');
 
 const api = axios.create({
   baseURL: API_BASE,

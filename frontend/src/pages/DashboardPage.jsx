@@ -7,15 +7,15 @@ import api from '../services/api';
 import ScamGauge from '../components/ScamGauge';
 import AgentBreakdown from '../components/AgentBreakdown';
 import { exportAnalysisReport, parseExplanationSections } from '../services/reportExporter';
-import { 
-  FileText, 
-  Image as ImageIcon, 
-  Globe, 
-  Send, 
-  Sparkles, 
-  Download, 
-  CheckCircle2, 
-  AlertCircle, 
+import {
+  FileText,
+  Image as ImageIcon,
+  Globe,
+  Send,
+  Sparkles,
+  Download,
+  CheckCircle2,
+  AlertCircle,
   AlertTriangle,
   BrainCircuit,
   History,
@@ -100,26 +100,26 @@ const StructuredExplanationView = ({ text }) => {
 
 const extractDomainFromResult = (res, currentActiveTab, currentInputUrl) => {
   if (!res) return '';
-  let targetDomain = 
-    res.verification_data?.domain || 
-    res.verification_data?.whois_info?.domain || 
-    res.intake_data?.domain || 
+  let targetDomain =
+    res.verification_data?.domain ||
+    res.verification_data?.whois_info?.domain ||
+    res.intake_data?.domain ||
     res.intake_data?.metadata_extracted?.domains?.[0] ||
-    res.input_url || 
+    res.input_url ||
     (currentActiveTab === 'url' ? currentInputUrl?.trim() : '') ||
     '';
 
   // Fallback domain extraction from OCR/explanation text
   if (!targetDomain && res.explanation_text) {
-    const m = res.explanation_text.match(/https?:\/\/([^\s"'<>]+)/i) || 
-              res.explanation_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) || 
-              res.explanation_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
+    const m = res.explanation_text.match(/https?:\/\/([^\s"'<>]+)/i) ||
+      res.explanation_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) ||
+      res.explanation_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
     if (m) targetDomain = m[1] || m[0];
   }
   if (!targetDomain && res.intake_data?.extracted_text) {
-    const m = res.intake_data.extracted_text.match(/https?:\/\/([^\s"'<>]+)/i) || 
-              res.intake_data.extracted_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) || 
-              res.intake_data.extracted_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
+    const m = res.intake_data.extracted_text.match(/https?:\/\/([^\s"'<>]+)/i) ||
+      res.intake_data.extracted_text.match(/\bwww\.([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/i) ||
+      res.intake_data.extracted_text.match(/\b([a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|lk|in|uk|bd|xyz|top|site|online|tech|ai|dev))\b/i);
     if (m) targetDomain = m[1] || m[0];
   }
 
@@ -141,9 +141,9 @@ const extractDomainFromResult = (res, currentActiveTab, currentInputUrl) => {
   cleanDom = cleanDom.replace(/[.,;:()\[\]{}'"]+$/, '').trim();
 
   const isRealDomain = Boolean(
-    cleanDom && 
-    !['not specified', 'n/a', 'none', 'null', 'verified url', ''].includes(cleanDom) && 
-    cleanDom.includes('.') && 
+    cleanDom &&
+    !['not specified', 'n/a', 'none', 'null', 'verified url', ''].includes(cleanDom) &&
+    cleanDom.includes('.') &&
     !['gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'icloud.com', 'aol.com', 'mail.com', 'proton.me', 'protonmail.com'].includes(cleanDom)
   );
 
@@ -376,7 +376,7 @@ const DashboardPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-3.5 sm:px-6 pt-24 sm:pt-32 pb-10 space-y-6 sm:space-y-8">
-      
+
       {/* USER DASHBOARD HEADER BAR & PREMIUM BANNER */}
       <div className="glass-panel p-5 sm:p-7 rounded-3xl border border-slate-800 relative overflow-hidden space-y-4">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
@@ -415,11 +415,11 @@ const DashboardPage = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
-        
+
         {/* INPUT FORM CONTAINER (7 COLS) */}
         <div className="lg:col-span-7 flex flex-col space-y-6">
           <div className="glass-panel p-5 sm:p-7 rounded-3xl border border-slate-800 space-y-6 h-full flex flex-col justify-between">
-            
+
             {/* Header: Submit Job Offer */}
             <div className="flex items-center space-x-3 pb-1 border-b border-slate-800/60">
               <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-sm">
@@ -441,11 +441,10 @@ const DashboardPage = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab('text')}
-                className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${
-                  activeTab === 'text'
-                    ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
-                }`}
+                className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${activeTab === 'text'
+                  ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
+                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
+                  }`}
               >
                 {activeTab === 'text' && (
                   <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center shadow-md">
@@ -469,11 +468,10 @@ const DashboardPage = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab('image')}
-                className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${
-                  activeTab === 'image'
-                    ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
-                }`}
+                className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${activeTab === 'image'
+                  ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
+                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
+                  }`}
               >
                 {activeTab === 'image' && (
                   <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center shadow-md">
@@ -497,11 +495,10 @@ const DashboardPage = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab('url')}
-                className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${
-                  activeTab === 'url'
-                    ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
-                }`}
+                className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 relative flex flex-col justify-between ${activeTab === 'url'
+                  ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500/50'
+                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
+                  }`}
               >
                 {activeTab === 'url' && (
                   <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center shadow-md">
@@ -532,7 +529,7 @@ const DashboardPage = () => {
 
             {/* TAB CONTENT INPUTS */}
             <form onSubmit={handleAnalyze} className="space-y-5">
-              
+
               {/* TAB 1: TEXT */}
               {activeTab === 'text' && (
                 <div>
@@ -656,7 +653,7 @@ const DashboardPage = () => {
 
           {/* FULL SCREEN FUTURISTIC AI SCANNING OVERLAY WITH NO TOP GAPS & FROSTED GLASS BACKDROP BLUR */}
           {analyzing && typeof document !== 'undefined' && createPortal(
-            <div 
+            <div
               style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', zIndex: 999999 }}
               className="fixed inset-0 z-[999999] w-screen h-screen flex flex-col items-center justify-center p-3 sm:p-6 animate-fade-in overflow-y-auto bg-slate-950/40 backdrop-blur-sm"
             >
@@ -667,7 +664,7 @@ const DashboardPage = () => {
               <div className="relative z-10 w-full max-w-5xl my-auto glass-panel p-5 sm:p-8 rounded-3xl border border-indigo-500/50 shadow-[0_0_80px_rgba(99,102,241,0.4)] overflow-hidden bg-slate-900/90 backdrop-blur-2xl flex flex-col justify-between space-y-6 max-h-[92vh] overflow-y-auto">
                 {/* Top ambient highlight line */}
                 <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
-                
+
                 {/* Top Scanner Status Bar */}
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
                   <div className="flex items-center space-x-3">
@@ -689,19 +686,19 @@ const DashboardPage = () => {
 
                 {/* DUAL-COLUMN SCANNER BODY (TOP-ALIGNED TO ELIMINATE TOP GAP) */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start flex-1">
-                  
+
                   {/* LEFT/TOP: LARGE HIGH-RES POSTER LASER SCANNER PREVIEW */}
                   <div className="md:col-span-7 flex justify-center">
                     {(activeTab === 'image' && previewUrl) ? (
                       <div className="relative w-full max-w-md rounded-2xl overflow-hidden border-2 border-indigo-500/60 bg-slate-950/90 shadow-[0_0_50px_rgba(99,102,241,0.4)]">
                         <img src={previewUrl} alt="Poster Under Scan" className="w-full max-h-[380px] sm:max-h-[420px] object-contain opacity-95 p-2 mx-auto" />
-                        
+
                         {/* Neon Cyan Laser Scan Line */}
                         <div className="absolute inset-x-0 h-2 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_25px_#38bdf8] animate-scan z-20 pointer-events-none" />
-                        
+
                         {/* Cyber Grid Overlay */}
                         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-20 pointer-events-none" />
-                        
+
                         {/* HUD Corner Markers */}
                         <div className="absolute top-3 left-3 text-[10px] font-mono font-bold text-cyan-300 bg-slate-950/90 px-3 py-1 rounded-lg border border-cyan-500/40 shadow">
                           {t('overlay.ocr_extraction_hud', '[OCR TEXT MINING & EXTRACTION]')}
@@ -762,7 +759,7 @@ const DashboardPage = () => {
           {/* FULL ANALYZED REPORT DISPLAY PANEL (BOTTOM LEFT) */}
           {result && (
             <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-indigo-500/30 bg-slate-900/80 space-y-6 animate-fade-in shadow-2xl">
-              
+
               {/* REPORT HEADER BAR */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
                 <div className="flex items-center space-x-3">
@@ -864,24 +861,23 @@ const DashboardPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('dashboard.risk_level', 'Risk Level Verdict')}</span>
-                  <span className={`text-sm font-extrabold block ${
-                    result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A' || result.risk_level === 'Unable to Determine'
-                      ? 'text-sky-400'
-                      : Number(result.scam_score) >= 81
+                  <span className={`text-sm font-extrabold block ${result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A' || result.risk_level === 'Unable to Determine'
+                    ? 'text-sky-400'
+                    : Number(result.scam_score) >= 81
                       ? 'text-rose-400'
                       : Number(result.scam_score) >= 61
-                      ? 'text-orange-400'
-                      : Number(result.scam_score) >= 41
-                      ? 'text-amber-400'
-                      : Number(result.scam_score) >= 21
-                      ? 'text-yellow-400'
-                      : 'text-emerald-400'
-                  }`}>
+                        ? 'text-orange-400'
+                        : Number(result.scam_score) >= 41
+                          ? 'text-amber-400'
+                          : Number(result.scam_score) >= 21
+                            ? 'text-yellow-400'
+                            : 'text-emerald-400'
+                    }`}>
                     {result.risk_level === 'Not a Job Advertisement' || result.scam_score === 'N/A'
                       ? 'NOT A JOB ADVERTISEMENT'
                       : result.risk_level === 'Unable to Determine'
-                      ? 'UNABLE TO DETERMINE'
-                      : getRiskLevelLabel(result.risk_level)}
+                        ? 'UNABLE TO DETERMINE'
+                        : getRiskLevelLabel(result.risk_level)}
                   </span>
                 </div>
 
@@ -907,9 +903,9 @@ const DashboardPage = () => {
                       <span className={`text-sm font-extrabold block ${detectedWhois?.is_new_domain ? 'text-rose-400' : 'text-emerald-400'}`}>
                         {detectedWhois?.registered_days !== undefined && detectedWhois?.registered_days !== null
                           ? (detectedWhois.domain_years !== undefined && detectedWhois.domain_years !== null && detectedWhois.domain_years > 0
-                              ? `${detectedWhois.domain_years}+ ${detectedWhois.domain_years === 1 ? 'Year' : 'Years'} Old (${detectedWhois.registered_days}d)`
-                              : `${detectedWhois.registered_days} Days Old`
-                            )
+                            ? `${detectedWhois.domain_years}+ ${detectedWhois.domain_years === 1 ? 'Year' : 'Years'} Old (${detectedWhois.registered_days}d)`
+                            : `${detectedWhois.registered_days} Days Old`
+                          )
                           : (detectedWhois?.whois_status ? detectedWhois.whois_status.split('•')[0].trim() : (detectedWhois?.status === 'verified' ? 'Established Record' : 'Active Domain Record'))}
                       </span>
                       <span className="text-[10px] text-slate-400 font-mono block truncate mt-0.5">
@@ -960,9 +956,9 @@ const DashboardPage = () => {
                       <span className={`font-semibold text-xs block ${detectedWhois.is_new_domain ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
                         {detectedWhois.registered_days !== undefined && detectedWhois.registered_days !== null
                           ? (detectedWhois.domain_years !== undefined && detectedWhois.domain_years !== null && detectedWhois.domain_years > 0
-                              ? `${detectedWhois.domain_years}+ ${detectedWhois.domain_years === 1 ? 'Year' : 'Years'} Old (${detectedWhois.registered_days} Days)`
-                              : `${detectedWhois.registered_days} ${t('dashboard.registered_days_suffix', 'Days (Registered)')}`
-                            )
+                            ? `${detectedWhois.domain_years}+ ${detectedWhois.domain_years === 1 ? 'Year' : 'Years'} Old (${detectedWhois.registered_days} Days)`
+                            : `${detectedWhois.registered_days} ${t('dashboard.registered_days_suffix', 'Days (Registered)')}`
+                          )
                           : (detectedWhois?.whois_status ? detectedWhois.whois_status.split('•')[0].trim() : (detectedWhois.status === 'verified' ? 'Established Record' : 'Active Domain Record'))}
                       </span>
                     </div>
@@ -974,9 +970,9 @@ const DashboardPage = () => {
                         {detectedWhois.creation_date && detectedWhois.creation_date !== 'N/A' && !isNaN(new Date(detectedWhois.creation_date).getTime())
                           ? new Date(detectedWhois.creation_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
                           : (detectedWhois.registered_days
-                              ? new Date(Date.now() - detectedWhois.registered_days * 86400000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-                              : 'Live Record Verified'
-                            )}
+                            ? new Date(Date.now() - detectedWhois.registered_days * 86400000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                            : 'Live Record Verified'
+                          )}
                       </span>
                     </div>
 
@@ -1072,7 +1068,7 @@ const DashboardPage = () => {
         <div className="lg:col-span-5 flex flex-col space-y-6">
           {result ? (
             <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 animate-fade-in">
-              
+
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <h2 className="text-lg font-bold text-slate-100">{t('dashboard.results_title')}</h2>
                 <span className="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-sky-400">
@@ -1128,13 +1124,13 @@ const DashboardPage = () => {
 
               {/* Card Body: Futuristic Cyber Radar Graphic + 5 Security Checks */}
               <div className="pt-6 grid grid-cols-1 sm:grid-cols-12 gap-6 items-center flex-1 my-auto">
-                
+
                 {/* Concentric Cybernetic Radar Shield with Modern Animations */}
                 <div className="sm:col-span-5 flex justify-center py-2">
                   <div className="relative w-40 h-40 sm:w-44 sm:h-44 flex items-center justify-center">
                     {/* Ambient pulsing outer glow */}
                     <div className="absolute inset-0 rounded-full bg-cyan-500/15 blur-2xl animate-pulse pointer-events-none" />
-                    
+
                     {/* Expanding Sonar Waves (expanding ripples) */}
                     <div className="absolute inset-0 rounded-full border border-cyan-400/40 animate-sonar-ring pointer-events-none" />
                     <div className="absolute inset-2 rounded-full border border-sky-400/30 animate-sonar-ring pointer-events-none" style={{ animationDelay: '1.2s' }} />
@@ -1146,7 +1142,7 @@ const DashboardPage = () => {
                         <div className="w-1/2 h-1/2 absolute top-0 right-0 bg-gradient-to-bl from-cyan-400/30 via-sky-500/10 to-transparent origin-bottom-left" />
                         <div className="w-1/2 h-[2px] absolute top-1/2 right-0 bg-gradient-to-r from-transparent via-cyan-300 to-cyan-400 origin-left shadow-[0_0_8px_#38bdf8]" />
                       </div>
-                      
+
                       {/* Orbiting Satellite Particle on Outer Ring */}
                       <div className="absolute inset-0 animate-radar-sweep pointer-events-none">
                         <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 absolute -top-1.5 left-1/2 -translate-x-1/2 shadow-[0_0_10px_#38bdf8] animate-pulse" />
@@ -1158,7 +1154,7 @@ const DashboardPage = () => {
                       {/* Crosshair guidelines */}
                       <div className="absolute inset-x-0 top-1/2 h-[1px] bg-sky-500/20" />
                       <div className="absolute inset-y-0 left-1/2 w-[1px] bg-sky-500/20" />
-                      
+
                       {/* Inner glowing core with Breathing Neon Shield */}
                       <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-full border-2 border-cyan-400/60 bg-gradient-to-tr from-cyan-950/70 via-sky-900/50 to-emerald-950/70 flex items-center justify-center shadow-[0_0_30px_rgba(56,189,248,0.45)] relative z-10">
                         <div className="relative flex items-center justify-center animate-cyber-pulse">

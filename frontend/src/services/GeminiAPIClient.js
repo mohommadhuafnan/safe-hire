@@ -220,8 +220,8 @@ class GeminiAPIClient {
 
         if (!streamSuccess) {
             try {
-                const backendUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || "";
-                const chatApiEndpoint = `${backendUrl.replace(/\/+$/, '')}/api/chat`;
+                const backendUrl = GeminiAPIClient.getBackendUrl();
+                const chatApiEndpoint = `${backendUrl}/api/chat`;
 
                 const backendRes = await fetch(chatApiEndpoint, {
                     method: 'POST',
@@ -273,8 +273,56 @@ class GeminiAPIClient {
         return "";
     }
 
+    static getBackendUrl() {
+        let raw = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || "";
+        raw = raw.trim();
+        if (raw === 'safe-hire-core-api' || raw === 'safe-hire-core-api:8000') {
+            raw = 'https://safe-hire-core-api.onrender.com';
+        } else if (raw && !raw.startsWith('http://') && !raw.startsWith('https://') && !raw.startsWith('/')) {
+            raw = `https://${raw}`;
+        }
+        return raw.replace(/\/+$/, '');
+    }
+
     static async fetchWhoisData(targetDomain) {
         if (!targetDomain) return null;
+
+        // 1. Primary: APILayer WHOIS API if client key available
+        try {
+            const apikey = (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env.VITE_APILAYER_KEY || import.meta.env.APILAYER_KEY)) || "nIvPeI99eWBDMSArYAf2YcrshDCOVvJ3";
+            if (apikey) {
+                const apiRes = await fetch(`https://api.apilayer.com/whois/query?domain=${encodeURIComponent(targetDomain)}`, {
+                    headers: { 'apikey': apikey }
+                });
+                if (apiRes.ok) {
+                    const apiData = await apiRes.json();
+                    const w = apiData.result;
+                    if (w && w.creation_date) {
+                        const creationStr = w.creation_date;
+                        const diffMs = Math.max(0, Date.now() - new Date(creationStr).getTime());
+                        const regDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                        const years = Math.floor(regDays / 365);
+                        const isNew = regDays < 90;
+                        const registrar = w.registrar || "ICANN Accredited Registrar";
+                        return {
+                            status: isNew ? 'suspicious' : 'verified',
+                            domain: targetDomain,
+                            creation_date: creationStr,
+                            registered_days: regDays,
+                            domain_years: years,
+                            is_new_domain: isNew,
+                            registrar: registrar,
+                            whois_status: isNew ? `⚠️ HIGH RISK DOMAIN: Created ${regDays} days ago (< 90 days) • ${registrar}` : `ESTABLISHED DOMAIN: ${years}+ Yrs Old (${regDays} days) • ${registrar}`,
+                            api_verified: true
+                        };
+                    }
+                }
+            }
+        } catch (apiErr) {
+            console.warn("Client APILayer WHOIS notice:", apiErr);
+        }
+
+        // 2. Secondary: Official ICANN RDAP open protocol (rdap.org)
         try {
             const res = await fetch(`https://rdap.org/domain/${targetDomain}`);
             if (res.ok) {
@@ -788,9 +836,9 @@ Verify job offers directly on official corporate career portals before sending d
 
         // 1. Try backend API first
         try {
-            const backendUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || "";
+            const backendUrl = GeminiAPIClient.getBackendUrl();
             const token = localStorage.getItem('safe_hire_token') || localStorage.getItem('token') || '';
-            const res = await fetch(`${backendUrl.replace(/\/+$/, '')}/api/analyze/translate-report`, {
+            const res = await fetch(`${backendUrl}/api/analyze/translate-report`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

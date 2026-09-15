@@ -169,20 +169,21 @@ class VerificationAgent:
             domains_to_try.append(root_dom)
 
         import requests
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
         for target_dom in domains_to_try:
             try:
                 url = f"https://rdap.org/domain/{target_dom}"
-                res = requests.get(url, timeout=5)
+                res = requests.get(url, headers=headers, timeout=5)
                 if res.status_code == 200:
                     data = res.json()
                     events = data.get("events", [])
                     creation_str = None
                     exp_str = None
                     for ev in events:
-                        action = ev.get("eventAction")
-                        if action == "registration":
+                        action = str(ev.get("eventAction", "")).lower()
+                        if action in ["registration", "registered", "creation", "created"]:
                             creation_str = ev.get("eventDate")
-                        elif action == "expiration":
+                        elif action in ["expiration", "expired"]:
                             exp_str = ev.get("eventDate")
 
                     now = datetime.now(timezone.utc)
@@ -239,9 +240,10 @@ class VerificationAgent:
             return None
         import requests
         from dateutil import parser
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
         try:
             url = f"https://api.certspotter.com/v1/issuances?domain={domain}&include_subdomains=true&expand=dns_names"
-            res = requests.get(url, timeout=5)
+            res = requests.get(url, headers=headers, timeout=5)
             if res.status_code == 200:
                 data = res.json()
                 if isinstance(data, list) and data:
@@ -288,9 +290,10 @@ class VerificationAgent:
         if not domain:
             return None
         import requests
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
         try:
             url = f"https://web.archive.org/cdx/search/cdx?url={domain}&matchType=domain&limit=1&output=json"
-            res = requests.get(url, timeout=4)
+            res = requests.get(url, headers=headers, timeout=4)
             if res.status_code == 200:
                 data = res.json()
                 if isinstance(data, list) and len(data) > 1:

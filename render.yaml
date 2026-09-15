@@ -31,6 +31,8 @@ services:
         value: wis_live_KyVkL7gYMiXFivIQG46K9Xe4sh5THeAPT7rqgbAb
       - key: ABSTRACT_EMAIL_API_KEY
         value: 65b5f7a51dcf4cf4b00176ac9e690531
+      - key: GOOGLE_SAFE_BROWSING_API_KEY
+        value: AIzaSyC6BIN5Bl3vIsLZVb7_5EiJqwQc6oik2x4
       - key: VALSEA_API_KEY
         value: vl_7a5a9f08a2f52681eca39db60314a5bb7ac93bd9e337086d0ce121301d1e04e8.451230e514da410b8f8e2a33346f0ecf
 
@@ -50,7 +52,10 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: safe-hire-core-api
-          property: host
+        value: https://safe-hire-core-api.onrender.com
+      - key: VITE_APILAYER_KEY
+        value: nIvPeI99eWBDMSArYAf2YcrshDCOVvJ3
+      - key: VITE_GEMINI_API_KEY
+        sync: false
+      - key: VITE_WHOIS_IS_API_KEY
+        value: wis_live_KyVkL7gYMiXFivIQG46K9Xe4sh5THeAPT7rqgbAb
