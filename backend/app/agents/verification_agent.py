@@ -63,7 +63,7 @@ class VerificationAgent:
         for target_dom in domains_to_try:
             try:
                 query_url = f"https://api.apilayer.com/whois/query?domain={target_dom}"
-                res = requests.get(query_url, headers=headers, timeout=6)
+                res = requests.get(query_url, headers=headers, timeout=3.5)
                 
                 whois_data = None
                 if res.status_code == 200:
@@ -148,7 +148,7 @@ class VerificationAgent:
                 logger.info(f"APILayer WHOIS API query notice for {target_dom}: {e}")
         return None
 
-    def query_rdap(self, domain: str) -> Optional[Dict[str, Any]]:
+    def query_rdap(self, domain: str, timeout: float = 2.5) -> Optional[Dict[str, Any]]:
         """Query official ICANN RDAP open protocol (rdap.org) for live authoritative domain registration age."""
         if not domain:
             return None
@@ -163,7 +163,7 @@ class VerificationAgent:
         for target_dom in domains_to_try:
             try:
                 url = f"https://rdap.org/domain/{target_dom}"
-                res = requests.get(url, headers=headers, timeout=5)
+                res = requests.get(url, headers=headers, timeout=timeout)
                 if res.status_code == 200:
                     data = res.json()
                     events = data.get("events", [])
@@ -235,7 +235,7 @@ class VerificationAgent:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
         try:
             url = f"https://api.certspotter.com/v1/issuances?domain={domain}&include_subdomains=true&expand=dns_names"
-            res = requests.get(url, headers=headers, timeout=5)
+            res = requests.get(url, headers=headers, timeout=2.5)
             if res.status_code == 200:
                 data = res.json()
                 if isinstance(data, list) and data:
@@ -287,7 +287,7 @@ class VerificationAgent:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
         try:
             url = f"https://web.archive.org/cdx/search/cdx?url={domain}&matchType=domain&limit=1&output=json"
-            res = requests.get(url, headers=headers, timeout=4)
+            res = requests.get(url, headers=headers, timeout=2.0)
             if res.status_code == 200:
                 data = res.json()
                 if isinstance(data, list) and len(data) > 1:
@@ -329,7 +329,7 @@ class VerificationAgent:
         from dateutil import parser
         try:
             ctx = ssl.create_default_context()
-            with socket.create_connection((domain, 443), timeout=3) as sock:
+            with socket.create_connection((domain, 443), timeout=1.8) as sock:
                 with ctx.wrap_socket(sock, server_hostname=domain) as ssock:
                     cert = ssock.getpeercert()
                     nb = cert.get('notBefore')
@@ -389,15 +389,44 @@ class VerificationAgent:
                 "api_verified": False
             }
 
+        # Fast DNS pre-check: if host does not resolve and is unresolvable, skip slow cascade
+        import socket
+        dns_resolved = False
+        try:
+            socket.gethostbyname(domain_clean)
+            dns_resolved = True
+        except Exception:
+            root_d = self.extract_root_domain(domain_clean)
+            if root_d and root_d != domain_clean:
+                try:
+                    socket.gethostbyname(root_d)
+                    dns_resolved = True
+                except Exception:
+                    pass
+
         # 1. Primary: APILayer WHOIS API (supports root domain fallback for subdomains)
         apilayer_res = self.query_apilayer_whois(domain_clean)
         if apilayer_res and apilayer_res.get("registered_days") is not None:
             return apilayer_res
 
         # 2. Secondary: Official ICANN RDAP live protocol (free, unlimited, authoritative)
-        rdap_res = self.query_rdap(domain_clean)
+        rdap_res = self.query_rdap(domain_clean, timeout=2.5)
         if rdap_res and rdap_res.get("registered_days") is not None:
             return rdap_res
+
+        # If DNS failed completely and RDAP had no data, domain is unresolvable/unregistered
+        if not dns_resolved:
+            return {
+                "status": "suspicious",
+                "domain": domain_clean,
+                "creation_date": "N/A",
+                "registered_days": 1,
+                "domain_years": 0,
+                "domain_age_formatted": "Unregistered / Unresolvable (< 30 Days)",
+                "is_new_domain": True,
+                "whois_status": f"⚠️ UNRESOLVABLE DOMAIN: DNS lookup failed for '{domain_clean}'",
+                "api_verified": False
+            }
 
         # 3. Tertiary: Certificate Transparency log via CertSpotter (global, supports .lk and ccTLDs)
         certspotter_res = self.query_certspotter_age(domain_clean)
@@ -555,7 +584,7 @@ class VerificationAgent:
                         "threatEntries": [{"url": target_url}]
                     }
                 }
-                res = requests.post(endpoint, json=payload, timeout=6)
+                res = requests.post(endpoint, json=payload, timeout=2.5)
                 if res.status_code == 200:
                     data = res.json()
                     matches = data.get("matches", [])
@@ -626,7 +655,7 @@ class VerificationAgent:
                 import requests
                 url = "https://emailvalidation.abstractapi.com/v1/"
                 params = {"api_key": api_key, "email": email_clean}
-                res = requests.get(url, params=params, timeout=6)
+                res = requests.get(url, params=params, timeout=2.5)
                 if res.status_code == 200:
                     data = res.json()
                     deliverability = data.get("deliverability", "UNKNOWN")

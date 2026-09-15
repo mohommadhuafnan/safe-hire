@@ -242,23 +242,36 @@ class AgentPipeline:
 
         explanation_text = reasoning_res.get("explanation", "")
 
-        # Dynamic translation via Valsea / Gemini if target language is non-English
+        # Dynamic translation via Valsea / Gemini if target language is non-English and not already generated in target script
         if final_lang and final_lang.lower() not in ["en", "english"]:
-            try:
-                from app.agents.valsea_agent import valsea_translator
-                valsea_res = valsea_translator.translate_report_components(
-                    explanation_text,
-                    recommendations,
-                    breakdown_signals,
-                    final_lang
-                )
-                if valsea_res and valsea_res.get("explanation_text"):
-                    explanation_text = valsea_res.get("explanation_text")
-                    recommendations = valsea_res.get("recommendations") or recommendations
-                    breakdown_signals = valsea_res.get("breakdown_signals") or breakdown_signals
-                    logger.info(f"[{request_id}] Valsea AI translated output to '{final_lang}'")
-            except Exception as valsea_err:
-                logger.info(f"[{request_id}] Valsea translation notice: {valsea_err}")
+            import re
+            lang_patterns = {
+                "si": r'[\u0D80-\u0DFF]',
+                "ta": r'[\u0B80-\u0BFF]',
+                "hi": r'[\u0900-\u097F]',
+                "bn": r'[\u0980-\u09FF]',
+            }
+            pat = lang_patterns.get(final_lang.lower().strip())
+            is_already_translated = bool(pat and re.search(pat, explanation_text))
+
+            if not is_already_translated:
+                try:
+                    from app.agents.valsea_agent import valsea_translator
+                    valsea_res = valsea_translator.translate_report_components(
+                        explanation_text,
+                        recommendations,
+                        breakdown_signals,
+                        final_lang
+                    )
+                    if valsea_res and valsea_res.get("explanation_text"):
+                        explanation_text = valsea_res.get("explanation_text")
+                        recommendations = valsea_res.get("recommendations") or recommendations
+                        breakdown_signals = valsea_res.get("breakdown_signals") or breakdown_signals
+                        logger.info(f"[{request_id}] Valsea AI translated output to '{final_lang}'")
+                except Exception as valsea_err:
+                    logger.info(f"[{request_id}] Valsea translation notice: {valsea_err}")
+            else:
+                logger.info(f"[{request_id}] Explanation already generated natively in '{final_lang}' by Reasoning Agent. Skipping redundant translation.")
 
         logger.info(f"[{request_id}] PIPELINE RUN FINISHED SUCCESS — final_score={scam_score}, risk={risk_level}")
 

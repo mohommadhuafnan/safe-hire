@@ -80,7 +80,7 @@ class ValseaTranslationAgent:
         }
 
         try:
-            res = requests.post(self.api_url, json=payload, headers=headers, timeout=20)
+            res = requests.post(self.api_url, json=payload, headers=headers, timeout=3.5)
             if res.status_code == 200:
                 data = res.json()
                 translated = data.get("translated_text") or data.get("translation")
@@ -102,30 +102,27 @@ class ValseaTranslationAgent:
         target_lang: str
     ) -> Optional[Dict[str, Any]]:
         """
-        Translates all report components using Valsea AI translation endpoint.
+        Translates all report components concurrently using Valsea AI translation endpoint.
         """
         valsea_target = VALSEA_LANG_MAP.get(target_lang.lower().strip())
         if not valsea_target:
             return None
 
-        translated_exp = self.translate_text(explanation_text, target_lang) if explanation_text else explanation_text
-        if not translated_exp:
-            return None
+        from concurrent.futures import ThreadPoolExecutor
 
-        translated_recs = []
-        for rec in (recommendations or []):
-            t_rec = self.translate_text(rec, target_lang)
-            translated_recs.append(t_rec if t_rec else rec)
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            fut_exp = executor.submit(self.translate_text, explanation_text, target_lang) if explanation_text else None
+            fut_recs = [executor.submit(self.translate_text, rec, target_lang) for rec in (recommendations or [])]
+            fut_sigs = [executor.submit(self.translate_text, sig, target_lang) for sig in (breakdown_signals or [])]
 
-        translated_signals = []
-        for sig in (breakdown_signals or []):
-            t_sig = self.translate_text(sig, target_lang)
-            translated_signals.append(t_sig if t_sig else sig)
+            translated_exp = fut_exp.result() if fut_exp else explanation_text
+            translated_recs = [f.result() or r for f, r in zip(fut_recs, recommendations or [])]
+            translated_sigs = [f.result() or s for f, s in zip(fut_sigs, breakdown_signals or [])]
 
         return {
-            "explanation_text": translated_exp,
+            "explanation_text": translated_exp or explanation_text,
             "recommendations": translated_recs,
-            "breakdown_signals": translated_signals,
+            "breakdown_signals": translated_sigs,
             "target_language": target_lang
         }
 

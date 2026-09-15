@@ -688,7 +688,7 @@ Return ONLY a valid JSON object matching this exact key structure (no markdown f
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                                 contents: [{ parts }],
-                                generationConfig: { temperature: 0.0, maxOutputTokens: 3000 }
+                                generationConfig: { temperature: 0.0, maxOutputTokens: 1500 }
                             })
                         });
 

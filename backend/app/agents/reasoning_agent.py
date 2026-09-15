@@ -269,12 +269,12 @@ class ReasoningAgent:
 
             payload = {
                 "contents": [{"parts": parts}],
-                "generationConfig": {"temperature": 0.0, "maxOutputTokens": 4096}
+                "generationConfig": {"temperature": 0.0, "maxOutputTokens": 1500}
             }
 
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
             headers = {"Content-Type": "application/json", "X-goog-api-key": gemini_key}
-            gemini_timeout = getattr(settings, "GEMINI_TIMEOUT", 15) or 15
+            gemini_timeout = getattr(settings, "GEMINI_TIMEOUT", 8) or 8
             try:
                 res = requests.post(url, json=payload, headers=headers, timeout=gemini_timeout)
                 if res.status_code == 200:
@@ -312,10 +312,10 @@ class ReasoningAgent:
                 "model": model_name,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.0,
-                "max_tokens": 4096,
+                "max_tokens": 1500,
             }
             try:
-                res = requests.post(url, json=payload, headers=headers, timeout=30)
+                res = requests.post(url, json=payload, headers=headers, timeout=10)
                 if res.status_code == 200:
                     data = res.json()
                     choices = data.get("choices") or []

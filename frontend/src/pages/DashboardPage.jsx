@@ -383,7 +383,7 @@ const DashboardPage = () => {
       } else {
         clearInterval(stepInterval);
       }
-    }, 1400);
+    }, 550);
 
     try {
       const formData = new FormData();

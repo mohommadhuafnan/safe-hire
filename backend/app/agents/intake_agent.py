@@ -293,9 +293,9 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
                                 ]
                             }
                         ],
-                        "generationConfig": {"temperature": 0.0, "maxOutputTokens": 1500}
+                        "generationConfig": {"temperature": 0.0, "maxOutputTokens": 1200}
                     }
-                    gemini_timeout = getattr(settings, "GEMINI_TIMEOUT", 15) or 15
+                    gemini_timeout = getattr(settings, "GEMINI_TIMEOUT", 8) or 8
                     res = requests.post(url, json=payload, headers=gemini_headers, timeout=gemini_timeout)
                     if res.status_code == 200:
                         data = res.json()
@@ -475,7 +475,7 @@ Return ONLY a raw JSON object with this exact structure (no markdown formatting 
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 SAFE-HIRE/1.0 AI Scam Verification Engine"
             }
-            response = requests.get(target_url, headers=headers, timeout=12)
+            response = requests.get(target_url, headers=headers, timeout=4.5)
             content_type_header = response.headers.get("Content-Type", "").lower()
 
             # Case A: URL directly points to an Image (e.g. flyer/poster image link)
