@@ -3,7 +3,7 @@ services:
   # 1. Python FastAPI Backend (Docker Web Service)
   # ----------------------------------------------------
   - type: web
-    name: safe-hire-backend
+    name: safe-hire-core-api
     runtime: docker
     dockerfilePath: backend/Dockerfile
     dockerContext: backend
@@ -52,5 +52,5 @@ services:
       - key: VITE_API_URL
         fromService:
           type: web
-          name: safe-hire-backend
+          name: safe-hire-core-api
           property: host
