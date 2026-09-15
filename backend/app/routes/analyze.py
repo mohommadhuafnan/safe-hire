@@ -214,7 +214,7 @@ async def translate_report_endpoint(
     except Exception as valsea_err:
         logger.warning(f"Valsea AI translation attempt notice: {valsea_err}")
 
-    # --- Stage 2: Secondary Gemini AI Translation ---
+    # --- Stage 2: Gemini Multimodal AI Translation ---
     lang_map = {
         "ta": "Tamil (தமிழ்)",
         "si": "Sinhala (සිංහල)",
@@ -225,7 +225,7 @@ async def translate_report_endpoint(
     target_lang_name = lang_map.get(req.target_language, "English")
     gemini_key = getattr(settings, "GEMINI_API_KEY", "") or ""
 
-    if not gemini_key or not req.explanation_text:
+    if not req.explanation_text:
         return {
             "explanation_text": req.explanation_text,
             "recommendations": req.recommendations,
@@ -249,32 +249,79 @@ Input Data to Translate:
 
 Return ONLY a valid raw JSON object matching this structure (no markdown fences outside JSON):
 {{
-  "explanation_text": "<translated explanation text>",
+  "explanation_text": "<translated explanation text in {target_lang_name}>",
   "recommendations": ["<translated rec 1>", "<translated rec 2>", ...],
   "breakdown_signals": ["<translated signal 1>", "<translated signal 2>", ...]
 }}"""
 
-    try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}"
-        res = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=20)
-        if res.status_code == 200:
-            data = res.json()
-            candidates = data.get("candidates") or []
-            if candidates and isinstance(candidates[0], dict):
-                parts = (candidates[0].get("content") or {}).get("parts") or []
-                if parts and isinstance(parts[0], dict):
-                    raw = parts[0].get("text") or ""
-                    cleaned = raw.replace("```json", "").replace("```", "").strip()
-                    parsed = json.loads(cleaned)
-                    if isinstance(parsed, dict):
-                        return {
-                            "explanation_text": parsed.get("explanation_text") or req.explanation_text,
-                            "recommendations": parsed.get("recommendations") or req.recommendations,
-                            "breakdown_signals": parsed.get("breakdown_signals") or req.breakdown_signals,
-                            "target_language": req.target_language
-                        }
-    except Exception as err:
-        logger.warning(f"Gemini translation endpoint notice: {err}")
+    if gemini_key:
+        models_to_try = [
+            "gemini-flash-lite-latest",
+            "gemini-3.1-flash-lite-preview",
+            "gemini-flash-latest",
+            "gemini-3.5-flash",
+            "gemini-3.6-flash"
+        ]
+        for model_name in models_to_try:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+                res = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=10)
+                if res.status_code == 200:
+                    data = res.json()
+                    candidates = data.get("candidates") or []
+                    if candidates and isinstance(candidates[0], dict):
+                        parts = (candidates[0].get("content") or {}).get("parts") or []
+                        if parts and isinstance(parts[0], dict):
+                            raw = parts[0].get("text") or ""
+                            cleaned = raw.replace("```json", "").replace("```", "").strip()
+                            parsed = json.loads(cleaned)
+                            if isinstance(parsed, dict) and parsed.get("explanation_text"):
+                                logger.info(f"✅ Gemini Translation Endpoint Success ({model_name}) for '{req.target_language}'")
+                                return {
+                                    "explanation_text": parsed.get("explanation_text"),
+                                    "recommendations": parsed.get("recommendations") or req.recommendations,
+                                    "breakdown_signals": parsed.get("breakdown_signals") or req.breakdown_signals,
+                                    "target_language": req.target_language
+                                }
+            except Exception as gemini_err:
+                logger.warning(f"Gemini translation notice for {model_name}: {gemini_err}")
+
+    # --- Stage 3: DeepSeek / Hugging Face Router Fallback ---
+    hf_token = getattr(settings, "HF_TOKEN", "") or getattr(settings, "DEEPSEEK_V4_API_KEY", "") or ""
+    if hf_token:
+        try:
+            hf_url = getattr(settings, "HF_API_BASE_URL", "https://router.huggingface.co/v1").rstrip("/") + "/chat/completions"
+            headers = {"Authorization": f"Bearer {hf_token}", "Content-Type": "application/json"}
+            for hf_model in ["deepseek-ai/DeepSeek-V3", "Qwen/Qwen2.5-72B-Instruct"]:
+                try:
+                    res = requests.post(
+                        hf_url,
+                        headers=headers,
+                        json={
+                            "model": hf_model,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0.1,
+                            "max_tokens": 1500
+                        },
+                        timeout=8
+                    )
+                    if res.status_code == 200:
+                        data = res.json()
+                        raw = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                        cleaned = raw.replace("```json", "").replace("```", "").strip()
+                        parsed = json.loads(cleaned)
+                        if isinstance(parsed, dict) and parsed.get("explanation_text"):
+                            logger.info(f"✅ DeepSeek/HF Translation Success ({hf_model}) for '{req.target_language}'")
+                            return {
+                                "explanation_text": parsed.get("explanation_text"),
+                                "recommendations": parsed.get("recommendations") or req.recommendations,
+                                "breakdown_signals": parsed.get("breakdown_signals") or req.breakdown_signals,
+                                "target_language": req.target_language
+                            }
+                except Exception as hf_err:
+                    logger.warning(f"HF translation notice for {hf_model}: {hf_err}")
+        except Exception as router_err:
+            logger.warning(f"Router translation error: {router_err}")
 
     return {
         "explanation_text": req.explanation_text,

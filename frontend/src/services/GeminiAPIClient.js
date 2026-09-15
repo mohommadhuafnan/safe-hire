@@ -1033,19 +1033,21 @@ Verify job offers directly on official corporate career portals before sending d
             });
             if (res.ok) {
                 const translated = await res.json();
-                return {
-                    ...report,
-                    explanation_text: translated.explanation_text || report.explanation_text,
-                    recommendations: translated.recommendations || report.recommendations,
-                    breakdown_signals: translated.breakdown_signals || report.breakdown_signals,
-                    language: targetLang
-                };
+                if (translated && translated.explanation_text) {
+                    return {
+                        ...report,
+                        explanation_text: translated.explanation_text,
+                        recommendations: translated.recommendations || report.recommendations,
+                        breakdown_signals: translated.breakdown_signals || report.breakdown_signals,
+                        language: targetLang
+                    };
+                }
             }
         } catch (e) {
             console.warn('Backend translation API unavailable, using direct Gemini fallback:', e);
         }
 
-        // 2. Direct Gemini Vision / Multimodal AI Fallback
+        // 2. Direct Gemini Multimodal AI Fallback
         if (this.apiKey) {
             try {
                 const langMap = {
@@ -1072,31 +1074,45 @@ ${JSON.stringify(report.breakdown_signals || [])}
 
 Return ONLY a valid JSON object matching this structure (no markdown fences outside JSON):
 {
-  "explanation_text": "<translated explanation text>",
+  "explanation_text": "<translated explanation text in ${langName}>",
   "recommendations": ["<translated rec 1>", "<translated rec 2>", ...],
   "breakdown_signals": ["<translated signal 1>", "<translated signal 2>", ...]
 }`;
 
-                const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`;
-                const res = await fetch(restUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
+                const modelsToTry = [
+                    "gemini-flash-lite-latest",
+                    "gemini-3.1-flash-lite-preview",
+                    "gemini-flash-latest",
+                    "gemini-3.5-flash",
+                    "gemini-3.6-flash"
+                ];
 
-                if (res.ok) {
-                    const data = await res.json();
-                    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                    const cleaned = rawText.replace(/```json/gi, '').replace(/```/gi, '').trim();
-                    const parsed = JSON.parse(cleaned);
-                    if (parsed && typeof parsed === 'object') {
-                        return {
-                            ...report,
-                            explanation_text: parsed.explanation_text || report.explanation_text,
-                            recommendations: parsed.recommendations || report.recommendations,
-                            breakdown_signals: parsed.breakdown_signals || report.breakdown_signals,
-                            language: targetLang
-                        };
+                for (const gModel of modelsToTry) {
+                    try {
+                        const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/${gModel}:generateContent?key=${this.apiKey}`;
+                        const res = await fetch(restUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                        });
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                            const cleaned = rawText.replace(/```json/gi, '').replace(/```/gi, '').trim();
+                            const parsed = JSON.parse(cleaned);
+                            if (parsed && typeof parsed === 'object' && parsed.explanation_text) {
+                                return {
+                                    ...report,
+                                    explanation_text: parsed.explanation_text,
+                                    recommendations: parsed.recommendations || report.recommendations,
+                                    breakdown_signals: parsed.breakdown_signals || report.breakdown_signals,
+                                    language: targetLang
+                                };
+                            }
+                        }
+                    } catch (mErr) {
+                        // Try next model
                     }
                 }
             } catch (err) {
